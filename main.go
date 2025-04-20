@@ -446,6 +446,9 @@ func main() {
 		}, w)
 
 		l, _ := storage.ListerForURI(storage.NewFileURI(filesManager.GetCurrentPath()))
+		fileDialog.SetTitleText("Open game save file (../AppData/LocalLow/Complex Games Inc_/GreyKnights/SaveGames/Campaign)")
+		fileDialog.SetConfirmText("Open")
+		fileDialog.SetDismissText("Cancel")
 		fileDialog.SetLocation(l)
 		fileDialog.Resize(fyne.NewSize(800, 600))
 		fileDialog.SetFilter(storage.NewExtensionFileFilter([]string{".gksave"}))
