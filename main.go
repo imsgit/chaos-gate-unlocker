@@ -456,9 +456,9 @@ func main() {
 	})
 
 	saveButton = widget.NewButton("Save", func() {
-		dialog.ShowConfirm(
+		confirmDialog := dialog.NewConfirm(
 			"Save confirmation",
-			"\n\nThis will override the existing save file. Are you sure?\nPlease make a backup if needed.\n\n",
+			"\n\n\nThis will override the existing save file. Are you sure?\nPlease make a backup if needed.",
 			func(response bool) {
 				if response {
 					go animateTop(leftAquila, rightAquila, progress, false)
@@ -477,6 +477,10 @@ func main() {
 					}
 				}
 			}, w)
+
+		confirmDialog.SetConfirmText("Save")
+		confirmDialog.SetDismissText("Cancel")
+		confirmDialog.Show()
 	})
 	saveButton.Disable()
 
