@@ -87,7 +87,7 @@ func (s *Select) disableSelectedOnPopup() {
 
 	for _, i := range popup.Items {
 		f = reflect.ValueOf(i).Elem().FieldByName("Item")
-		v := f.Interface().(*fyne.MenuItem)
+		v, _ := f.Interface().(*fyne.MenuItem)
 		if v.Label == s.Selected {
 			v.Disabled = true
 			i.Refresh()

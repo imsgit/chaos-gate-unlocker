@@ -29,8 +29,6 @@ var (
 const (
 	minVersion = 1170
 
-	onShipLocation = "COMMON_Baleful_Edict"
-
 	saveDir   = "AppData/LocalLow/Complex Games Inc_/GreyKnights/SaveGames/Campaign"
 	protonDir = "/1611910/pfx"
 )
@@ -51,8 +49,8 @@ func (m *Manager) OnLoadState(fn func(*internal.State)) {
 	m.onLoadState = append(m.onLoadState, fn)
 }
 
-func (m *Manager) OnShip() bool {
-	return m.header != nil && m.header.Location == onShipLocation
+func (m *Manager) SaveDir() string {
+	return saveDir
 }
 
 func (m *Manager) GetCurrentPath() string {
@@ -154,30 +152,6 @@ func (m *Manager) Load(reader fyne.URIReadCloser) error {
 	return nil
 }
 
-func (m *Manager) Status() string {
-	var difficulty string
-	switch m.header.Difficulty {
-	case 3:
-		difficulty = "Legendary"
-	case 2:
-		difficulty = "Ruthless"
-	case 1:
-		difficulty = "Standard"
-	case 0:
-		difficulty = "Merciful"
-	}
-	if m.header.IronMan {
-		difficulty += " Ironman"
-	}
-
-	timestamp := fmt.Sprintf("%d-%02d-%02d %02d:%02d:%02d",
-		m.header.SavedTimeStamp.Years, m.header.SavedTimeStamp.Months, m.header.SavedTimeStamp.Days,
-		m.header.SavedTimeStamp.Hours, m.header.SavedTimeStamp.Minutes, m.header.SavedTimeStamp.Seconds)
-
-	return fmt.Sprintf("%s | %s | Days: %d | Difficulty: %s | %s",
-		filepath.Base(m.filePath), m.header.SaveName, m.header.GameDays, difficulty, timestamp)
-}
-
 func (m *Manager) loadHeader(headerBytes []byte, header **internal.Header) error {
 	var newHeader internal.Header
 	if err := json.Unmarshal(headerBytes, &newHeader); err != nil {
@@ -244,4 +218,28 @@ func (m *Manager) Save() error {
 	}
 
 	return nil
+}
+
+func (m *Manager) Status() string {
+	var difficulty string
+	switch m.header.Difficulty {
+	case 3:
+		difficulty = "Legendary"
+	case 2:
+		difficulty = "Ruthless"
+	case 1:
+		difficulty = "Standard"
+	case 0:
+		difficulty = "Merciful"
+	}
+	if m.header.IronMan {
+		difficulty += " Ironman"
+	}
+
+	timestamp := fmt.Sprintf("%d-%02d-%02d %02d:%02d:%02d",
+		m.header.SavedTimeStamp.Years, m.header.SavedTimeStamp.Months, m.header.SavedTimeStamp.Days,
+		m.header.SavedTimeStamp.Hours, m.header.SavedTimeStamp.Minutes, m.header.SavedTimeStamp.Seconds)
+
+	return fmt.Sprintf("%s | %s | Days: %d | Difficulty: %s | %s",
+		filepath.Base(m.filePath), m.header.SaveName, m.header.GameDays, difficulty, timestamp)
 }

@@ -50,8 +50,6 @@ var (
 	healUnits      = map[any]bool{}
 	talentsUnits   = map[any][][]string{}
 	augmeticsUnits = map[any][][]string{}
-
-	saveButton *widget.Button
 )
 
 func main() {
@@ -157,7 +155,6 @@ func main() {
 			}
 			break
 		}
-
 		refreshSaveButton()
 	}, "ActHeal", "Heal wound", "Heals the wound;\nIf the wound was critical, you can also select a new augmetic for your knight")
 	healWoundSwitch.Hide()
@@ -331,20 +328,13 @@ func main() {
 			unitsList.UnselectAll()
 			_ = status.Set("")
 
-			for unitsProvider.Length() > 0 {
-				unit, _ := unitsProvider.GetValue(0)
-				_ = unitsProvider.Remove(unit)
-			}
-
 			err = filesManager.Load(rc)
 			if err != nil {
 				dialog.ShowError(err, w)
 				return
 			}
 
-			for _, unit := range featuresManager.Units() {
-				_ = unitsProvider.Append(unit)
-			}
+			_ = unitsProvider.Set(featuresManager.Units())
 
 			unlockAdvancedClassesSwitch.Enable()
 			unlockAdvancedClassesSwitch.SetState(false, true)
@@ -446,7 +436,7 @@ func main() {
 		}, w)
 
 		l, _ := storage.ListerForURI(storage.NewFileURI(filesManager.GetCurrentPath()))
-		fileDialog.SetTitleText("Open game save file (../AppData/LocalLow/Complex Games Inc_/GreyKnights/SaveGames/Campaign)")
+		fileDialog.SetTitleText("Open game save file   ../" + filesManager.SaveDir())
 		fileDialog.SetConfirmText("Open")
 		fileDialog.SetDismissText("Cancel")
 		fileDialog.SetLocation(l)
@@ -587,6 +577,8 @@ func containsOpt(list []string, val string) bool {
 	}
 	return false
 }
+
+var saveButton *widget.Button
 
 func refreshSaveButton() {
 	var augmeticsChanged bool

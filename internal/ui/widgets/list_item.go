@@ -55,6 +55,11 @@ func NewListItem() fyne.CanvasObject {
 	return i
 }
 
+func (i *ListItem) MinSize() fyne.Size {
+	i.ExtendBaseWidget(i)
+	return fyne.NewSize(0, 54)
+}
+
 func (i *ListItem) CreateRenderer() fyne.WidgetRenderer {
 	classContainer := container.NewPadded(i.iconClass)
 
@@ -74,10 +79,6 @@ func (i *ListItem) CreateRenderer() fyne.WidgetRenderer {
 			lvlContainer,
 			nameContainer), nil,
 		))
-}
-
-func (i *ListItem) MinSize() fyne.Size {
-	return fyne.NewSize(0, 54)
 }
 
 func (i *ListItem) Bind(val interface{}) {
