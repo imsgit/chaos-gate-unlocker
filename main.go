@@ -24,7 +24,7 @@ import (
 )
 
 const (
-	version = "Version: 1.0.0.46 | Author: imsgit | 2025-04-20"
+	version = "Version: 1.0.0.47 | Author: imsgit | 2025-04-27"
 )
 
 var (
@@ -237,7 +237,7 @@ func main() {
 		}
 	}
 
-	unitsList.OnUnselected = func(_ widget.ListItemID) {
+	unitsList.OnUnselected = func(widget.ListItemID) {
 		healWoundSwitch.Hide()
 		repairDamageSwitch.Hide()
 		unitsBox.Objects[2] = container.NewVBox()
@@ -275,6 +275,8 @@ func main() {
 			widget.NewRichTextFromMarkdown(`
 [> Visit Nexus Mods for more information](https://www.nexusmods.com/warhammer40kchaosgatedaemonhunters/mods/5)
 
+[> Visit Fyne.io for app details](https://apps.fyne.io/apps/chaos.gate.unlocker.html)
+
 [> Visit Reddit for discussion](https://www.reddit.com/r/ChaosGateGame/comments/1hz3s5g/chaosgateunlocker)
 `),
 			widget.NewRichTextFromMarkdown(version)))
@@ -305,7 +307,8 @@ func main() {
 	progress := canvas.NewRectangle(fyne.CurrentApp().Settings().Theme().Color(theme.ColorNameBackground, 0))
 	progress.SetMinSize(fyne.NewSize(0, 4))
 
-	openButton := widget.NewButton("Open", func() {
+	var openButton *widget.Button
+	openButton = widget.NewButton("Open", func() {
 		fileDialog := dialog.NewFileOpen(func(rc fyne.URIReadCloser, err error) {
 			if rc == nil {
 				return
@@ -314,6 +317,7 @@ func main() {
 			go func() {
 				animateTop(leftAquila, rightAquila, progress, true)
 				fyne.DoAndWait(func() {
+					openButton.Enable()
 					layoutTabs.Show()
 					_ = status.Set(filesManager.Status())
 				})
@@ -323,6 +327,7 @@ func main() {
 			augmeticsUnits = map[any][][]string{}
 			talentsUnits = map[any][][]string{}
 
+			openButton.Disable()
 			layoutTabs.Hide()
 			layoutTabs.SelectIndex(0)
 			unitsList.UnselectAll()
@@ -451,10 +456,16 @@ func main() {
 			"\n\n\nThis will override the existing save file. Are you sure?\nPlease make a backup if needed.",
 			func(response bool) {
 				if response {
-					go animateTop(leftAquila, rightAquila, progress, false)
+					go func() {
+						animateTop(leftAquila, rightAquila, progress, false)
+						fyne.DoAndWait(func() {
+							openButton.Enable()
+						})
+					}()
 
 					applyChanges()
 
+					openButton.Disable()
 					saveButton.Disable()
 					layoutTabs.Hide()
 					layoutTabs.SelectIndex(0)
@@ -701,11 +712,9 @@ func animateTop(im, im2 *canvas.Image, r *canvas.Rectangle, open bool) {
 		im2.Translucency = 1
 	}
 
-	fyne.DoAndWait(func() {
-		r.FillColor = fyne.CurrentApp().Settings().Theme().Color(theme.ColorNameBackground, 0)
-	})
+	r.FillColor = fyne.CurrentApp().Settings().Theme().Color(theme.ColorNameBackground, 0)
 
-	ticker := time.NewTicker(24 * time.Millisecond)
+	ticker := time.NewTicker(20 * time.Millisecond)
 	defer ticker.Stop()
 
 	for i := 0; i < 30; i++ {
@@ -714,34 +723,31 @@ func animateTop(im, im2 *canvas.Image, r *canvas.Rectangle, open bool) {
 			if i < 20 {
 				newSize := fyne.NewSize(currentSize.Width+sOffset, 4)
 				currentSize = newSize
-				fyne.DoAndWait(func() {
-					r.FillColor = fyne.CurrentApp().Settings().Theme().Color(theme.ColorNameShadow, 0)
-					r.Resize(newSize)
-				})
+				r.FillColor = fyne.CurrentApp().Settings().Theme().Color(theme.ColorNameShadow, 0)
+				r.Resize(newSize)
 			} else if !open {
-				fyne.DoAndWait(func() {
-					r.FillColor = fyne.CurrentApp().Settings().Theme().Color(theme.ColorNameBackground, 0)
-				})
+				r.FillColor = fyne.CurrentApp().Settings().Theme().Color(theme.ColorNameBackground, 0)
 			}
 
 			if i > 4 {
-				fyne.DoAndWait(func() {
-					im.Translucency += tOffset
-					if im.Translucency < 0 {
-						im.Translucency = 0
-					}
-					if im.Translucency > 1 {
-						im.Translucency = 1
-					}
-					im.Refresh()
+				im.Translucency += tOffset
+				if im.Translucency < 0 {
+					im.Translucency = 0
+				}
+				if im.Translucency > 1 {
+					im.Translucency = 1
+				}
 
-					im2.Translucency += tOffset
-					if im2.Translucency < 0 {
-						im2.Translucency = 0
-					}
-					if im2.Translucency > 1 {
-						im2.Translucency = 1
-					}
+				im2.Translucency += tOffset
+				if im2.Translucency < 0 {
+					im2.Translucency = 0
+				}
+				if im2.Translucency > 1 {
+					im2.Translucency = 1
+				}
+
+				fyne.DoAndWait(func() {
+					im.Refresh()
 					im2.Refresh()
 				})
 			}
@@ -752,7 +758,7 @@ func animateTop(im, im2 *canvas.Image, r *canvas.Rectangle, open bool) {
 func animateAbout(ctx context.Context, im *canvas.Image) {
 	tOffset := -0.04
 
-	ticker := time.NewTicker(24 * time.Millisecond)
+	ticker := time.NewTicker(20 * time.Millisecond)
 	defer ticker.Stop()
 
 	for i := 0; i < 30; i++ {
@@ -761,11 +767,12 @@ func animateAbout(ctx context.Context, im *canvas.Image) {
 			return
 		case <-ticker.C:
 			if i > 5 {
+				im.Translucency += tOffset
+				if im.Translucency < 0 {
+					im.Translucency = 0
+				}
+
 				fyne.DoAndWait(func() {
-					im.Translucency += tOffset
-					if im.Translucency < 0 {
-						im.Translucency = 0
-					}
 					im.Refresh()
 				})
 			}
