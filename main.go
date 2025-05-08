@@ -5,6 +5,7 @@ import (
 	"chaos-gate-unlocker/internal/files"
 	"chaos-gate-unlocker/internal/ui"
 	"chaos-gate-unlocker/internal/ui/widgets"
+	"fmt"
 
 	"context"
 	"reflect"
@@ -24,7 +25,7 @@ import (
 )
 
 const (
-	version = "Version: 1.0.0.47 | Author: imsgit | 2025-04-27"
+	version = "Version: 1.0.0.%d | Author: imsgit | 2025-05-05"
 )
 
 var (
@@ -279,7 +280,7 @@ func main() {
 
 [> Visit Reddit for discussion](https://www.reddit.com/r/ChaosGateGame/comments/1hz3s5g/chaosgateunlocker)
 `),
-			widget.NewRichTextFromMarkdown(version)))
+			widget.NewRichTextFromMarkdown(fmt.Sprintf(version, a.Metadata().Build))))
 	layoutTabs := container.NewAppTabs(mainTab, unitsTab, aboutTab)
 	layoutTabs.SetTabLocation(container.TabLocationTrailing)
 	layoutTabs.OnSelected = func(item *container.TabItem) {

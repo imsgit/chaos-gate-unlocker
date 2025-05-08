@@ -3,7 +3,7 @@ module chaos-gate-unlocker
 go 1.21
 
 require (
-	fyne.io/fyne/v2 v2.6.0
+	fyne.io/fyne/v2 v2.6.1
 	github.com/dweymouth/fyne-tooltip v0.3.1
 	github.com/goccy/go-json v0.10.3
 )
