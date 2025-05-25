@@ -452,7 +452,7 @@ func main() {
 		}, w)
 
 		l, _ := storage.ListerForURI(storage.NewFileURI(filesManager.GetCurrentPath()))
-		fileDialog.SetTitleText("Open game save file    ../" + filesManager.SaveDir())
+		fileDialog.SetTitleText("Open game save file ../" + filesManager.SaveDir())
 		fileDialog.SetConfirmText("Open")
 		fileDialog.SetDismissText("Cancel")
 		fileDialog.SetLocation(l)

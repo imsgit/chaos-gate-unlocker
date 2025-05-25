@@ -212,7 +212,7 @@ func (m *Manager) Save() error {
 		file = append(file, sep...)
 	}
 
-	err = os.WriteFile(m.filePath, file, 0644)
+	err = os.WriteFile(m.filePath, file, 0600)
 	if err != nil {
 		return ErrSaveFile
 	}
