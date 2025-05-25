@@ -172,7 +172,7 @@ func (m *Manager) loadState(stateBytes []byte, state **internal.State) error {
 		return ErrWrongSaveFileFormat
 	}
 
-	decodedState := decode(stateBytes)
+	decodedState := encodeDecode(stateBytes)
 
 	var newState internal.State
 	if err := json.Unmarshal(decodedState, &newState); err != nil {
@@ -193,7 +193,7 @@ func (m *Manager) Save() error {
 	if err != nil {
 		return ErrSaveFile
 	}
-	stateBytes = encode(stateBytes)
+	stateBytes = encodeDecode(stateBytes)
 
 	fileLength := len(headerBytes) + len(sep) + len(stateBytes) + len(sep)
 
