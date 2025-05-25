@@ -98,7 +98,7 @@ func (m *Manager) GetCurrentPath() string {
 func searchDir(root, searchPath string) string {
 	var result string
 
-	_ = filepath.Walk(root, func(path string, info os.FileInfo, err error) error {
+	filepath.Walk(root, func(path string, info os.FileInfo, err error) error {
 		if err != nil || !info.IsDir() || path == root || !strings.HasSuffix(path, searchPath) {
 			return nil
 		}
@@ -123,7 +123,7 @@ func (m *Manager) Load(reader fyne.URIReadCloser) error {
 		return err
 	}
 
-	_ = reader.Close()
+	reader.Close()
 
 	chunks := bytes.Split(file, sep)
 	if len(chunks) < 3 {
@@ -147,7 +147,7 @@ func (m *Manager) Load(reader fyne.URIReadCloser) error {
 	}
 
 	pathBinding := binding.BindPreferenceString("path", fyne.CurrentApp().Preferences())
-	_ = pathBinding.Set(m.filePath)
+	pathBinding.Set(m.filePath)
 
 	return nil
 }

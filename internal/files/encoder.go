@@ -60,7 +60,7 @@ func encodeDecode(data []byte) []byte {
 			continue
 		case 194, 195:
 			if i+1 < len(data) {
-				r, _ := utf8.DecodeRune([]byte{b, data[i+1]})
+				r, _ := utf8.DecodeRune(data[i : i+2])
 				b = nibbleSwap(byte(r))
 				result[i] = []byte(string(b))
 				i++
@@ -96,7 +96,7 @@ func encodeDecode(data []byte) []byte {
 
 	wg.Wait()
 
-	return bytes.Join(result, []byte{})
+	return bytes.Join(result, nil)
 }
 
 func nibbleSwap(b byte) byte {
