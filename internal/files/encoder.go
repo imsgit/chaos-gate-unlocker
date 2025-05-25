@@ -7,9 +7,9 @@ import (
 
 func encode(data []byte) []byte {
 	var (
-		result  = make([][]byte, len(data))
-		wg      sync.WaitGroup
-		unicode int
+		result         = make([][]byte, len(data))
+		wg             sync.WaitGroup
+		russianUnicode byte
 	)
 
 	for i, b := range data {
@@ -18,11 +18,11 @@ func encode(data []byte) []byte {
 			result[i] = []byte{b}
 			continue
 		default:
-			if b > 183 {
-				unicode = 3
+			if b == 228 || b == 225 {
+				russianUnicode = 3
 			}
-			if unicode > 0 {
-				unicode--
+			if russianUnicode > 0 {
+				russianUnicode--
 				result[i] = []byte{b}
 				continue
 			}
@@ -43,11 +43,11 @@ func encode(data []byte) []byte {
 
 func decode(data []byte) []byte {
 	var (
-		result  = make([]byte, len(data))
-		wg      sync.WaitGroup
-		shift   bool
-		skip    int
-		unicode int
+		result         = make([]byte, len(data))
+		wg             sync.WaitGroup
+		shift          bool
+		skip           int
+		russianUnicode byte
 	)
 
 	for i, b := range data {
@@ -63,11 +63,12 @@ func decode(data []byte) []byte {
 			result[i-skip] = b
 			continue
 		default:
-			if b > 183 {
-				unicode = 3
+			if b == 228 || b == 225 {
+				russianUnicode = 3
 			}
-			if unicode > 0 {
-				unicode--
+			if russianUnicode > 0 {
+				russianUnicode--
+				shift = false
 				result[i-skip] = b
 				continue
 			}

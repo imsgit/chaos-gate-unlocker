@@ -100,6 +100,7 @@ func (s *Switch) FocusGained() {
 	if s.Disabled() {
 		return
 	}
+
 	s.focused = true
 }
 

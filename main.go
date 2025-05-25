@@ -5,9 +5,9 @@ import (
 	"chaos-gate-unlocker/internal/files"
 	"chaos-gate-unlocker/internal/ui"
 	"chaos-gate-unlocker/internal/ui/widgets"
-	"fmt"
 
 	"context"
+	"fmt"
 	"reflect"
 	"strings"
 	"time"
@@ -25,7 +25,7 @@ import (
 )
 
 const (
-	version = "Version: 1.0.0.%d | Author: imsgit | 2025-05-05"
+	version = "Version: 1.0.0.%d | Author: imsgit | 2025-05-25"
 )
 
 var (
@@ -246,7 +246,6 @@ func main() {
 		unitsScrollBox.ScrollToTop()
 	}
 
-	var cancel context.CancelFunc
 	back := canvas.NewImageFromResource(ui.GetAppBackgroundIcon())
 	back.FillMode = canvas.ImageFillContain
 	back.Translucency = 0.96
@@ -281,16 +280,21 @@ func main() {
 [> Visit Reddit for discussion](https://www.reddit.com/r/ChaosGateGame/comments/1hz3s5g/chaosgateunlocker)
 `),
 			widget.NewRichTextFromMarkdown(fmt.Sprintf(version, a.Metadata().Build))))
+
+	var acancel context.CancelFunc
 	layoutTabs := container.NewAppTabs(mainTab, unitsTab, aboutTab)
 	layoutTabs.SetTabLocation(container.TabLocationTrailing)
 	layoutTabs.OnSelected = func(item *container.TabItem) {
 		if item.Text == "About" {
-			var ctx context.Context
-			ctx, cancel = context.WithCancel(context.Background())
-			go animateAbout(ctx, back)
+			var actx context.Context
+			actx, acancel = context.WithCancel(context.Background())
+			go func() {
+				animateAbout(actx, back)
+				acancel()
+			}()
 		} else {
-			if cancel != nil {
-				cancel()
+			if acancel != nil {
+				acancel()
 			}
 			back.Translucency = 0.96
 		}
@@ -315,14 +319,19 @@ func main() {
 				return
 			}
 
-			go func() {
-				animateTop(leftAquila, rightAquila, progress, true)
+			ctx, cancel := context.WithCancel(context.Background())
+			go func(ctx context.Context) {
+				animateTop(ctx, leftAquila, rightAquila, progress, true)
+
 				fyne.DoAndWait(func() {
 					openButton.Enable()
-					layoutTabs.Show()
-					_ = status.Set(filesManager.Status())
+					if ctx.Err() == nil {
+						layoutTabs.Show()
+						status.Set(filesManager.Status())
+					}
 				})
-			}()
+				cancel()
+			}(ctx)
 
 			healUnits = map[any]bool{}
 			augmeticsUnits = map[any][][]string{}
@@ -332,15 +341,16 @@ func main() {
 			layoutTabs.Hide()
 			layoutTabs.SelectIndex(0)
 			unitsList.UnselectAll()
-			_ = status.Set("")
+			status.Set("")
 
 			err = filesManager.Load(rc)
 			if err != nil {
+				cancel()
 				dialog.ShowError(err, w)
 				return
 			}
 
-			_ = unitsProvider.Set(featuresManager.Units())
+			unitsProvider.Set(featuresManager.Units())
 
 			unlockAdvancedClassesSwitch.Enable()
 			unlockAdvancedClassesSwitch.SetState(false, true)
@@ -442,7 +452,7 @@ func main() {
 		}, w)
 
 		l, _ := storage.ListerForURI(storage.NewFileURI(filesManager.GetCurrentPath()))
-		fileDialog.SetTitleText("Open game save file   ../" + filesManager.SaveDir())
+		fileDialog.SetTitleText("Open game save file    ../" + filesManager.SaveDir())
 		fileDialog.SetConfirmText("Open")
 		fileDialog.SetDismissText("Cancel")
 		fileDialog.SetLocation(l)
@@ -457,12 +467,15 @@ func main() {
 			"\n\n\nThis will override the existing save file. Are you sure?\nPlease make a backup if needed.",
 			func(response bool) {
 				if response {
-					go func() {
-						animateTop(leftAquila, rightAquila, progress, false)
+					ctx, cancel := context.WithCancel(context.Background())
+					go func(ctx context.Context) {
+						animateTop(ctx, leftAquila, rightAquila, progress, false)
+
 						fyne.DoAndWait(func() {
 							openButton.Enable()
 						})
-					}()
+						cancel()
+					}(ctx)
 
 					applyChanges()
 
@@ -471,10 +484,11 @@ func main() {
 					layoutTabs.Hide()
 					layoutTabs.SelectIndex(0)
 					unitsList.UnselectAll()
-					_ = status.Set("")
+					status.Set("")
 
 					err := filesManager.Save()
 					if err != nil {
+						cancel()
 						dialog.ShowError(err, w)
 					}
 				}
@@ -703,10 +717,11 @@ func applyChanges() {
 	}
 }
 
-func animateTop(im, im2 *canvas.Image, r *canvas.Rectangle, open bool) {
+func animateTop(ctx context.Context, im, im2 *canvas.Image, r *canvas.Rectangle, open bool) {
 	currentSize := fyne.NewSize(0, 4)
 	sOffset := r.Size().Width / 20
 	tOffset := 0.04
+
 	if open {
 		tOffset *= -1
 		im.Translucency = 1
@@ -720,6 +735,8 @@ func animateTop(im, im2 *canvas.Image, r *canvas.Rectangle, open bool) {
 
 	for i := 0; i < 30; i++ {
 		select {
+		case <-ctx.Done():
+			return
 		case <-ticker.C:
 			if i < 20 {
 				newSize := fyne.NewSize(currentSize.Width+sOffset, 4)
