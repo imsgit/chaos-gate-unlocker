@@ -22,8 +22,8 @@ import (
 var (
 	sep = []byte("\r\n")
 
-	ErrWrongSaveFileFormat = errors.New("\n\nWrong save file format.")
-	ErrSaveFile            = errors.New("\n\nCannot save file.")
+	ErrWrongSaveFileFormat = errors.New("\n\n\nError. Wrong save file format.\n\n")
+	ErrSaveFile            = errors.New("\n\n\nError. Cannot save file.\n\n")
 )
 
 const (
@@ -98,13 +98,13 @@ func (m *Manager) GetCurrentPath() string {
 func searchDir(root, searchPath string) string {
 	var result string
 
-	filepath.Walk(root, func(path string, info os.FileInfo, err error) error {
-		if err != nil || !info.IsDir() || path == root || !strings.HasSuffix(path, searchPath) {
+	filepath.WalkDir(root, func(path string, d fs.DirEntry, err error) error {
+		if err != nil || !d.IsDir() || path == root || !strings.HasSuffix(path, searchPath) {
 			return nil
 		}
 
 		result = path
-		return fs.SkipAll
+		return fs.SkipDir
 	})
 
 	return result
@@ -116,14 +116,14 @@ func dirNotExists(path string) bool {
 }
 
 func (m *Manager) Load(reader fyne.URIReadCloser) error {
+	defer reader.Close()
+
 	m.filePath = reader.URI().Path()
 
 	file, err := io.ReadAll(reader)
 	if err != nil {
 		return err
 	}
-
-	reader.Close()
 
 	chunks := bytes.Split(file, sep)
 	if len(chunks) < 3 {
@@ -142,8 +142,8 @@ func (m *Manager) Load(reader fyne.URIReadCloser) error {
 
 	m.combatStateBytes = combatStateBytes
 
-	for i := range m.onLoadState {
-		m.onLoadState[i](m.state)
+	for _, callback := range m.onLoadState {
+		callback(m.state)
 	}
 
 	pathBinding := binding.BindPreferenceString("path", fyne.CurrentApp().Preferences())

@@ -2,7 +2,6 @@ package files
 
 import (
 	"bytes"
-	"sync"
 	"unicode/utf8"
 )
 
@@ -47,10 +46,7 @@ var russianUnicodeEncode = map[[2]byte][]byte{
 }
 
 func encodeDecode(data []byte) []byte {
-	var (
-		result = make([][]byte, len(data))
-		wg     sync.WaitGroup
-	)
+	result := make([][]byte, len(data))
 
 	for i := 0; i < len(data); i++ {
 		b := data[i]
@@ -84,17 +80,11 @@ func encodeDecode(data []byte) []byte {
 					continue
 				}
 			}
-		}
-
-		wg.Add(1)
-		go func(i int, b byte) {
-			defer wg.Done()
+		default:
 			b = nibbleSwap(b)
 			result[i] = []byte(string(b))
-		}(i, b)
+		}
 	}
-
-	wg.Wait()
 
 	return bytes.Join(result, nil)
 }

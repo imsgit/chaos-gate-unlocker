@@ -730,12 +730,13 @@ func animateTop(ctx context.Context, im, im2 *canvas.Image, r *canvas.Rectangle,
 
 	r.FillColor = fyne.CurrentApp().Settings().Theme().Color(theme.ColorNameBackground, 0)
 
-	ticker := time.NewTicker(20 * time.Millisecond)
+	ticker := time.NewTicker(15 * time.Millisecond)
 	defer ticker.Stop()
 
 	for i := 0; i < 30; i++ {
 		select {
 		case <-ctx.Done():
+			r.FillColor = fyne.CurrentApp().Settings().Theme().Color(theme.ColorNameBackground, 0)
 			return
 		case <-ticker.C:
 			if i < 20 {
@@ -776,7 +777,7 @@ func animateTop(ctx context.Context, im, im2 *canvas.Image, r *canvas.Rectangle,
 func animateAbout(ctx context.Context, im *canvas.Image) {
 	tOffset := -0.04
 
-	ticker := time.NewTicker(20 * time.Millisecond)
+	ticker := time.NewTicker(15 * time.Millisecond)
 	defer ticker.Stop()
 
 	for i := 0; i < 30; i++ {

@@ -76,19 +76,16 @@ func (s Sort) Less(i, j int) bool {
 	iClass, iStatus, iLvl, iName := getClassStatusLvlAndName(s[i])
 	jClass, jStatus, jLvl, jName := getClassStatusLvlAndName(s[j])
 
-	if jClass == iClass {
-		if iStatus == jStatus {
-			if jLvl == iLvl {
-				return jName > iName
-			}
-
-			return jLvl < iLvl
-		}
-
+	if jClass != iClass {
+		return jClass < iClass
+	}
+	if jStatus != iStatus {
 		return jStatus < iStatus
 	}
-
-	return jClass < iClass
+	if jLvl != iLvl {
+		return jLvl < iLvl
+	}
+	return jName > iName
 }
 
 func (s Sort) Swap(i, j int) {
