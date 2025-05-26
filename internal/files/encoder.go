@@ -46,28 +46,26 @@ var russianUnicodeEncode = map[[2]byte][]byte{
 }
 
 func encodeDecode(data []byte) []byte {
-	result := make([][]byte, len(data))
+	var result bytes.Buffer
 
 	for i := 0; i < len(data); i++ {
 		b := data[i]
 
 		switch b {
 		case 34, 51, 68, 85, 102, 119:
-			result[i] = []byte{b}
+			result.WriteByte(b)
 			continue
 		case 194, 195:
 			if i+1 < len(data) {
 				r, _ := utf8.DecodeRune(data[i : i+2])
-				b = nibbleSwap(byte(r))
-				result[i] = []byte(string(b))
+				b = byte(r)
 				i++
-				continue
 			}
 		case 208, 209:
 			if i+1 < len(data) {
 				key := [2]byte{b, data[i+1]}
 				if v, ok := russianUnicodeEncode[key]; ok {
-					result[i] = v
+					result.Write(v)
 					i++
 					continue
 				}
@@ -76,20 +74,20 @@ func encodeDecode(data []byte) []byte {
 			if i+2 < len(data) {
 				key := [3]byte{b, data[i+1], data[i+2]}
 				if v, ok := russianUnicodeDecode[key]; ok {
-					result[i] = v
+					result.Write(v)
 					i += 2
 					continue
 				}
 			}
 		}
 
-		b = nibbleSwap(b)
-		result[i] = []byte(string(b))
+		b = (b << 4 & 0xF0) | (b >> 4 & 0x0F)
+		if b < 128 {
+			result.WriteByte(b)
+		} else {
+			result.Write([]byte(string(b)))
+		}
 	}
 
-	return bytes.Join(result, nil)
-}
-
-func nibbleSwap(b byte) byte {
-	return (b << 4 & 0xF0) | (b >> 4 & 0x0F)
+	return result.Bytes()
 }

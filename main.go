@@ -277,8 +277,7 @@ func main() {
 
 [> Visit Fyne.io for app details](https://apps.fyne.io/apps/chaos.gate.unlocker.html)
 
-[> Visit Reddit for discussion](https://www.reddit.com/r/ChaosGateGame/comments/1hz3s5g/chaosgateunlocker)
-`),
+[> Visit Reddit for discussion](https://www.reddit.com/r/ChaosGateGame/comments/1hz3s5g/chaosgateunlocker)`),
 			widget.NewRichTextFromMarkdown(fmt.Sprintf(version, a.Metadata().Build))))
 
 	var acancel context.CancelFunc
@@ -338,6 +337,7 @@ func main() {
 			talentsUnits = map[any][][]string{}
 
 			openButton.Disable()
+			saveButton.Disable()
 			layoutTabs.Hide()
 			layoutTabs.SelectIndex(0)
 			unitsList.UnselectAll()
