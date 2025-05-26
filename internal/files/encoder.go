@@ -2,7 +2,6 @@ package files
 
 import (
 	"bytes"
-	"unicode/utf8"
 )
 
 var russianUnicodeDecode = map[[3]byte][]byte{
@@ -57,8 +56,10 @@ func encodeDecode(data []byte) []byte {
 			continue
 		case 194, 195:
 			if i+1 < len(data) {
-				r, _ := utf8.DecodeRune(data[i : i+2])
-				b = byte(r)
+				b = data[i+1]
+				if data[i] == 195 {
+					b |= 0x40
+				}
 				i++
 			}
 		case 208, 209:
