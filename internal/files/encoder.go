@@ -53,14 +53,12 @@ func encodeDecode(data []byte) []byte {
 		switch b {
 		case 34, 51, 68, 85, 102, 119:
 			result[i] = []byte{b}
-			continue
 		case 194, 195:
 			if i+1 < len(data) {
 				r, _ := utf8.DecodeRune(data[i : i+2])
 				b = nibbleSwap(byte(r))
 				result[i] = []byte(string(b))
 				i++
-				continue
 			}
 		case 208, 209:
 			if i+1 < len(data) {
@@ -68,7 +66,6 @@ func encodeDecode(data []byte) []byte {
 				if v, ok := russianUnicodeEncode[key]; ok {
 					result[i] = v
 					i++
-					continue
 				}
 			}
 		case 228:
@@ -77,7 +74,6 @@ func encodeDecode(data []byte) []byte {
 				if v, ok := russianUnicodeDecode[key]; ok {
 					result[i] = v
 					i += 2
-					continue
 				}
 			}
 		default:
