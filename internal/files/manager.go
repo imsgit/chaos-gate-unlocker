@@ -57,7 +57,7 @@ func (m *Manager) GetCurrentPath() string {
 	pathBinding := binding.BindPreferenceString("path", fyne.CurrentApp().Preferences())
 	currentPath, _ := pathBinding.Get()
 	dir := filepath.Dir(currentPath)
-	if !dirNotExists(dir) {
+	if dirExists(dir) {
 		return dir
 	}
 
@@ -88,7 +88,7 @@ func (m *Manager) GetCurrentPath() string {
 		dir = filepath.Join(dir, saveDir)
 	}
 
-	if dirNotExists(dir) {
+	if !dirExists(dir) {
 		dir, _ = os.Getwd()
 	}
 
@@ -110,9 +110,9 @@ func searchDir(root, searchPath string) string {
 	return result
 }
 
-func dirNotExists(path string) bool {
-	_, err := os.Stat(path)
-	return err != nil && os.IsNotExist(err)
+func dirExists(path string) bool {
+	info, err := os.Stat(path)
+	return err == nil && info.IsDir()
 }
 
 func (m *Manager) Load(reader fyne.URIReadCloser) error {

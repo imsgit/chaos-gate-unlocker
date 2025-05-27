@@ -465,32 +465,34 @@ func main() {
 		confirmDialog := dialog.NewConfirm(
 			"Save confirmation",
 			"\n\n\nThis will override the existing save file. Are you sure?\nPlease make a backup if needed.",
-			func(response bool) {
-				if response {
-					ctx, cancel := context.WithCancel(context.Background())
-					go func(ctx context.Context) {
-						animateTop(ctx, leftAquila, rightAquila, progress, false)
+			func(r bool) {
+				if !r {
+					return
+				}
 
-						fyne.DoAndWait(func() {
-							openButton.Enable()
-						})
-						cancel()
-					}(ctx)
+				ctx, cancel := context.WithCancel(context.Background())
+				go func(ctx context.Context) {
+					animateTop(ctx, leftAquila, rightAquila, progress, false)
 
-					applyChanges()
+					fyne.DoAndWait(func() {
+						openButton.Enable()
+					})
+					cancel()
+				}(ctx)
 
-					openButton.Disable()
-					saveButton.Disable()
-					layoutTabs.Hide()
-					layoutTabs.SelectIndex(0)
-					unitsList.UnselectAll()
-					status.Set("")
+				applyChanges()
 
-					err := filesManager.Save()
-					if err != nil {
-						cancel()
-						dialog.ShowError(err, w)
-					}
+				openButton.Disable()
+				saveButton.Disable()
+				layoutTabs.Hide()
+				layoutTabs.SelectIndex(0)
+				unitsList.UnselectAll()
+				status.Set("")
+
+				err := filesManager.Save()
+				if err != nil {
+					cancel()
+					dialog.ShowError(err, w)
 				}
 			}, w)
 
@@ -723,7 +725,7 @@ func animateTop(ctx context.Context, im, im2 *canvas.Image, r *canvas.Rectangle,
 	tOffset := 0.04
 
 	if open {
-		tOffset *= -1
+		tOffset = -tOffset
 		im.Translucency = 1
 		im2.Translucency = 1
 	}
@@ -749,21 +751,8 @@ func animateTop(ctx context.Context, im, im2 *canvas.Image, r *canvas.Rectangle,
 			}
 
 			if i > 4 {
-				im.Translucency += tOffset
-				if im.Translucency < 0 {
-					im.Translucency = 0
-				}
-				if im.Translucency > 1 {
-					im.Translucency = 1
-				}
-
-				im2.Translucency += tOffset
-				if im2.Translucency < 0 {
-					im2.Translucency = 0
-				}
-				if im2.Translucency > 1 {
-					im2.Translucency = 1
-				}
+				im.Translucency = clamp(im.Translucency + tOffset)
+				im2.Translucency = clamp(im2.Translucency + tOffset)
 
 				fyne.DoAndWait(func() {
 					im.Refresh()
@@ -786,10 +775,7 @@ func animateAbout(ctx context.Context, im *canvas.Image) {
 			return
 		case <-ticker.C:
 			if i > 5 {
-				im.Translucency += tOffset
-				if im.Translucency < 0 {
-					im.Translucency = 0
-				}
+				im.Translucency = clamp(im.Translucency + tOffset)
 
 				fyne.DoAndWait(func() {
 					im.Refresh()
@@ -797,4 +783,14 @@ func animateAbout(ctx context.Context, im *canvas.Image) {
 			}
 		}
 	}
+}
+
+func clamp(v float64) float64 {
+	if v < 0 {
+		return 0
+	}
+	if v > 1 {
+		return 1
+	}
+	return v
 }
