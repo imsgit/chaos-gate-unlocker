@@ -25,7 +25,7 @@ import (
 )
 
 const (
-	version = "Version: 1.0.0.%d | Author: imsgit | 2025-05-25"
+	version = "Version: 1.0.0.%d | Author: imsgit | 2025-05-28"
 )
 
 var (
