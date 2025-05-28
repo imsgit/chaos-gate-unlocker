@@ -4,7 +4,7 @@ import (
 	"bytes"
 )
 
-var encodeExtendedUnicodeRange = map[[2]byte][]byte{
+var encodeRussianUnicodeRange = map[[2]byte][]byte{
 	{208, 129}: {228, 128, 144}, {208, 144}: {228, 128, 129}, {208, 145}: {228, 128, 145}, {208, 146}: {228, 128, 161},
 	{208, 147}: {228, 128, 177}, {208, 148}: {228, 129, 129}, {208, 149}: {228, 129, 145}, {208, 150}: {228, 129, 161},
 	{208, 151}: {228, 129, 177}, {208, 152}: {228, 130, 129}, {208, 153}: {228, 130, 145}, {208, 154}: {228, 130, 161},
@@ -24,7 +24,7 @@ var encodeExtendedUnicodeRange = map[[2]byte][]byte{
 	{209, 143}: {228, 131, 180}, {209, 145}: {228, 128, 149},
 }
 
-var decodeExtendedUnicodeRange = map[[3]byte][]byte{
+var decodeRussianUnicodeRange = map[[3]byte][]byte{
 	{228, 128, 144}: {208, 129}, {228, 128, 129}: {208, 144}, {228, 128, 145}: {208, 145}, {228, 128, 161}: {208, 146},
 	{228, 128, 177}: {208, 147}, {228, 129, 129}: {208, 148}, {228, 129, 145}: {208, 149}, {228, 129, 161}: {208, 150},
 	{228, 129, 177}: {208, 151}, {228, 130, 129}: {208, 152}, {228, 130, 145}: {208, 153}, {228, 130, 161}: {208, 154},
@@ -62,19 +62,19 @@ func encodeDecode(data []byte) []byte {
 				}
 				i++
 			}
-		case 196, 197, 208, 209:
+		case 208, 209:
 			if i+1 < len(data) {
 				key := [2]byte{b, data[i+1]}
-				if v, ok := encodeExtendedUnicodeRange[key]; ok {
+				if v, ok := encodeRussianUnicodeRange[key]; ok {
 					result.Write(v)
 					i++
 					continue
 				}
 			}
-		case 225, 228:
+		case 228:
 			if i+2 < len(data) {
 				key := [3]byte{b, data[i+1], data[i+2]}
-				if v, ok := decodeExtendedUnicodeRange[key]; ok {
+				if v, ok := decodeRussianUnicodeRange[key]; ok {
 					result.Write(v)
 					i += 2
 					continue
