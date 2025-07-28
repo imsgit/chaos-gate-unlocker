@@ -8,7 +8,12 @@ import (
 
 	"context"
 	"fmt"
+	"os"
+	"os/exec"
 	"reflect"
+	"regexp"
+	"runtime"
+	"strconv"
 	"strings"
 	"time"
 
@@ -25,7 +30,7 @@ import (
 )
 
 const (
-	version = "Version: 1.0.0.%d | Author: imsgit | 2025-05-28"
+	version = "Version: 1.0.0.%d | Author: imsgit | 2025-07-28"
 )
 
 var (
@@ -284,14 +289,15 @@ func main() {
 	layoutTabs := container.NewAppTabs(mainTab, unitsTab, aboutTab)
 	layoutTabs.SetTabLocation(container.TabLocationTrailing)
 	layoutTabs.OnSelected = func(item *container.TabItem) {
-		if item.Text == "About" {
+		switch item {
+		case aboutTab:
 			var actx context.Context
 			actx, acancel = context.WithCancel(context.Background())
 			go func() {
 				animateAbout(actx, back)
 				acancel()
 			}()
-		} else {
+		default:
 			if acancel != nil {
 				acancel()
 			}
@@ -510,6 +516,8 @@ func main() {
 		back,
 		layoutTabs,
 	)
+
+	validateScale()
 
 	w.Resize(fyne.NewSize(800, 600))
 	w.SetContent(fynetooltip.AddWindowToolTipLayer(content, w.Canvas()))
@@ -793,4 +801,24 @@ func clamp(v float64) float64 {
 		return 1
 	}
 	return v
+}
+
+func validateScale() {
+	if runtime.GOOS == "windows" {
+		return
+	}
+
+	cmd := exec.Command("xdpyinfo")
+	out, err := cmd.Output()
+	if err != nil {
+		return
+	}
+
+	re := regexp.MustCompile(`resolution:\s+(\d+)x`)
+	match := re.FindStringSubmatch(string(out))
+	if len(match) == 2 {
+		if dpi, _ := strconv.Atoi(match[1]); dpi > 96 {
+			os.Setenv("FYNE_SCALE", "2.0")
+		}
+	}
 }
