@@ -13,15 +13,11 @@ const (
 )
 
 func (m *Manager) AuthorizeDreadnoughtMissions() {
-	for _, record := range m.state.LinearRecords {
-		switch record.TypeName {
-		case internal.StarMapMission:
-			object := record.SerializedObject.(*objects.StarMapMission)
-			if canBeTechnophageMission(object) {
-				object.IsTechnophageMission = true
-			}
+	forEach(m, internal.StarMapMission, func(o *objects.StarMapMission) {
+		if canBeTechnophageMission(o) {
+			o.IsTechnophageMission = true
 		}
-	}
+	})
 }
 
 func (m *Manager) CanAuthorizeDreadnoughtMissions() (bool, bool) {

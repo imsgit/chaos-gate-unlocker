@@ -11,18 +11,14 @@ const (
 )
 
 func (m *Manager) UnlockGarranCrowe() {
-	for _, record := range m.state.LinearRecords {
-		switch record.TypeName {
-		case internal.GameUnlocksSaveState:
-			object := record.SerializedObject.(*objects.GameUnlocksSaveState)
-			object.Unlocks = append(object.Unlocks, objects.Unlock{
-				ID: HasSeenFirstGrandMasterReportOfAct2,
-			})
-		case internal.KnightsSaveState:
-			object := record.SerializedObject.(*objects.KnightsSaveState)
-			object.DaysUntilNextCroweStateChange = 0
-		}
-	}
+	forEach(m, internal.GameUnlocksSaveState, func(o *objects.GameUnlocksSaveState) {
+		o.Unlocks = append(o.Unlocks, objects.Unlock{
+			ID: HasSeenFirstGrandMasterReportOfAct2,
+		})
+	})
+	forEach(m, internal.KnightsSaveState, func(o *objects.KnightsSaveState) {
+		o.DaysUntilNextCroweStateChange = 0
+	})
 }
 
 func (m *Manager) CanUnlockGarranCrowe() (bool, bool) {

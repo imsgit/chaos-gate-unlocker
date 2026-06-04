@@ -6,27 +6,20 @@ import (
 )
 
 func (m *Manager) RepairDreadnought() {
-	for _, record := range m.state.LinearRecords {
-		switch record.TypeName {
-		case internal.DreadnoughtState:
-			object := record.SerializedObject.(*objects.DreadnoughtState)
-			object.LostMaxHealth = 0
-			object.HealthState.Status = 0
-			object.HealthState.HealingSuspended = false
-			object.HealthState.RecoveryTimeLeft = 0
-			return
-		}
+	object := first[objects.DreadnoughtState](m, internal.DreadnoughtState)
+	if object == nil {
+		return
 	}
+	object.LostMaxHealth = 0
+	object.HealthState.Status = 0
+	object.HealthState.HealingSuspended = false
+	object.HealthState.RecoveryTimeLeft = 0
 }
 
 func (m *Manager) CanRepairDreadnought() (bool, bool) {
-	for _, record := range m.state.LinearRecords {
-		switch record.TypeName {
-		case internal.DreadnoughtState:
-			object := record.SerializedObject.(*objects.DreadnoughtState)
-			return object.HealthState.Status > 0, true
-		}
+	object := first[objects.DreadnoughtState](m, internal.DreadnoughtState)
+	if object == nil {
+		return false, false
 	}
-
-	return false, false
+	return object.HealthState.Status > 0, true
 }

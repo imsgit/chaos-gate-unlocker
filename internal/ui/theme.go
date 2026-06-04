@@ -45,10 +45,6 @@ func (t TabTheme) Color(c fyne.ThemeColorName, v fyne.ThemeVariant) color.Color 
 	case theme.ColorNamePrimary:
 		return color.NRGBA{R: 0xFF, G: 0xFF, B: 0xFF, A: 0xFF}
 	case theme.ColorNameForeground:
-		// Unselected tabs use this. Keep it OPAQUE so the hover background
-		// (ColorNameHover) can't blend through translucent white and make
-		// unselected tabs look white. Only the selected tab (ColorNamePrimary)
-		// is pure white.
 		return color.NRGBA{R: 0x8A, G: 0x8A, B: 0x8A, A: 0xFF}
 	}
 	return t.Theme.Color(c, v)

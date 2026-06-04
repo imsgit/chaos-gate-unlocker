@@ -6,25 +6,16 @@ import (
 )
 
 func (m *Manager) CompleteCurrentResearch() {
-	for _, record := range m.state.LinearRecords {
-		switch record.TypeName {
-		case internal.ResearchProject:
-			object := record.SerializedObject.(*objects.ResearchProject)
-			object.ResearchPointsLeft = 0
-		}
-	}
+	forEach(m, internal.ResearchProject, func(o *objects.ResearchProject) {
+		o.ResearchPointsLeft = 0
+	})
 }
 
 func (m *Manager) CanCompleteCurrentResearch() (bool, bool) {
 	researchPointsLeft := -1
-
-	for _, record := range m.state.LinearRecords {
-		switch record.TypeName {
-		case internal.ResearchProject:
-			object := record.SerializedObject.(*objects.ResearchProject)
-			researchPointsLeft = object.ResearchPointsLeft
-		}
-	}
+	forEach(m, internal.ResearchProject, func(o *objects.ResearchProject) {
+		researchPointsLeft = o.ResearchPointsLeft
+	})
 
 	return researchPointsLeft > 0, researchPointsLeft == 0
 }

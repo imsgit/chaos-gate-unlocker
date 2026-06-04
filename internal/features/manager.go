@@ -51,30 +51,30 @@ func (s Sort) Len() int {
 	return len(s)
 }
 
-func (s Sort) Less(i, j int) bool {
-	getClassStatusLvlAndName := func(obj interface{}) (class, status, lvl int, name string) {
-		switch object := obj.(type) {
-		case *objects.KnightState:
-			status = object.HealthState.Status
-			if object.CurrentSideMission.MissionID != "" {
-				status = 5
-			}
-			return 2, status, getLvl(object.CurrentLevelData.Key), object.GivenName
-		case *objects.AssassinState:
-			status = object.HealthState.Status
-			if object.CurrentSideMission.MissionID != "" {
-				status = 5
-			}
-			return 1, 0, getLvl(object.CurrentLevelData.Key), object.GivenName
-		case *objects.DreadnoughtState:
-			return 0, 0, getLvl(object.CurrentLevelData.Key), object.GivenName
-		default:
-			return 0, 0, 0, ""
+func classStatusLvlName(obj interface{}) (class, status, lvl int, name string) {
+	switch object := obj.(type) {
+	case *objects.KnightState:
+		status = object.HealthState.Status
+		if object.CurrentSideMission.MissionID != "" {
+			status = 5
 		}
+		return 2, status, getLvl(object.CurrentLevelData.Key), object.GivenName
+	case *objects.AssassinState:
+		status = object.HealthState.Status
+		if object.CurrentSideMission.MissionID != "" {
+			status = 5
+		}
+		return 1, 0, getLvl(object.CurrentLevelData.Key), object.GivenName
+	case *objects.DreadnoughtState:
+		return 0, 0, getLvl(object.CurrentLevelData.Key), object.GivenName
+	default:
+		return 0, 0, 0, ""
 	}
+}
 
-	iClass, iStatus, iLvl, iName := getClassStatusLvlAndName(s[i])
-	jClass, jStatus, jLvl, jName := getClassStatusLvlAndName(s[j])
+func (s Sort) Less(i, j int) bool {
+	iClass, iStatus, iLvl, iName := classStatusLvlName(s[i])
+	jClass, jStatus, jLvl, jName := classStatusLvlName(s[j])
 
 	if jClass != iClass {
 		return jClass < iClass
@@ -123,29 +123,27 @@ func (m *Manager) Units() []interface{} {
 }
 
 func getClass(s string) string {
-	return strings.Split(s, "_")[0]
+	class, _, _ := strings.Cut(s, "_")
+	return class
 }
 
 func getLvl(s string) int {
-	lvl, _ := strconv.Atoi(strings.Split(s, "_")[1])
+	_, after, _ := strings.Cut(s, "_")
+	lvl, _ := strconv.Atoi(after)
 	return lvl
 }
 
 func (m *Manager) unlockTimelineEvent(eventKey string, calendarType int) {
 	var eventOccasion *objects.TimelineEventOccasion
-	var saveState *objects.TimeManagerSaveState
-
-	for _, record := range m.state.LinearRecords {
-		switch record.TypeName {
-		case internal.TimelineEventOccasion:
-			object := record.SerializedObject.(*objects.TimelineEventOccasion)
-			if object.EventToPlay.Key == eventKey {
-				eventOccasion = object
-			}
-		case internal.TimeManagerSaveState:
-			saveState = record.SerializedObject.(*objects.TimeManagerSaveState)
+	forEach(m, internal.TimelineEventOccasion, func(o *objects.TimelineEventOccasion) {
+		if o.EventToPlay.Key == eventKey {
+			eventOccasion = o
 		}
-	}
+	})
+	var saveState *objects.TimeManagerSaveState
+	forEach(m, internal.TimeManagerSaveState, func(o *objects.TimeManagerSaveState) {
+		saveState = o
+	})
 
 	if eventOccasion != nil {
 		eventOccasion.TriggerTime = 0
@@ -180,4 +178,21 @@ func (m *Manager) generateNewInstanceId() int {
 		}
 	}
 	return minId - 1
+}
+
+func forEach[T any](m *Manager, typeName string, fn func(*T)) {
+	for _, record := range m.state.LinearRecords {
+		if record.TypeName == typeName {
+			fn(record.SerializedObject.(*T))
+		}
+	}
+}
+
+func first[T any](m *Manager, typeName string) *T {
+	for _, record := range m.state.LinearRecords {
+		if record.TypeName == typeName {
+			return record.SerializedObject.(*T)
+		}
+	}
+	return nil
 }

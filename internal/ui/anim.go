@@ -6,6 +6,7 @@ import (
 	"image"
 	_ "image/png"
 	"math"
+	"sync"
 	"time"
 
 	"chaos-gate-unlocker/internal/ui/widgets/progress"
@@ -70,7 +71,27 @@ func AquilaFrames(res fyne.Resource, pivotX, fromDeg, toDeg float64, count int) 
 	return frames
 }
 
-func AnimateTop(ctx context.Context, im, im2 *canvas.Image, p *progress.ProgressWidget, open bool, leftFrames, rightFrames []image.Image) {
+var (
+	aquilaFramesOnce  sync.Once
+	leftAquilaFrames  []image.Image
+	rightAquilaFrames []image.Image
+)
+
+func PrewarmAquilaFrames() {
+	go AquilaFramesLR()
+}
+
+func AquilaFramesLR() (left, right []image.Image) {
+	aquilaFramesOnce.Do(func() {
+		leftAquilaFrames = AquilaFrames(GetAppLeftAquilaIcon(), 1.0, -30, 0, 18)
+		rightAquilaFrames = AquilaFrames(GetAppRightAquilaIcon(), 0.0, 30, 0, 18)
+	})
+	return leftAquilaFrames, rightAquilaFrames
+}
+
+func AnimateTop(ctx context.Context, im, im2 *canvas.Image, p *progress.ProgressWidget, open bool) {
+	leftFrames, rightFrames := AquilaFramesLR()
+
 	width := float32(0)
 	sOffset := p.Size().Width / 20
 
@@ -78,6 +99,8 @@ func AnimateTop(ctx context.Context, im, im2 *canvas.Image, p *progress.Progress
 		im.Translucency = 1
 		im2.Translucency = 1
 		if len(leftFrames) > 0 {
+			im.Resource = nil
+			im2.Resource = nil
 			im.Image = leftFrames[0]
 			im2.Image = rightFrames[0]
 		}

@@ -16,8 +16,8 @@ import (
 	"os/exec"
 	"regexp"
 	"runtime"
+	"slices"
 	"strconv"
-	"strings"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/app"
@@ -37,20 +37,9 @@ var (
 	featuresManager = features.NewManager()
 	filesManager    = files.NewManager()
 
-	removeMarketingWeapons       bool
-	unlockPreorderItems          bool
-	unlockAdvancedClasses        bool
-	unlockPuritySeals            bool
-	unlockAssassins              bool
-	reattunePrognosticars        bool
-	unlockGarranCrowe            bool
-	authorizeDreadnoughtMissions bool
-	repairDreadnought            bool
-	unlockGladiusFrigate         bool
-	completeCurrentResearch      bool
-	completeCurrentConstruction  bool
-	unequipMastercraftedWeapons  bool
-	unequipMastercraftedArmor    bool
+	removeMarketingWeapons, unlockPreorderItems, unlockAdvancedClasses, unlockPuritySeals, unlockAssassins,
+	reattunePrognosticars, unlockGarranCrowe, authorizeDreadnoughtMissions, repairDreadnought, unlockGladiusFrigate,
+	completeCurrentResearch, completeCurrentConstruction, unequipMastercraftedWeapons, unequipMastercraftedArmor bool
 
 	currUnit       any
 	healUnits      = map[any]bool{}
@@ -159,7 +148,6 @@ func main() {
 			}
 		})
 	unitsList.HideSeparators = true
-
 	unitsList.OnSelected = func(id widget.ListItemID) {
 		currUnit, _ = unitsProvider.GetValue(id)
 
@@ -192,31 +180,14 @@ func main() {
 		if initTalents {
 			talentsUnits[currUnit] = append(talentsUnits[currUnit], []string{}, []string{})
 		}
-		talentsBox := container.NewVBox()
-		unitsBox.Objects[2] = talentsBox
-		for i := 0; ; i++ {
-			if sel := renderTalent(i, initTalents); sel != nil {
-				talentsBox.Objects = append(talentsBox.Objects, sel)
-				continue
-			}
-			break
-		}
+		unitsBox.Objects[2] = fillDropdownBox(renderTalent, initTalents)
 
 		initAugmetics := len(augmeticsUnits[currUnit]) == 0
 		if initAugmetics {
 			augmeticsUnits[currUnit] = append(augmeticsUnits[currUnit], []string{}, []string{})
 		}
-		augmeticsBox := container.NewVBox()
-		unitsBox.Objects[3] = augmeticsBox
-		for i := 0; ; i++ {
-			if sel := renderAugmetic(i, initAugmetics); sel != nil {
-				augmeticsBox.Objects = append(augmeticsBox.Objects, sel)
-				continue
-			}
-			break
-		}
+		unitsBox.Objects[3] = fillDropdownBox(renderAugmetic, initAugmetics)
 	}
-
 	unitsList.OnUnselected = func(widget.ListItemID) {
 		healWoundSwitch.Hide()
 		repairDamageSwitch.Hide()
@@ -290,14 +261,7 @@ func main() {
 	rightAquila.SetMinSize(fyne.NewSize(100, 0))
 	rightAquila.Translucency = 1
 
-	leftFrames := ui.AquilaFrames(ui.GetAppLeftAquilaIcon(), 1.0, -30, 0, 18)
-	rightFrames := ui.AquilaFrames(ui.GetAppRightAquilaIcon(), 0.0, 30, 0, 18)
-	if len(leftFrames) > 0 {
-		leftAquila.Resource = nil
-		leftAquila.Image = leftFrames[0]
-		rightAquila.Resource = nil
-		rightAquila.Image = rightFrames[0]
-	}
+	ui.PrewarmAquilaFrames()
 
 	progressLine := progress.NewProgressWidget()
 
@@ -306,7 +270,7 @@ func main() {
 	animateTop := func(open bool, onDone func()) context.CancelFunc {
 		ctx, cancel := context.WithCancel(context.Background())
 		go func() {
-			ui.AnimateTop(ctx, leftAquila, rightAquila, progressLine, open, leftFrames, rightFrames)
+			ui.AnimateTop(ctx, leftAquila, rightAquila, progressLine, open)
 			fyne.DoAndWait(func() {
 				openButton.Enable()
 				if ctx.Err() == nil && onDone != nil {
@@ -412,7 +376,6 @@ func main() {
 	saveButton.Disable()
 
 	tabsThemed = container.NewThemeOverride(layoutTabs, ui.TabTheme{})
-
 	content := container.NewBorder(
 		container.NewBorder(nil, nil, leftAquila, rightAquila,
 			container.NewVBox(openButton, saveButton, progressLine)),
@@ -441,6 +404,18 @@ type dropdownSpec struct {
 	store       map[any][][]string
 	canChange   func(idx int) (bool, dropdownItem, []string)
 	lookup      func(name string) dropdownItem
+}
+
+func fillDropdownBox(render func(idx int, init bool) *dropdown.DropdownIconWidget, init bool) *fyne.Container {
+	box := container.NewVBox()
+	for i := 0; ; i++ {
+		sel := render(i, init)
+		if sel == nil {
+			break
+		}
+		box.Objects = append(box.Objects, sel)
+	}
+	return box
 }
 
 func renderDropdown(idx int, init bool, spec dropdownSpec) *dropdown.DropdownIconWidget {
@@ -538,7 +513,7 @@ var saveButton *widget.Button
 func refreshSaveButton() {
 	var augmeticsChanged bool
 	for _, augmetics := range augmeticsUnits {
-		if strings.Join(augmetics[0], ",") != strings.Join(augmetics[1], ",") {
+		if !slices.Equal(augmetics[0], augmetics[1]) {
 			augmeticsChanged = true
 			break
 		}
@@ -546,7 +521,7 @@ func refreshSaveButton() {
 
 	var talentsChanged bool
 	for _, talents := range talentsUnits {
-		if strings.Join(talents[0], ",") != strings.Join(talents[1], ",") {
+		if !slices.Equal(talents[0], talents[1]) {
 			talentsChanged = true
 			break
 		}
@@ -572,15 +547,12 @@ func applyChanges() {
 			action.apply()
 		}
 	}
-
 	for unit := range healUnits {
 		featuresManager.HealUnit(unit)
 	}
-
 	for unit, augmetics := range augmeticsUnits {
 		featuresManager.ChangeUnitAugmetics(unit, augmetics[1])
 	}
-
 	for unit, talents := range talentsUnits {
 		featuresManager.ChangeUnitTalents(unit, talents[1])
 	}

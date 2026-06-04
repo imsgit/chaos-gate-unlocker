@@ -16,7 +16,6 @@ import (
 	"strings"
 
 	"fyne.io/fyne/v2"
-	"fyne.io/fyne/v2/data/binding"
 	"github.com/goccy/go-json"
 )
 
@@ -69,8 +68,7 @@ func (m *Manager) DefaultLocationHint() string {
 }
 
 func (m *Manager) GetCurrentPath() string {
-	pathBinding := binding.BindPreferenceString("path", fyne.CurrentApp().Preferences())
-	currentPath, _ := pathBinding.Get()
+	currentPath := fyne.CurrentApp().Preferences().String("path")
 	dir := filepath.Dir(currentPath)
 	if currentPath != "" && dirExists(dir) {
 		return dir
@@ -205,11 +203,11 @@ func (m *Manager) Load(reader fyne.URIReadCloser) error {
 
 	headerBytes, stateBytes, combatStateBytes := chunks[0], chunks[1], chunks[2]
 
-	if err = m.loadHeader(headerBytes, &m.header); err != nil {
+	if err = m.loadHeader(headerBytes); err != nil {
 		return err
 	}
 
-	if err = m.loadState(stateBytes, &m.state); err != nil {
+	if err = m.loadState(stateBytes); err != nil {
 		return err
 	}
 
@@ -219,40 +217,36 @@ func (m *Manager) Load(reader fyne.URIReadCloser) error {
 		callback(m.state)
 	}
 
-	pathBinding := binding.BindPreferenceString("path", fyne.CurrentApp().Preferences())
-	pathBinding.Set(m.filePath)
+	fyne.CurrentApp().Preferences().SetString("path", m.filePath)
 
 	return nil
 }
 
-func (m *Manager) loadHeader(headerBytes []byte, header **internal.Header) error {
-	var newHeader internal.Header
-	if err := json.Unmarshal(headerBytes, &newHeader); err != nil {
-		return ErrWrongSaveFileFormat
-	}
-	*header = &newHeader
-
-	ver, _ := strconv.Atoi(newHeader.Version)
-	if ver < minVersion {
+func (m *Manager) loadHeader(headerBytes []byte) error {
+	var header internal.Header
+	if err := json.Unmarshal(headerBytes, &header); err != nil {
 		return ErrWrongSaveFileFormat
 	}
 
+	if ver, _ := strconv.Atoi(header.Version); ver < minVersion {
+		return ErrWrongSaveFileFormat
+	}
+
+	m.header = &header
 	return nil
 }
 
-func (m *Manager) loadState(stateBytes []byte, state **internal.State) error {
+func (m *Manager) loadState(stateBytes []byte) error {
 	if len(stateBytes) == 0 || stateBytes[0] != 194 {
 		return ErrWrongSaveFileFormat
 	}
 
-	decodedState := encodeDecode(stateBytes)
-
-	var newState internal.State
-	if err := json.Unmarshal(decodedState, &newState); err != nil {
+	var state internal.State
+	if err := json.Unmarshal(encodeDecode(stateBytes), &state); err != nil {
 		return ErrWrongSaveFileFormat
 	}
-	*state = &newState
 
+	m.state = &state
 	return nil
 }
 

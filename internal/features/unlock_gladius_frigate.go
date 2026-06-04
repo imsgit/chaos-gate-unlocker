@@ -13,25 +13,19 @@ const (
 )
 
 func (m *Manager) UnlockGladiusFrigate() {
-	var eventOccasion *objects.TimelineEventOccasion
-	var eventOccasion2 *objects.TimelineEventOccasion
-	var saveState *objects.TimeManagerSaveState
-
-	for _, record := range m.state.LinearRecords {
-		switch record.TypeName {
-		case internal.TimelineEventOccasion:
-			object := record.SerializedObject.(*objects.TimelineEventOccasion)
-			if object.EventToPlay.Key == CorruptedVesselReturn {
-				eventOccasion = object
-			}
-			if object.EventToPlay.Key == CorruptedVesselNewEquipment {
-				eventOccasion2 = object
-			}
-		case internal.TimeManagerSaveState:
-			object := record.SerializedObject.(*objects.TimeManagerSaveState)
-			saveState = object
+	var eventOccasion, eventOccasion2 *objects.TimelineEventOccasion
+	forEach(m, internal.TimelineEventOccasion, func(o *objects.TimelineEventOccasion) {
+		if o.EventToPlay.Key == CorruptedVesselReturn {
+			eventOccasion = o
 		}
-	}
+		if o.EventToPlay.Key == CorruptedVesselNewEquipment {
+			eventOccasion2 = o
+		}
+	})
+	var saveState *objects.TimeManagerSaveState
+	forEach(m, internal.TimeManagerSaveState, func(o *objects.TimeManagerSaveState) {
+		saveState = o
+	})
 
 	if eventOccasion != nil && eventOccasion2 != nil {
 		eventOccasion.TriggerTime = 0

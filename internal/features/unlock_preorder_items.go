@@ -11,36 +11,31 @@ var (
 )
 
 func (m *Manager) UnlockPreorderItems() {
-	for _, record := range m.state.LinearRecords {
-		switch record.TypeName {
-		case internal.ArmourySaveState:
-			object := record.SerializedObject.(*objects.ArmorySaveState)
-			object.UnlockedWeapons = append(object.UnlockedWeapons, objects.UnlockedItem{
-				Upgrades: []bool{false, false, false, false, false},
-				Data: objects.StringValue{
-					Key: HammerCrysylix3,
-				},
-			})
-			object.UnlockedWargears = append(object.UnlockedWargears, objects.UnlockedItem{
-				Data: objects.StringValue{
-					Key: DominaLiberDaemonica,
-				},
-			})
-			return
-		}
+	object := first[objects.ArmorySaveState](m, internal.ArmourySaveState)
+	if object == nil {
+		return
 	}
+	object.UnlockedWeapons = append(object.UnlockedWeapons, objects.UnlockedItem{
+		Upgrades: []bool{false, false, false, false, false},
+		Data: objects.StringValue{
+			Key: HammerCrysylix3,
+		},
+	})
+	object.UnlockedWargears = append(object.UnlockedWargears, objects.UnlockedItem{
+		Data: objects.StringValue{
+			Key: DominaLiberDaemonica,
+		},
+	})
 }
 
 func (m *Manager) CanUnlockPreorderItems() bool {
-	for _, record := range m.state.LinearRecords {
-		if record.TypeName == internal.ArmourySaveState {
-			object := record.SerializedObject.(*objects.ArmorySaveState)
-			for _, wargear := range object.UnlockedWargears {
-				if wargear.Data.Key == DominaLiberDaemonica {
-					return false
-				}
-			}
-			break
+	object := first[objects.ArmorySaveState](m, internal.ArmourySaveState)
+	if object == nil {
+		return true
+	}
+	for _, wargear := range object.UnlockedWargears {
+		if wargear.Data.Key == DominaLiberDaemonica {
+			return false
 		}
 	}
 

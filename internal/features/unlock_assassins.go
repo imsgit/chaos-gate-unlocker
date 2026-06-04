@@ -13,14 +13,11 @@ const (
 )
 
 func (m *Manager) UnlockAssassins() {
-	for _, record := range m.state.LinearRecords {
-		if record.TypeName == internal.GameUnlocksSaveState {
-			object := record.SerializedObject.(*objects.GameUnlocksSaveState)
-			object.Unlocks = append(object.Unlocks, objects.Unlock{
-				ID: HasQueuedExecutionForce,
-			})
-		}
-	}
+	forEach(m, internal.GameUnlocksSaveState, func(o *objects.GameUnlocksSaveState) {
+		o.Unlocks = append(o.Unlocks, objects.Unlock{
+			ID: HasQueuedExecutionForce,
+		})
+	})
 
 	m.unlockTimelineEvent(ExecutionForce, 3)
 }

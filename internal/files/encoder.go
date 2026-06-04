@@ -1,13 +1,9 @@
 package files
 
-import (
-	"bytes"
-	"unicode/utf8"
-)
+import "unicode/utf8"
 
 func encodeDecode(data []byte) []byte {
-	var result bytes.Buffer
-	result.Grow(len(data))
+	result := make([]byte, 0, len(data))
 
 	for len(data) > 0 {
 		r, size := utf8.DecodeRune(data)
@@ -16,10 +12,10 @@ func encodeDecode(data []byte) []byte {
 		if s := swapNibbles(r); utf8.ValidRune(s) {
 			r = s
 		}
-		result.WriteRune(r)
+		result = utf8.AppendRune(result, r)
 	}
 
-	return result.Bytes()
+	return result
 }
 
 func swapNibbles(r rune) rune {
