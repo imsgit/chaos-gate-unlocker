@@ -27,11 +27,13 @@ func (m *Manager) UnlockGladiusFrigate() {
 		saveState = o
 	})
 
-	if eventOccasion != nil && eventOccasion2 != nil {
+	if eventOccasion != nil {
 		eventOccasion.TriggerTime = 0
 		eventOccasion.SavedChosenResults.Values = []interface{}{}
-		eventOccasion2.TriggerTime = 0
-		eventOccasion2.SavedChosenResults.Values = []interface{}{}
+		if eventOccasion2 != nil {
+			eventOccasion2.TriggerTime = 0
+			eventOccasion2.SavedChosenResults.Values = []interface{}{}
+		}
 		return
 	}
 
