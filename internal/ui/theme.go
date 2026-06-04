@@ -27,11 +27,31 @@ func (Theme) Color(c fyne.ThemeColorName, v fyne.ThemeVariant) color.Color {
 		return color.NRGBA{R: 0xFF, G: 0xFF, B: 0xFF, A: 0xE2}
 	case theme.ColorNamePrimary, theme.ColorNameScrollBar:
 		return color.NRGBA{R: 0xF1, G: 0xEF, B: 0xEF, A: 0x99}
+	case theme.ColorNameScrollBarBackground:
+		return color.NRGBA{R: 0xFF, G: 0xFF, B: 0xFF, A: 0x08}
 	case theme.ColorNameOverlayBackground, theme.ColorNameMenuBackground:
 		return color.NRGBA{R: 0x18, G: 0x18, B: 0x18, A: 0xFA}
 	}
 
 	return theme.DefaultTheme().Color(c, v)
+}
+
+type TabTheme struct {
+	Theme
+}
+
+func (t TabTheme) Color(c fyne.ThemeColorName, v fyne.ThemeVariant) color.Color {
+	switch c {
+	case theme.ColorNamePrimary:
+		return color.NRGBA{R: 0xFF, G: 0xFF, B: 0xFF, A: 0xFF}
+	case theme.ColorNameForeground:
+		// Unselected tabs use this. Keep it OPAQUE so the hover background
+		// (ColorNameHover) can't blend through translucent white and make
+		// unselected tabs look white. Only the selected tab (ColorNamePrimary)
+		// is pure white.
+		return color.NRGBA{R: 0x8A, G: 0x8A, B: 0x8A, A: 0xFF}
+	}
+	return t.Theme.Color(c, v)
 }
 
 func (Theme) Font(s fyne.TextStyle) fyne.Resource {

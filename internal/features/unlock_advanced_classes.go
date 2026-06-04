@@ -11,45 +11,7 @@ const (
 )
 
 func (m *Manager) UnlockAdvancedClasses() {
-	var eventOccasion *objects.TimelineEventOccasion
-	var saveState *objects.TimeManagerSaveState
-
-	for _, record := range m.state.LinearRecords {
-		switch record.TypeName {
-		case internal.TimelineEventOccasion:
-			object := record.SerializedObject.(*objects.TimelineEventOccasion)
-			if object.EventToPlay.Key == AdvancedClasses {
-				eventOccasion = object
-			}
-		case internal.TimeManagerSaveState:
-			object := record.SerializedObject.(*objects.TimeManagerSaveState)
-			saveState = object
-		}
-	}
-
-	if eventOccasion != nil {
-		eventOccasion.TriggerTime = 0
-		eventOccasion.SavedChosenResults.Values = []interface{}{}
-		return
-	}
-
-	if saveState == nil {
-		return
-	}
-
-	id := m.generateNewInstanceId()
-
-	eventOccasion = &objects.TimelineEventOccasion{}
-	eventOccasion.EventToPlay.Key = AdvancedClasses
-	eventOccasion.CalendarType = 2
-	eventOccasion.SavedChosenResults.Values = []interface{}{}
-
-	saveState.CurrentOccasions.Values = append(saveState.CurrentOccasions.Values, objects.IntValue{Key: id})
-	m.state.LinearInstanceIds = append(m.state.LinearInstanceIds, id)
-	m.state.LinearRecords = append(m.state.LinearRecords, &internal.LinearRecord{
-		TypeName:         internal.TimelineEventOccasion,
-		SerializedObject: eventOccasion,
-	})
+	m.unlockTimelineEvent(AdvancedClasses, 2)
 }
 
 func (m *Manager) CanUnlockAdvancedClasses() (bool, bool) {

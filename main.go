@@ -4,18 +4,20 @@ import (
 	"chaos-gate-unlocker/internal/features"
 	"chaos-gate-unlocker/internal/files"
 	"chaos-gate-unlocker/internal/ui"
-	"chaos-gate-unlocker/internal/ui/widgets"
+	"chaos-gate-unlocker/internal/ui/widgets/dropdown"
+	"chaos-gate-unlocker/internal/ui/widgets/listitem"
+	"chaos-gate-unlocker/internal/ui/widgets/progress"
+	"chaos-gate-unlocker/internal/ui/widgets/toggle"
+	"chaos-gate-unlocker/internal/ui/widgets/tooltip"
 
 	"context"
 	"fmt"
 	"os"
 	"os/exec"
-	"reflect"
 	"regexp"
 	"runtime"
 	"strconv"
 	"strings"
-	"time"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/app"
@@ -24,13 +26,11 @@ import (
 	"fyne.io/fyne/v2/data/binding"
 	"fyne.io/fyne/v2/dialog"
 	"fyne.io/fyne/v2/storage"
-	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
-	fynetooltip "github.com/dweymouth/fyne-tooltip"
 )
 
 const (
-	version = "Version: 1.0.0.%d | Author: imsgit | 2025-07-28"
+	version = "Ver: 1.0.0.%d | Author: imsgit | 2026-06-04"
 )
 
 var (
@@ -58,6 +58,26 @@ var (
 	augmeticsUnits = map[any][][]string{}
 )
 
+var featureActions = []struct {
+	flag  *bool
+	apply func()
+}{
+	{&unlockPuritySeals, featuresManager.UnlockPuritySeals},
+	{&repairDreadnought, featuresManager.RepairDreadnought},
+	{&unlockPreorderItems, featuresManager.UnlockPreorderItems},
+	{&unlockAdvancedClasses, featuresManager.UnlockAdvancedClasses},
+	{&reattunePrognosticars, featuresManager.ReattunePrognosticars},
+	{&unlockGarranCrowe, featuresManager.UnlockGarranCrowe},
+	{&authorizeDreadnoughtMissions, featuresManager.AuthorizeDreadnoughtMissions},
+	{&unlockGladiusFrigate, featuresManager.UnlockGladiusFrigate},
+	{&completeCurrentConstruction, featuresManager.CompleteCurrentConstruction},
+	{&completeCurrentResearch, featuresManager.CompleteCurrentResearch},
+	{&unequipMastercraftedWeapons, featuresManager.UnequipMastercraftedWeapons},
+	{&unequipMastercraftedArmor, featuresManager.UnequipMastercraftedArmor},
+	{&removeMarketingWeapons, featuresManager.RemoveMarketingWeapons},
+	{&unlockAssassins, featuresManager.UnlockAssassins},
+}
+
 func main() {
 	a := app.NewWithID("chaos.gate.unlocker")
 	a.Settings().SetTheme(ui.Theme{})
@@ -65,13 +85,22 @@ func main() {
 
 	filesManager.OnLoadState(featuresManager.ApplyState())
 
-	authorizeDreadnoughtMissionsSwitch := widgets.NewSwitch(func(on bool) {
-		authorizeDreadnoughtMissions = on
-		refreshSaveButton()
-	}, "ActDread", "Authorize Dreadnought missions", "Marks all regular missions as Technophage, including Hive missions;\nThe difficulty of the missions will increase, but it won't affect the frigate's chances of winning;\nDreadnought access is required")
+	authorizeDreadnoughtMissionsSwitch := boolSwitch(&authorizeDreadnoughtMissions, "ActDread", "Authorize Dreadnought missions", "Marks all regular missions as Technophage, including Hive missions;\nThe difficulty of the missions will increase, won't affect the frigate's chances of winning;\nDreadnought access is required")
+	reattunePrognosticarsSwitch := boolSwitch(&reattunePrognosticars, "ActPrognosticars", "Reattune prognosticars", "Restores all attuned prognosticars, making them available again")
+	completeCurrentResearchSwitch := boolSwitch(&completeCurrentResearch, "ActComplete", "Complete current research", "Completes current research project;\nAdvance current day to unlock")
+	completeCurrentConstructionSwitch := boolSwitch(&completeCurrentConstruction, "ActComplete", "Complete current construction", "Completes current construction project;\nAdvance current day to unlock")
+	unequipMastercraftedArmorSwitch := boolSwitch(&unequipMastercraftedArmor, "ActUnequip", "Unequip mastercrafted armor", "Unequips all mastercrafted armor, clearing the slots if necessary;\nAlso unlocks currently unavailable armor, won't affect the frigate's chances of winning")
+	unequipMastercraftedWeaponsSwitch := boolSwitch(&unequipMastercraftedWeapons, "ActUnequip", "Unequip mastercrafted weapons", "Unequips all mastercrafted weapons;\nAlso unlocks currently unavailable weapons, won't affect the frigate's chances of winning")
+	unlockPreorderItemsSwitch := boolSwitch(&unlockPreorderItems, "ActPreorder", "Unlock pre-order items", "Unlocks the Domina Liber Daemonica tome and Destroyer of Crys'yllix hammer")
+	unlockAdvancedClassesSwitch := boolSwitch(&unlockAdvancedClasses, "Librarian", "Unlock advanced classes", "Unlocks the Librarian, Paladin, Chaplain and Purifier classes;\nAdvance current day to unlock")
+	unlockGarranCroweSwitch := boolSwitch(&unlockGarranCrowe, "GarranCrowe", "Unlock Garran Crowe", "Unlocks castellan Garran Crowe;\nDLC access is required;\nAdvance current day to unlock")
+	unlockAssassinsSwitch := boolSwitch(&unlockAssassins, "ActAssassins", "Unlock assassins", "Unlocks imperial assassins;\nDLC access is required;\nAdvance current day to unlock")
+	unlockGladiusFrigateSwitch := boolSwitch(&unlockGladiusFrigate, "ActFrigate", "Unlock Gladius frigate", "Unlocks the Gladius frigate, the Cleanse mission will still appear as expected;\nDLC access is required;\nAdvance current day to unlock")
+	unlockPuritySealsSwitch := boolSwitch(&unlockPuritySeals, "ActSeals", "Unlock purity seals", "Unlocks purity seals upgrades;\nPoxus seeds access is required;\nAdvance current day to unlock")
+	removeMarketingWeaponsSwitch := boolSwitch(&removeMarketingWeapons, "ActMarketing", "Remove marketing weapons", "Unequips and removes all weapons classified as Twitch drops")
 
-	var repairDamageSwitch *widgets.Switch
-	repairDreadnoughtSwitch := widgets.NewSwitch(func(on bool) {
+	var repairDamageSwitch *toggle.ToggleWidget
+	repairDreadnoughtSwitch := toggle.NewToggleWidget(func(on bool) {
 		repairDreadnought = on
 		refreshSaveButton()
 		if repairDamageSwitch.Visible() {
@@ -79,70 +108,10 @@ func main() {
 		}
 	}, "ActRepair", "Repair Dreadnought", "Repairs the Dreadnought's damage for free;\nDreadnought access is required")
 
-	reattunePrognosticarsSwitch := widgets.NewSwitch(func(on bool) {
-		reattunePrognosticars = on
-		refreshSaveButton()
-	}, "ActPrognosticars", "Reattune prognosticars", "Restores all attuned prognosticars, making them available again")
-
-	completeCurrentResearchSwitch := widgets.NewSwitch(func(on bool) {
-		completeCurrentResearch = on
-		refreshSaveButton()
-	}, "ActComplete", "Complete current research", "Completes current research project;\nAdvance current day to unlock")
-
-	completeCurrentConstructionSwitch := widgets.NewSwitch(func(on bool) {
-		completeCurrentConstruction = on
-		refreshSaveButton()
-	}, "ActComplete", "Complete current construction", "Completes current construction project;\nAdvance current day to unlock")
-
-	unequipMastercraftedArmorSwitch := widgets.NewSwitch(func(on bool) {
-		unequipMastercraftedArmor = on
-		refreshSaveButton()
-	}, "ActUnequip", "Unequip mastercrafted armor", "Unequips all mastercrafted armor, clearing the slots if necessary;\nAlso unlocks currently unavailable armor, but it won't affect the frigate's chances of winning")
-
-	unequipMastercraftedWeaponsSwitch := widgets.NewSwitch(func(on bool) {
-		unequipMastercraftedWeapons = on
-		refreshSaveButton()
-	}, "ActUnequip", "Unequip mastercrafted weapons", "Unequips all mastercrafted weapons;\nAlso unlocks currently unavailable weapons, but it won't affect the frigate's chances of winning")
-
-	unlockPreorderItemsSwitch := widgets.NewSwitch(func(on bool) {
-		unlockPreorderItems = on
-		refreshSaveButton()
-	}, "ActPreorder", "Unlock pre-order items", "Unlocks the Domina Liber Daemonica tome and Destroyer of Crys'yllix hammer")
-
-	unlockAdvancedClassesSwitch := widgets.NewSwitch(func(on bool) {
-		unlockAdvancedClasses = on
-		refreshSaveButton()
-	}, "Librarian", "Unlock advanced classes", "Unlocks the Librarian, Paladin, Chaplain and Purifier classes;\nAdvance current day to unlock")
-
-	unlockGarranCroweSwitch := widgets.NewSwitch(func(on bool) {
-		unlockGarranCrowe = on
-		refreshSaveButton()
-	}, "GarranCrowe", "Unlock Garran Crowe", "Unlocks castellan Garran Crowe;\nDLC access is required;\nAdvance current day to unlock")
-
-	unlockAssassinsSwitch := widgets.NewSwitch(func(on bool) {
-		unlockAssassins = on
-		refreshSaveButton()
-	}, "ActAssassins", "Unlock assassins", "Unlocks imperial assassins;\nDLC access is required;\nAdvance current day to unlock")
-
-	unlockGladiusFrigateSwitch := widgets.NewSwitch(func(on bool) {
-		unlockGladiusFrigate = on
-		refreshSaveButton()
-	}, "ActFrigate", "Unlock Gladius frigate", "Unlocks the Gladius frigate, but the Cleanse mission will still appear as expected;\nDLC access is required;\nAdvance current day to unlock")
-
-	unlockPuritySealsSwitch := widgets.NewSwitch(func(on bool) {
-		unlockPuritySeals = on
-		refreshSaveButton()
-	}, "ActSeals", "Unlock purity seals", "Unlocks purity seals upgrades;\nPoxus seeds access is required;\nAdvance current day to unlock")
-
-	removeMarketingWeaponsSwitch := widgets.NewSwitch(func(on bool) {
-		removeMarketingWeapons = on
-		refreshSaveButton()
-	}, "ActMarketing", "Remove marketing weapons", "Unequips and removes all weapons classified as Twitch drops")
-
 	unitsBox := container.NewVBox()
 	unitsScrollBox := container.NewVScroll(unitsBox)
 
-	healWoundSwitch := widgets.NewSwitch(func(on bool) {
+	healWoundSwitch := toggle.NewToggleWidget(func(on bool) {
 		delete(healUnits, currUnit)
 		if on {
 			healUnits[currUnit] = on
@@ -162,10 +131,10 @@ func main() {
 			break
 		}
 		refreshSaveButton()
-	}, "ActHeal", "Heal wound", "Heals the wound;\nIf the wound was critical, you can also select a new augmetic for your knight")
+	}, "ActHeal", "Heal wound", "Heals the wound")
 	healWoundSwitch.Hide()
 
-	repairDamageSwitch = widgets.NewSwitch(func(on bool) {
+	repairDamageSwitch = toggle.NewToggleWidget(func(on bool) {
 		repairDreadnought = on
 		refreshSaveButton()
 		repairDreadnoughtSwitch.SetState(on, false)
@@ -180,13 +149,13 @@ func main() {
 
 	unitsList := widget.NewListWithData(
 		unitsProvider,
-		widgets.NewListItem,
+		listitem.NewListItemWidget,
 		func(item binding.DataItem, o fyne.CanvasObject) {
-			f := reflect.ValueOf(item).Elem().FieldByName("index")
-			if f.IsValid() && f.CanInt() {
-				val, _ := unitsProvider.GetValue(int(f.Int()))
-				listItem, _ := o.(*widgets.ListItem)
-				listItem.Bind(val)
+			val, ok := item.(binding.Untyped)
+			listItem, ok2 := o.(*listitem.ListItemWidget)
+			if ok && ok2 {
+				v, _ := val.Get()
+				listItem.Bind(v)
 			}
 		})
 	unitsList.HideSeparators = true
@@ -197,6 +166,11 @@ func main() {
 		enable, showHeal := featuresManager.CanHealUnit(currUnit)
 		if showHeal {
 			healWoundSwitch.Show()
+			if featuresManager.UnitSupportsAugmetics(currUnit) {
+				healWoundSwitch.SetToolTip("Heals the wound;\nIf the wound was critical, you can also select a new augmetic")
+			} else {
+				healWoundSwitch.SetToolTip("Heals the wound")
+			}
 			if enable {
 				healWoundSwitch.Enable()
 				healWoundSwitch.SetState(healUnits[currUnit], false)
@@ -256,7 +230,7 @@ func main() {
 	back.Translucency = 0.96
 
 	mainTab := container.NewTabItemWithIcon("Main", ui.GetAppTabMainIcon(),
-		container.NewGridWithColumns(2,
+		container.NewThemeOverride(container.NewGridWithColumns(2,
 			container.NewVBox(
 				authorizeDreadnoughtMissionsSwitch,
 				repairDreadnoughtSwitch,
@@ -272,20 +246,22 @@ func main() {
 				unlockAssassinsSwitch,
 				unlockGladiusFrigateSwitch,
 				unlockPuritySealsSwitch,
-				removeMarketingWeaponsSwitch)))
+				removeMarketingWeaponsSwitch)), ui.Theme{}))
 	unitsTab := container.NewTabItemWithIcon("Units", ui.GetAppTabUnitsIcon(),
-		container.NewGridWithColumns(2, unitsList, unitsScrollBox))
+		container.NewThemeOverride(
+			container.NewGridWithColumns(2, unitsList, unitsScrollBox), ui.Theme{}))
 	aboutTab := container.NewTabItemWithIcon("About", ui.GetAppTabAboutIcon(),
-		container.NewBorder(nil, nil,
+		container.NewThemeOverride(container.NewBorder(nil, nil,
 			widget.NewRichTextFromMarkdown(`
 [> Visit Nexus Mods for more information](https://www.nexusmods.com/warhammer40kchaosgatedaemonhunters/mods/5)
 
 [> Visit Fyne.io for app details](https://apps.fyne.io/apps/chaos.gate.unlocker.html)
 
 [> Visit Reddit for discussion](https://www.reddit.com/r/ChaosGateGame/comments/1hz3s5g/chaosgateunlocker)`),
-			widget.NewRichTextFromMarkdown(fmt.Sprintf(version, a.Metadata().Build))))
+			widget.NewRichTextFromMarkdown(fmt.Sprintf(version, a.Metadata().Build))), ui.Theme{}))
 
 	var acancel context.CancelFunc
+	var tabsThemed *container.ThemeOverride
 	layoutTabs := container.NewAppTabs(mainTab, unitsTab, aboutTab)
 	layoutTabs.SetTabLocation(container.TabLocationTrailing)
 	layoutTabs.OnSelected = func(item *container.TabItem) {
@@ -294,7 +270,7 @@ func main() {
 			var actx context.Context
 			actx, acancel = context.WithCancel(context.Background())
 			go func() {
-				animateAbout(actx, back)
+				ui.AnimateAbout(actx, back)
 				acancel()
 			}()
 		default:
@@ -314,40 +290,62 @@ func main() {
 	rightAquila.SetMinSize(fyne.NewSize(100, 0))
 	rightAquila.Translucency = 1
 
-	progress := canvas.NewRectangle(fyne.CurrentApp().Settings().Theme().Color(theme.ColorNameBackground, 0))
-	progress.SetMinSize(fyne.NewSize(0, 4))
+	leftFrames := ui.AquilaFrames(ui.GetAppLeftAquilaIcon(), 1.0, -30, 0, 18)
+	rightFrames := ui.AquilaFrames(ui.GetAppRightAquilaIcon(), 0.0, 30, 0, 18)
+	if len(leftFrames) > 0 {
+		leftAquila.Resource = nil
+		leftAquila.Image = leftFrames[0]
+		rightAquila.Resource = nil
+		rightAquila.Image = rightFrames[0]
+	}
 
-	var openButton *widget.Button
-	openButton = widget.NewButton("Open", func() {
+	progressLine := progress.NewProgressWidget()
+
+	var openButton *tooltip.Button
+
+	animateTop := func(open bool, onDone func()) context.CancelFunc {
+		ctx, cancel := context.WithCancel(context.Background())
+		go func() {
+			ui.AnimateTop(ctx, leftAquila, rightAquila, progressLine, open, leftFrames, rightFrames)
+			fyne.DoAndWait(func() {
+				openButton.Enable()
+				if ctx.Err() == nil && onDone != nil {
+					onDone()
+				}
+			})
+			cancel()
+		}()
+		return cancel
+	}
+
+	resetUI := func() {
+		openButton.Disable()
+		saveButton.Disable()
+		layoutTabs.Hide()
+		layoutTabs.SelectIndex(0)
+		unitsList.UnselectAll()
+		status.Set("")
+	}
+
+	openButton = tooltip.NewButton("Open", func() {
 		fileDialog := dialog.NewFileOpen(func(rc fyne.URIReadCloser, err error) {
 			if rc == nil {
 				return
 			}
 
-			ctx, cancel := context.WithCancel(context.Background())
-			go func(ctx context.Context) {
-				animateTop(ctx, leftAquila, rightAquila, progress, true)
-
-				fyne.DoAndWait(func() {
-					openButton.Enable()
-					if ctx.Err() == nil {
-						layoutTabs.Show()
-						status.Set(filesManager.Status())
-					}
-				})
-				cancel()
-			}(ctx)
+			cancel := animateTop(true, func() {
+				layoutTabs.Show()
+				if tabsThemed != nil {
+					tabsThemed.Refresh()
+				}
+				status.Set(filesManager.Status())
+			})
 
 			healUnits = map[any]bool{}
 			augmeticsUnits = map[any][][]string{}
 			talentsUnits = map[any][][]string{}
 
-			openButton.Disable()
-			saveButton.Disable()
-			layoutTabs.Hide()
-			layoutTabs.SelectIndex(0)
-			unitsList.UnselectAll()
-			status.Set("")
+			resetUI()
 
 			err = filesManager.Load(rc)
 			if err != nil {
@@ -358,103 +356,20 @@ func main() {
 
 			unitsProvider.Set(featuresManager.Units())
 
-			unlockAdvancedClassesSwitch.Enable()
-			unlockAdvancedClassesSwitch.SetState(false, true)
-			if canUnlock, unlocked := featuresManager.CanUnlockAdvancedClasses(); !canUnlock {
-				unlockAdvancedClassesSwitch.Disable()
-				unlockAdvancedClassesSwitch.SetState(unlocked, false)
-			}
-
-			repairDreadnoughtSwitch.Enable()
-			repairDreadnoughtSwitch.SetState(false, true)
-			if canUnlock, unlocked := featuresManager.CanRepairDreadnought(); !canUnlock {
-				repairDreadnoughtSwitch.Disable()
-				repairDreadnoughtSwitch.SetState(unlocked, false)
-			}
-
-			unlockPuritySealsSwitch.Enable()
-			unlockPuritySealsSwitch.SetState(false, true)
-			if canUnlock, unlocked := featuresManager.CanUnlockPuritySeals(); !canUnlock {
-				unlockPuritySealsSwitch.Disable()
-				unlockPuritySealsSwitch.SetState(unlocked, false)
-			}
-
-			reattunePrognosticarsSwitch.Enable()
-			reattunePrognosticarsSwitch.SetState(false, true)
-			if canUnlock, unlocked := featuresManager.CanReattunePrognosticars(); !canUnlock {
-				reattunePrognosticarsSwitch.Disable()
-				reattunePrognosticarsSwitch.SetState(unlocked, false)
-			}
-
-			unlockGarranCroweSwitch.Enable()
-			unlockGarranCroweSwitch.SetState(false, true)
-			if canUnlock, unlocked := featuresManager.CanUnlockGarranCrowe(); !canUnlock {
-				unlockGarranCroweSwitch.Disable()
-				unlockGarranCroweSwitch.SetState(unlocked, false)
-			}
-
-			unlockPreorderItemsSwitch.Enable()
-			unlockPreorderItemsSwitch.SetState(false, true)
-			if canUnlock := featuresManager.CanUnlockPreorderItems(); !canUnlock {
-				unlockPreorderItemsSwitch.Disable()
-				unlockPreorderItemsSwitch.SetState(true, false)
-			}
-
-			authorizeDreadnoughtMissionsSwitch.Enable()
-			authorizeDreadnoughtMissionsSwitch.SetState(false, true)
-			if canUnlock, unlocked := featuresManager.CanAuthorizeDreadnoughtMissions(); !canUnlock {
-				authorizeDreadnoughtMissionsSwitch.Disable()
-				authorizeDreadnoughtMissionsSwitch.SetState(unlocked, false)
-			}
-
-			unlockGladiusFrigateSwitch.Enable()
-			unlockGladiusFrigateSwitch.SetState(false, true)
-			if canUnlock, unlocked := featuresManager.CanUnlockGladiusFrigate(); !canUnlock {
-				unlockGladiusFrigateSwitch.Disable()
-				unlockGladiusFrigateSwitch.SetState(unlocked, false)
-			}
-
-			completeCurrentResearchSwitch.Enable()
-			completeCurrentResearchSwitch.SetState(false, true)
-			if canUnlock, unlocked := featuresManager.CanCompleteCurrentResearch(); !canUnlock {
-				completeCurrentResearchSwitch.Disable()
-				completeCurrentResearchSwitch.SetState(unlocked, false)
-			}
-
-			completeCurrentConstructionSwitch.Enable()
-			completeCurrentConstructionSwitch.SetState(false, true)
-			if canUnlock, unlocked := featuresManager.CanCompleteCurrentConstruction(); !canUnlock {
-				completeCurrentConstructionSwitch.Disable()
-				completeCurrentConstructionSwitch.SetState(unlocked, false)
-			}
-
-			unequipMastercraftedWeaponsSwitch.Enable()
-			unequipMastercraftedWeaponsSwitch.SetState(false, true)
-			if !featuresManager.CanUnequipMastercraftedWeapons() {
-				unequipMastercraftedWeaponsSwitch.Disable()
-				unequipMastercraftedWeaponsSwitch.SetState(true, false)
-			}
-
-			unequipMastercraftedArmorSwitch.Enable()
-			unequipMastercraftedArmorSwitch.SetState(false, true)
-			if !featuresManager.CanUnequipMastercraftedArmor() {
-				unequipMastercraftedArmorSwitch.Disable()
-				unequipMastercraftedArmorSwitch.SetState(true, false)
-			}
-
-			removeMarketingWeaponsSwitch.Enable()
-			removeMarketingWeaponsSwitch.SetState(false, true)
-			if !featuresManager.CanRemoveMarketingWeapons() {
-				removeMarketingWeaponsSwitch.Disable()
-				removeMarketingWeaponsSwitch.SetState(true, false)
-			}
-
-			unlockAssassinsSwitch.Enable()
-			unlockAssassinsSwitch.SetState(false, true)
-			if canUnlock, unlocked := featuresManager.CanUnlockAssassins(); !canUnlock {
-				unlockAssassinsSwitch.Disable()
-				unlockAssassinsSwitch.SetState(unlocked, false)
-			}
+			resetSwitch(unlockAdvancedClassesSwitch, featuresManager.CanUnlockAdvancedClasses)
+			resetSwitch(repairDreadnoughtSwitch, featuresManager.CanRepairDreadnought)
+			resetSwitch(unlockPuritySealsSwitch, featuresManager.CanUnlockPuritySeals)
+			resetSwitch(reattunePrognosticarsSwitch, featuresManager.CanReattunePrognosticars)
+			resetSwitch(unlockGarranCroweSwitch, featuresManager.CanUnlockGarranCrowe)
+			resetSwitch(authorizeDreadnoughtMissionsSwitch, featuresManager.CanAuthorizeDreadnoughtMissions)
+			resetSwitch(unlockGladiusFrigateSwitch, featuresManager.CanUnlockGladiusFrigate)
+			resetSwitch(completeCurrentResearchSwitch, featuresManager.CanCompleteCurrentResearch)
+			resetSwitch(completeCurrentConstructionSwitch, featuresManager.CanCompleteCurrentConstruction)
+			resetSwitch(unlockAssassinsSwitch, featuresManager.CanUnlockAssassins)
+			resetSwitchOn(unlockPreorderItemsSwitch, featuresManager.CanUnlockPreorderItems())
+			resetSwitchOn(unequipMastercraftedWeaponsSwitch, featuresManager.CanUnequipMastercraftedWeapons())
+			resetSwitchOn(unequipMastercraftedArmorSwitch, featuresManager.CanUnequipMastercraftedArmor())
+			resetSwitchOn(removeMarketingWeaponsSwitch, featuresManager.CanRemoveMarketingWeapons())
 		}, w)
 
 		l, _ := storage.ListerForURI(storage.NewFileURI(filesManager.GetCurrentPath()))
@@ -466,6 +381,7 @@ func main() {
 		fileDialog.SetFilter(storage.NewExtensionFileFilter([]string{".gksave"}))
 		fileDialog.Show()
 	})
+	openButton.SetToolTip("Can't find your save? It's usually in:\n" + filesManager.DefaultLocationHint())
 
 	saveButton = widget.NewButton("Save", func() {
 		confirmDialog := dialog.NewConfirm(
@@ -476,24 +392,11 @@ func main() {
 					return
 				}
 
-				ctx, cancel := context.WithCancel(context.Background())
-				go func(ctx context.Context) {
-					animateTop(ctx, leftAquila, rightAquila, progress, false)
-
-					fyne.DoAndWait(func() {
-						openButton.Enable()
-					})
-					cancel()
-				}(ctx)
+				cancel := animateTop(false, nil)
 
 				applyChanges()
 
-				openButton.Disable()
-				saveButton.Disable()
-				layoutTabs.Hide()
-				layoutTabs.SelectIndex(0)
-				unitsList.UnselectAll()
-				status.Set("")
+				resetUI()
 
 				err := filesManager.Save()
 				if err != nil {
@@ -508,106 +411,122 @@ func main() {
 	})
 	saveButton.Disable()
 
+	tabsThemed = container.NewThemeOverride(layoutTabs, ui.TabTheme{})
+
 	content := container.NewBorder(
 		container.NewBorder(nil, nil, leftAquila, rightAquila,
-			container.NewVBox(openButton, saveButton, progress)),
+			container.NewVBox(openButton, saveButton, progressLine)),
 		widget.NewLabelWithData(status),
 		nil, nil,
 		back,
-		layoutTabs,
+		tabsThemed,
 	)
 
 	validateScale()
 
 	w.Resize(fyne.NewSize(800, 600))
-	w.SetContent(fynetooltip.AddWindowToolTipLayer(content, w.Canvas()))
+	w.SetContent(tooltip.AddWindowToolTipLayer(content, w.Canvas()))
 	w.CenterOnScreen()
 	w.ShowAndRun()
 }
 
-func renderTalent(idx int, init bool) *widgets.SelectIcon {
-	if canChange, talent, options := featuresManager.CanChangeUnitTalents(currUnit, idx); canChange {
-		sel := widgets.NewSelectIcon()
-		sel.SetPlaceHolder("(Select talent)")
-		sel.SetOptions(options)
-
-		if init {
-			sel.SetSelected(talent.Name)
-			talentsUnits[currUnit][0] = append(talentsUnits[currUnit][0], talent.Name)
-			talentsUnits[currUnit][1] = append(talentsUnits[currUnit][1], talent.Name)
-		} else {
-			sel.SetSelected(talentsUnits[currUnit][1][idx])
-			talent = featuresManager.TalentByName(sel.Selected())
-		}
-
-		sel.SetResource(ui.GetIconByName(talent.ID))
-		sel.SetToolTip(talent.Description)
-
-		sel.OnChanged(func(newVal string) {
-			sel.SetResource(ui.GetIconByName(featuresManager.TalentByName(newVal).ID))
-			sel.SetToolTip(featuresManager.TalentByName(newVal).Description)
-			talentsUnits[currUnit][1][idx] = newVal
-			refreshSaveButton()
-		})
-
-		sel.OnBeforeShowPopup(func() {
-			var opts []string
-			for _, opt := range options {
-				if !containsOpt(talentsUnits[currUnit][1], opt) || opt == sel.Selected() {
-					opts = append(opts, opt)
-				}
-			}
-			sel.SetOptions(opts)
-		})
-		return sel
-	}
-	return nil
+type dropdownItem struct {
+	id   string
+	name string
+	desc string
 }
 
-func renderAugmetic(idx int, init bool) *widgets.SelectIcon {
-	if canChange, augmetic, options := featuresManager.CanChangeUnitAugmetics(currUnit, idx, healUnits[currUnit]); canChange {
-		sel := widgets.NewSelectIcon()
-		sel.SetPlaceHolder("(Select augmetic)")
-		sel.SetOptions(options)
-
-		if init {
-			sel.SetSelected(augmetic.Name)
-			augmeticsUnits[currUnit][0] = append(augmeticsUnits[currUnit][0], augmetic.Name)
-			augmeticsUnits[currUnit][1] = append(augmeticsUnits[currUnit][1], augmetic.Name)
-		} else {
-			sel.SetSelected(augmeticsUnits[currUnit][1][idx])
-			augmetic = featuresManager.AugmeticByName(sel.Selected())
-		}
-
-		sel.SetResource(ui.GetIconByName(augmetic.ID))
-		sel.SetToolTip(augmetic.Description)
-
-		sel.OnChanged(func(newVal string) {
-			sel.SetResource(ui.GetIconByName(featuresManager.AugmeticByName(newVal).ID))
-			sel.SetToolTip(featuresManager.AugmeticByName(newVal).Description)
-			augmeticsUnits[currUnit][1][idx] = newVal
-			refreshSaveButton()
-		})
-
-		sel.OnBeforeShowPopup(func() {
-			var opts []string
-			for _, opt := range options {
-				if !containsOpt(augmeticsUnits[currUnit][1], opt) || opt == sel.Selected() {
-					opts = append(opts, opt)
-				}
-			}
-			sel.SetOptions(opts)
-		})
-		return sel
-	}
-	return nil
+type dropdownSpec struct {
+	placeholder string
+	store       map[any][][]string
+	canChange   func(idx int) (bool, dropdownItem, []string)
+	lookup      func(name string) dropdownItem
 }
 
-const skipOpt = "(Torso) Autosanguine"
+func renderDropdown(idx int, init bool, spec dropdownSpec) *dropdown.DropdownIconWidget {
+	canChange, item, options := spec.canChange(idx)
+	if !canChange {
+		return nil
+	}
+
+	sel := dropdown.NewDropdownIconWidget()
+	sel.SetPlaceHolder(spec.placeholder)
+	sel.SetOptions(options)
+
+	if init {
+		sel.SetSelected(item.name)
+		spec.store[currUnit][0] = append(spec.store[currUnit][0], item.name)
+		spec.store[currUnit][1] = append(spec.store[currUnit][1], item.name)
+	} else {
+		sel.SetSelected(spec.store[currUnit][1][idx])
+		item = spec.lookup(sel.Selected())
+	}
+
+	sel.SetResource(ui.GetIconByName(item.id))
+	sel.SetToolTip(item.desc)
+	sel.SetOptionToolTip(func(opt string) string {
+		return spec.lookup(opt).desc
+	})
+	sel.SetOptionIcon(func(opt string) fyne.Resource {
+		return ui.GetIconByName(spec.lookup(opt).id)
+	})
+
+	sel.OnChanged(func(newVal string) {
+		changed := spec.lookup(newVal)
+		sel.SetResource(ui.GetIconByName(changed.id))
+		sel.SetToolTip(changed.desc)
+		spec.store[currUnit][1][idx] = newVal
+		refreshSaveButton()
+	})
+
+	sel.OnBeforeShowPopup(func() {
+		var opts []string
+		for _, opt := range options {
+			if !containsOpt(spec.store[currUnit][1], opt) || opt == sel.Selected() {
+				opts = append(opts, opt)
+			}
+		}
+		sel.SetOptions(opts)
+	})
+	return sel
+}
+
+func renderTalent(idx int, init bool) *dropdown.DropdownIconWidget {
+	return renderDropdown(idx, init, dropdownSpec{
+		placeholder: "(Select talent)",
+		store:       talentsUnits,
+		canChange: func(idx int) (bool, dropdownItem, []string) {
+			canChange, talent, options := featuresManager.CanChangeUnitTalents(currUnit, idx)
+			return canChange, dropdownItem{id: talent.ID, name: talent.Name, desc: talent.Description}, options
+		},
+		lookup: func(name string) dropdownItem {
+			talent := featuresManager.TalentByName(name)
+			return dropdownItem{id: talent.ID, name: talent.Name, desc: talent.Description}
+		},
+	})
+}
+
+func renderAugmetic(idx int, init bool) *dropdown.DropdownIconWidget {
+	return renderDropdown(idx, init, dropdownSpec{
+		placeholder: "(Select augmetic)",
+		store:       augmeticsUnits,
+		canChange: func(idx int) (bool, dropdownItem, []string) {
+			canChange, augmetic, options := featuresManager.CanChangeUnitAugmetics(currUnit, idx, healUnits[currUnit])
+			return canChange, dropdownItem{id: augmetic.ID, name: augmetic.Name, desc: augmetic.Description}, options
+		},
+		lookup: func(name string) dropdownItem {
+			augmetic := featuresManager.AugmeticByName(name)
+			return dropdownItem{id: augmetic.ID, name: augmetic.Name, desc: augmetic.Description}
+		},
+	})
+}
 
 func containsOpt(list []string, val string) bool {
+	if features.IsSkipOption(val) {
+		return true
+	}
 	for _, v := range list {
-		if v == val || val == skipOpt {
+		if v == val {
 			return true
 		}
 	}
@@ -633,23 +552,13 @@ func refreshSaveButton() {
 		}
 	}
 
-	canApplyChanges := unlockPuritySeals ||
-		unlockAdvancedClasses ||
-		repairDreadnought ||
-		reattunePrognosticars ||
-		unlockGarranCrowe ||
-		authorizeDreadnoughtMissions ||
-		unlockGladiusFrigate ||
-		completeCurrentConstruction ||
-		completeCurrentResearch ||
-		unequipMastercraftedWeapons ||
-		unequipMastercraftedArmor ||
-		removeMarketingWeapons ||
-		unlockAssassins ||
-		unlockPreorderItems ||
-		len(healUnits) > 0 ||
-		augmeticsChanged ||
-		talentsChanged
+	canApplyChanges := len(healUnits) > 0 || augmeticsChanged || talentsChanged
+	for _, action := range featureActions {
+		if *action.flag {
+			canApplyChanges = true
+			break
+		}
+	}
 
 	saveButton.Disable()
 	if canApplyChanges {
@@ -658,60 +567,10 @@ func refreshSaveButton() {
 }
 
 func applyChanges() {
-	if unlockPuritySeals {
-		featuresManager.UnlockPuritySeals()
-	}
-
-	if repairDreadnought {
-		featuresManager.RepairDreadnought()
-	}
-
-	if unlockPreorderItems {
-		featuresManager.UnlockPreorderItems()
-	}
-
-	if unlockAdvancedClasses {
-		featuresManager.UnlockAdvancedClasses()
-	}
-
-	if reattunePrognosticars {
-		featuresManager.ReattunePrognosticars()
-	}
-
-	if unlockGarranCrowe {
-		featuresManager.UnlockGarranCrowe()
-	}
-
-	if authorizeDreadnoughtMissions {
-		featuresManager.AuthorizeDreadnoughtMissions()
-	}
-
-	if unlockGladiusFrigate {
-		featuresManager.UnlockGladiusFrigate()
-	}
-
-	if completeCurrentConstruction {
-		featuresManager.CompleteCurrentConstruction()
-	}
-
-	if completeCurrentResearch {
-		featuresManager.CompleteCurrentResearch()
-	}
-
-	if unequipMastercraftedWeapons {
-		featuresManager.UnequipMastercraftedWeapons()
-	}
-
-	if unequipMastercraftedArmor {
-		featuresManager.UnequipMastercraftedArmor()
-	}
-
-	if removeMarketingWeapons {
-		featuresManager.RemoveMarketingWeapons()
-	}
-
-	if unlockAssassins {
-		featuresManager.UnlockAssassins()
+	for _, action := range featureActions {
+		if *action.flag {
+			action.apply()
+		}
 	}
 
 	for unit := range healUnits {
@@ -725,82 +584,6 @@ func applyChanges() {
 	for unit, talents := range talentsUnits {
 		featuresManager.ChangeUnitTalents(unit, talents[1])
 	}
-}
-
-func animateTop(ctx context.Context, im, im2 *canvas.Image, r *canvas.Rectangle, open bool) {
-	currentSize := fyne.NewSize(0, 4)
-	sOffset := r.Size().Width / 20
-	tOffset := 0.04
-
-	if open {
-		tOffset = -tOffset
-		im.Translucency = 1
-		im2.Translucency = 1
-	}
-
-	r.FillColor = fyne.CurrentApp().Settings().Theme().Color(theme.ColorNameBackground, 0)
-
-	ticker := time.NewTicker(15 * time.Millisecond)
-	defer ticker.Stop()
-
-	for i := 0; i < 30; i++ {
-		select {
-		case <-ctx.Done():
-			r.FillColor = fyne.CurrentApp().Settings().Theme().Color(theme.ColorNameBackground, 0)
-			return
-		case <-ticker.C:
-			if i < 20 {
-				newSize := fyne.NewSize(currentSize.Width+sOffset, 4)
-				currentSize = newSize
-				r.FillColor = fyne.CurrentApp().Settings().Theme().Color(theme.ColorNameShadow, 0)
-				r.Resize(newSize)
-			} else if !open {
-				r.FillColor = fyne.CurrentApp().Settings().Theme().Color(theme.ColorNameBackground, 0)
-			}
-
-			if i > 4 {
-				im.Translucency = clamp(im.Translucency + tOffset)
-				im2.Translucency = clamp(im2.Translucency + tOffset)
-
-				fyne.DoAndWait(func() {
-					im.Refresh()
-					im2.Refresh()
-				})
-			}
-		}
-	}
-}
-
-func animateAbout(ctx context.Context, im *canvas.Image) {
-	tOffset := -0.04
-
-	ticker := time.NewTicker(15 * time.Millisecond)
-	defer ticker.Stop()
-
-	for i := 0; i < 30; i++ {
-		select {
-		case <-ctx.Done():
-			return
-		case <-ticker.C:
-			if i > 5 {
-				im.Translucency = clamp(im.Translucency + tOffset)
-
-				fyne.DoAndWait(func() {
-					im.Refresh()
-				})
-			}
-		}
-	}
-}
-
-func clamp(v float64) float64 {
-	if v < 0 {
-		return 0
-	}
-	if v > 1 {
-		return 1
-	}
-	return v
 }
 
 func validateScale() {
@@ -821,4 +604,24 @@ func validateScale() {
 			os.Setenv("FYNE_SCALE", "2.0")
 		}
 	}
+}
+
+func boolSwitch(flag *bool, icon, name, tooltip string) *toggle.ToggleWidget {
+	return toggle.NewToggleWidget(func(on bool) {
+		*flag = on
+		refreshSaveButton()
+	}, icon, name, tooltip)
+}
+
+func resetSwitch(sw *toggle.ToggleWidget, status func() (bool, bool)) {
+	sw.Enable()
+	sw.SetState(false, true)
+	if available, state := status(); !available {
+		sw.Disable()
+		sw.SetState(state, false)
+	}
+}
+
+func resetSwitchOn(sw *toggle.ToggleWidget, available bool) {
+	resetSwitch(sw, func() (bool, bool) { return available, true })
 }

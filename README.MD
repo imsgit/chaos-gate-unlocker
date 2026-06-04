@@ -36,4 +36,4 @@ When you heal a critical wound, you can add an augmetic using this tool or chang
 
 ## Known issues
 
-You may still see in-game notifications for purity seals, advanced classes and frigate later in the game. Some unicode symbols used in the given name may be displayed incorrectly in the tool.
+You may still see in-game notifications for purity seals, advanced classes and frigate later in the game.

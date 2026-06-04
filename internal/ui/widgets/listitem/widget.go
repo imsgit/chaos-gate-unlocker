@@ -1,9 +1,10 @@
-package widgets
+package listitem
 
 import (
 	"chaos-gate-unlocker/internal/features"
 	"chaos-gate-unlocker/internal/objects"
 	"chaos-gate-unlocker/internal/ui"
+	"chaos-gate-unlocker/internal/ui/widgets/tooltip"
 
 	"image/color"
 	"regexp"
@@ -12,6 +13,7 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/driver/desktop"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 )
@@ -22,10 +24,12 @@ var (
 	lightColor    = color.RGBA{R: 255, G: 255, B: 127, A: 255}
 )
 
-type ListItem struct {
+type ListItemWidget struct {
 	widget.BaseWidget
+	tooltip.ToolTipWidgetExtend
 
-	iconClass *Icon
+	hoverBg   *canvas.Rectangle
+	iconClass *canvas.Image
 	imgLvl    *canvas.Image
 
 	textName   *canvas.Text
@@ -33,14 +37,17 @@ type ListItem struct {
 	textStatus *canvas.Text
 }
 
-func NewListItem() fyne.CanvasObject {
-	i := &ListItem{
-		iconClass:  NewIcon(),
+func NewListItemWidget() fyne.CanvasObject {
+	i := &ListItemWidget{
+		hoverBg:    canvas.NewRectangle(color.Transparent),
+		iconClass:  &canvas.Image{FillMode: canvas.ImageFillContain},
 		imgLvl:     canvas.NewImageFromResource(ui.GetWidgetUnitLevelIcon()),
 		textName:   canvas.NewText("", color.White),
 		textLvl:    canvas.NewText("", color.Black),
 		textStatus: canvas.NewText("", color.White),
 	}
+
+	i.iconClass.SetMinSize(fyne.NewSize(46, 46))
 
 	i.imgLvl.FillMode = canvas.ImageFillContain
 	i.imgLvl.SetMinSize(fyne.NewSize(32, 32))
@@ -53,12 +60,37 @@ func NewListItem() fyne.CanvasObject {
 	return i
 }
 
-func (i *ListItem) MinSize() fyne.Size {
+func (i *ListItemWidget) ExtendBaseWidget(wid fyne.Widget) {
+	i.ExtendToolTipWidget(wid)
+	i.BaseWidget.ExtendBaseWidget(wid)
+}
+
+func (i *ListItemWidget) MinSize() fyne.Size {
 	i.ExtendBaseWidget(i)
 	return fyne.NewSize(0, 54)
 }
 
-func (i *ListItem) CreateRenderer() fyne.WidgetRenderer {
+func (i *ListItemWidget) MouseIn(e *desktop.MouseEvent) {
+	if !tooltip.OverlayShown(i) {
+		i.ToolTipWidgetExtend.MouseIn(e)
+	}
+	i.hoverBg.FillColor = i.Theme().Color(theme.ColorNameHover, fyne.CurrentApp().Settings().ThemeVariant())
+	i.hoverBg.Refresh()
+}
+
+func (i *ListItemWidget) MouseMoved(e *desktop.MouseEvent) {
+	i.ToolTipWidgetExtend.MouseMoved(e)
+}
+
+func (i *ListItemWidget) MouseOut() {
+	i.ToolTipWidgetExtend.MouseOut()
+	i.hoverBg.FillColor = color.Transparent
+	i.hoverBg.Refresh()
+}
+
+func (i *ListItemWidget) CreateRenderer() fyne.WidgetRenderer {
+	i.hoverBg.CornerRadius = i.Theme().Size(theme.SizeNameSelectionRadius)
+
 	classContainer := container.NewPadded(i.iconClass)
 
 	lvlContainer := container.NewPadded(container.NewCenter(
@@ -72,55 +104,43 @@ func (i *ListItem) CreateRenderer() fyne.WidgetRenderer {
 	))
 
 	return widget.NewSimpleRenderer(
-		container.NewBorder(nil, nil, container.NewHBox(
-			classContainer,
-			lvlContainer,
-			nameContainer), nil,
-		))
+		container.NewStack(i.hoverBg,
+			container.NewBorder(nil, nil, container.NewHBox(
+				classContainer,
+				lvlContainer,
+				nameContainer), nil,
+			)))
 }
 
-func (i *ListItem) Bind(val interface{}) {
+func (i *ListItemWidget) Bind(val interface{}) {
 	var name, class, lvl string
 	var healthStatus int
 	var noPilot, underRepair, sideMission bool
 
 	switch object := val.(type) {
 	case *objects.KnightState:
-		givenName := object.GivenName
-		if object.GivenNameOverride != "" {
-			givenName = object.GivenNameOverride
-		}
-		name = givenName + " " + features.Surnames[object.SurnameIndex]
-		if object.SurnameOverride != "" {
-			name = givenName + " " + object.SurnameOverride
-		}
+		name = override(object.GivenName, object.GivenNameOverride) + " " +
+			override(features.Surnames[object.SurnameIndex], object.SurnameOverride)
 		class, lvl = parseClassLvl(object.CurrentLevelData.Key)
 		healthStatus = object.HealthState.Status
 		sideMission = object.CurrentSideMission.MissionID != ""
 	case *objects.DreadnoughtState:
-		givenName := object.GivenName
-		if object.GivenNameOverride != "" {
-			givenName = object.GivenNameOverride
-		}
-		name = givenName + " " + features.Surnames[object.SurnameIndex]
+		name = override(object.GivenName, object.GivenNameOverride) + " " + features.Surnames[object.SurnameIndex]
 		class, lvl = parseClassLvl(object.CurrentLevelData.Key)
 		healthStatus = object.HealthState.Status
 		noPilot = !object.HasPilot
 		underRepair = object.HealthState.RecoveryTimeLeft > 0
 		sideMission = object.CurrentSideMission.MissionID != ""
 	case *objects.AssassinState:
-		givenName := object.GivenName
-		if object.GivenNameOverride != "" {
-			givenName = object.GivenNameOverride
-		}
-		name = givenName + " " + features.AssassinSurnames[object.SurnameIndex]
+		name = override(object.GivenName, object.GivenNameOverride) + " " + features.AssassinSurnames[object.SurnameIndex]
 		class, lvl = parseClassLvl(object.CurrentLevelData.Key)
 		healthStatus = object.HealthState.Status
 		sideMission = object.CurrentSideMission.MissionID != ""
 	}
 
-	i.iconClass.SetResource(ui.GetIconByName(class))
-	i.iconClass.SetToolTip(splitOnCapital(class))
+	i.iconClass.Resource = ui.GetIconByName(class)
+	i.iconClass.Refresh()
+	i.SetToolTip(splitOnCapital(class))
 
 	i.textName.Text = name
 	i.textLvl.Text = lvl
@@ -179,12 +199,17 @@ func (i *ListItem) Bind(val interface{}) {
 	i.textStatus.Refresh()
 }
 
+func override(base, over string) string {
+	if over != "" {
+		return over
+	}
+	return base
+}
+
 func parseClassLvl(s string) (string, string) {
 	splits := strings.Split(s, "_")
 	if len(splits) == 2 {
-		class := splits[0]
-		lvl := splits[1]
-		return class, lvl
+		return splits[0], splits[1]
 	}
 	return "", ""
 }

@@ -131,6 +131,47 @@ func getLvl(s string) int {
 	return lvl
 }
 
+func (m *Manager) unlockTimelineEvent(eventKey string, calendarType int) {
+	var eventOccasion *objects.TimelineEventOccasion
+	var saveState *objects.TimeManagerSaveState
+
+	for _, record := range m.state.LinearRecords {
+		switch record.TypeName {
+		case internal.TimelineEventOccasion:
+			object := record.SerializedObject.(*objects.TimelineEventOccasion)
+			if object.EventToPlay.Key == eventKey {
+				eventOccasion = object
+			}
+		case internal.TimeManagerSaveState:
+			saveState = record.SerializedObject.(*objects.TimeManagerSaveState)
+		}
+	}
+
+	if eventOccasion != nil {
+		eventOccasion.TriggerTime = 0
+		eventOccasion.SavedChosenResults.Values = []interface{}{}
+		return
+	}
+
+	if saveState == nil {
+		return
+	}
+
+	id := m.generateNewInstanceId()
+
+	eventOccasion = &objects.TimelineEventOccasion{}
+	eventOccasion.EventToPlay.Key = eventKey
+	eventOccasion.CalendarType = calendarType
+	eventOccasion.SavedChosenResults.Values = []interface{}{}
+
+	saveState.CurrentOccasions.Values = append(saveState.CurrentOccasions.Values, objects.IntValue{Key: id})
+	m.state.LinearInstanceIds = append(m.state.LinearInstanceIds, id)
+	m.state.LinearRecords = append(m.state.LinearRecords, &internal.LinearRecord{
+		TypeName:         internal.TimelineEventOccasion,
+		SerializedObject: eventOccasion,
+	})
+}
+
 func (m *Manager) generateNewInstanceId() int {
 	minId := 0
 	for _, id := range m.state.LinearInstanceIds {

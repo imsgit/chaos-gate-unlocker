@@ -147,6 +147,12 @@ type Augmetic struct {
 	Description string
 }
 
+const skipOption = "(Torso) Autosanguine"
+
+func IsSkipOption(option string) bool {
+	return option == skipOption
+}
+
 func (m *Manager) ChangeUnitAugmetics(unit any, changedAugmetics []string) {
 	switch object := unit.(type) {
 	case *objects.KnightState:
@@ -157,6 +163,13 @@ func (m *Manager) ChangeUnitAugmetics(unit any, changedAugmetics []string) {
 			}
 		}
 	}
+}
+
+func (m *Manager) UnitSupportsAugmetics(unit any) bool {
+	if object, ok := unit.(*objects.KnightState); ok {
+		return getClass(object.CurrentLevelData.Key) != GarranCrowClass
+	}
+	return false
 }
 
 func (m *Manager) CanChangeUnitAugmetics(unit any, idx int, heal bool) (bool, Augmetic, []string) {

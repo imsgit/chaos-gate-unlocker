@@ -28,6 +28,26 @@ const (
 	StarMapMissionSaveState = "GreyKnights.StarMapMissionSaveState"
 )
 
+var typeNameToObject = map[string]func() interface{}{
+	CurrencySaveState:       func() interface{} { return &objects.CurrencySaveState{} },
+	GameUnlocksSaveState:    func() interface{} { return &objects.GameUnlocksSaveState{} },
+	StarMapMission:          func() interface{} { return &objects.StarMapMission{} },
+	StarMapNodeModel:        func() interface{} { return &objects.StarMapNodeModel{} },
+	ConstructionProject:     func() interface{} { return &objects.ConstructionProject{} },
+	ResearchProject:         func() interface{} { return &objects.ResearchProject{} },
+	KnightsSaveState:        func() interface{} { return &objects.KnightsSaveState{} },
+	KnightState:             func() interface{} { return &objects.KnightState{} },
+	CallidusAssassinState:   func() interface{} { return &objects.AssassinState{} },
+	CulexusAssassinState:    func() interface{} { return &objects.AssassinState{} },
+	EversorAssassinState:    func() interface{} { return &objects.AssassinState{} },
+	VindicareAssassinState:  func() interface{} { return &objects.AssassinState{} },
+	DreadnoughtState:        func() interface{} { return &objects.DreadnoughtState{} },
+	TimeManagerSaveState:    func() interface{} { return &objects.TimeManagerSaveState{} },
+	TimelineEventOccasion:   func() interface{} { return &objects.TimelineEventOccasion{} },
+	ArmourySaveState:        func() interface{} { return &objects.ArmorySaveState{} },
+	StarMapMissionSaveState: func() interface{} { return &objects.StarMapMissionSaveState{} },
+}
+
 func (r *LinearRecord) MarshalJSON() ([]byte, error) {
 	serializedContents := r.SerializedContents
 
@@ -58,31 +78,11 @@ func (r *LinearRecord) UnmarshalJSON(data []byte) error {
 	r.TypeName = t.TypeName
 	r.AssetName = t.AssetName
 
-	typeNameToObject := map[string]interface{}{
-		CurrencySaveState:       &objects.CurrencySaveState{},
-		GameUnlocksSaveState:    &objects.GameUnlocksSaveState{},
-		StarMapMission:          &objects.StarMapMission{},
-		StarMapNodeModel:        &objects.StarMapNodeModel{},
-		ConstructionProject:     &objects.ConstructionProject{},
-		ResearchProject:         &objects.ResearchProject{},
-		KnightsSaveState:        &objects.KnightsSaveState{},
-		KnightState:             &objects.KnightState{},
-		CallidusAssassinState:   &objects.AssassinState{},
-		CulexusAssassinState:    &objects.AssassinState{},
-		EversorAssassinState:    &objects.AssassinState{},
-		VindicareAssassinState:  &objects.AssassinState{},
-		DreadnoughtState:        &objects.DreadnoughtState{},
-		TimeManagerSaveState:    &objects.TimeManagerSaveState{},
-		TimelineEventOccasion:   &objects.TimelineEventOccasion{},
-		ArmourySaveState:        &objects.ArmorySaveState{},
-		StarMapMissionSaveState: &objects.StarMapMissionSaveState{},
-	}
-
-	if obj, exists := typeNameToObject[t.TypeName]; exists {
+	if newObject, exists := typeNameToObject[t.TypeName]; exists {
 		unquoted, _ := strconv.Unquote(string(t.SerializedContents))
 		serializedContents := []byte(unquoted)
 
-		r.SerializedObject = obj
+		r.SerializedObject = newObject()
 		err = json.Unmarshal(serializedContents, r.SerializedObject)
 		if err != nil {
 			return err
