@@ -8,7 +8,6 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/theme"
-	"fyne.io/fyne/v2/widget"
 )
 
 const (
@@ -41,23 +40,23 @@ func AddWindowToolTipLayer(content fyne.CanvasObject, canvas fyne.Canvas) fyne.C
 	return container.NewStack(content, &l.Container)
 }
 
-func AddPopUpToolTipLayer(p *widget.PopUp) {
-	parent := layers[p.Canvas]
+func AddOverlayToolTipLayer(overlay fyne.CanvasObject, canvas fyne.Canvas) *fyne.Container {
+	parent := layers[canvas]
 	if parent == nil {
 		fyne.LogError("", errors.New("no tooltip layer for parent canvas"))
-		return
+		return nil
 	}
 	l := &layer{}
 	if parent.overlays == nil {
 		parent.overlays = make(map[fyne.CanvasObject]*layer)
 	}
-	parent.overlays[p] = l
-	p.Content = container.NewStack(p.Content, &l.Container)
+	parent.overlays[overlay] = l
+	return &l.Container
 }
 
-func DestroyPopUpToolTipLayer(p *widget.PopUp) {
-	if parent := layers[p.Canvas]; parent != nil {
-		delete(parent.overlays, p)
+func RemoveOverlayToolTipLayer(overlay fyne.CanvasObject, canvas fyne.Canvas) {
+	if parent := layers[canvas]; parent != nil {
+		delete(parent.overlays, overlay)
 	}
 }
 
@@ -84,12 +83,7 @@ func showAtMousePosition(canvas fyne.Canvas, pos fyne.Position, text string) *ha
 	t := newTip(text)
 	l.Container.Objects = []fyne.CanvasObject{t}
 
-	var zeroPos fyne.Position
-	if pop, ok := overlay.(*widget.PopUp); ok && pop != nil {
-		zeroPos = pop.Content.Position()
-	} else {
-		zeroPos = fyne.CurrentApp().Driver().AbsolutePositionForObject(&l.Container)
-	}
+	zeroPos := fyne.CurrentApp().Driver().AbsolutePositionForObject(&l.Container)
 
 	sizeAndPosition(zeroPos, pos.Subtract(zeroPos), t, canvas)
 	l.Container.Refresh()

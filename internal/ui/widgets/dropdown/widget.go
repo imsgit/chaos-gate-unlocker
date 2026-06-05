@@ -3,7 +3,6 @@ package dropdown
 import (
 	"chaos-gate-unlocker/internal/ui/widgets/tooltip"
 
-	"image/color"
 	"math"
 
 	"fyne.io/fyne/v2"
@@ -15,45 +14,6 @@ import (
 	"fyne.io/fyne/v2/widget"
 )
 
-type flatPopupTheme struct{ fyne.Theme }
-
-func (t flatPopupTheme) Color(n fyne.ThemeColorName, v fyne.ThemeVariant) color.Color {
-	switch n {
-	case theme.ColorNameShadow, theme.ColorNameOverlayBackground:
-		return color.Transparent
-	}
-	return t.Theme.Color(n, v)
-}
-
-func (t flatPopupTheme) Size(n fyne.ThemeSizeName) float32 {
-	if n == theme.SizeNameInnerPadding {
-		return 0
-	}
-	return t.Theme.Size(n)
-}
-
-const selectTextNudge float32 = 3
-
-type selectPadTheme struct{ fyne.Theme }
-
-func (t selectPadTheme) Size(n fyne.ThemeSizeName) float32 {
-	if n == theme.SizeNameInnerPadding {
-		return t.Theme.Size(n) + selectTextNudge
-	}
-	return t.Theme.Size(n)
-}
-
-func (t selectPadTheme) Color(n fyne.ThemeColorName, v fyne.ThemeVariant) color.Color {
-	c := t.Theme.Color(n, v)
-	switch n {
-	case theme.ColorNameButton, theme.ColorNameInputBackground, theme.ColorNameHover:
-		nc := color.NRGBAModel.Convert(c).(color.NRGBA)
-		nc.A = uint8(float64(nc.A) * 0.7)
-		return nc
-	}
-	return c
-}
-
 type Widget struct {
 	widget.Select
 	tooltip.WidgetExtend
@@ -63,7 +23,7 @@ type Widget struct {
 	ToolTipForOption func(option string) string
 	IconForOption    func(option string) fyne.Resource
 
-	popup *widget.PopUp
+	popup *popOverlay
 }
 
 func New() *Widget {
@@ -169,8 +129,10 @@ func (s *Widget) showPopup() {
 	scroll := container.NewVScroll(box)
 	boxMin := box.MinSize()
 
-	pad := s.Theme().Size(theme.SizeNamePadding)
-	border := s.Theme().Size(theme.SizeNameInputBorder)
+	th := s.Theme()
+	tv := fyne.CurrentApp().Settings().ThemeVariant()
+	pad := th.Size(theme.SizeNamePadding)
+	border := th.Size(theme.SizeNameInputBorder)
 	const contentPad float32 = 2
 
 	var rowH float32
@@ -203,8 +165,6 @@ func (s *Widget) showPopup() {
 		}
 	}
 
-	th := fyne.CurrentApp().Settings().Theme()
-	tv := fyne.CurrentApp().Settings().ThemeVariant()
 	panel := canvas.NewRectangle(th.Color(theme.ColorNameOverlayBackground, tv))
 	panel.StrokeColor = th.Color(theme.ColorNameInputBorder, tv)
 	panel.StrokeWidth = th.Size(theme.SizeNameInputBorder)
@@ -226,13 +186,9 @@ func (s *Widget) showPopup() {
 
 	content := newSelectPopup(rows, scroll, selectedIdx, s.hidePopup)
 	padded := container.New(layout.NewCustomPaddedLayout(contentPad, contentPad, contentPad, contentPad), content)
-	pop := widget.NewPopUp(container.NewStack(panel, padded), cv)
-	tooltip.AddPopUpToolTipLayer(pop)
-	container.NewThemeOverride(pop, flatPopupTheme{th})
-	container.NewThemeOverride(scroll, th)
+	pop := newPopOverlay(container.NewStack(panel, padded), cv, s.hidePopup)
 
-	pop.Resize(fyne.NewSize(popWidth, popHeight))
-	pop.ShowAtPosition(pos)
+	pop.showAt(pos, fyne.NewSize(popWidth, popHeight))
 	cv.Focus(content)
 
 	if selectedIdx >= 0 && step > 0 {
@@ -250,7 +206,6 @@ func (s *Widget) hidePopup() {
 	if s.popup == nil {
 		return
 	}
-	tooltip.DestroyPopUpToolTipLayer(s.popup)
 	s.popup.Hide()
 	s.popup = nil
 }

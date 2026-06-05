@@ -232,7 +232,7 @@ func main() {
 		unitsScrollBox.ScrollToTop()
 	}
 
-	back := canvas.NewImageFromResource(ui.GetAppBackgroundIcon())
+	back := canvas.NewImageFromImage(ui.DecodeRaw(ui.GetAppBackgroundIcon()))
 	back.FillMode = canvas.ImageFillContain
 	back.ScaleMode = canvas.ImageScaleFastest
 	back.Translucency = 0.96
@@ -242,7 +242,7 @@ func main() {
 	eyeGlow.Start()
 
 	mainTab := container.NewTabItemWithIcon("Main", ui.GetAppTabMainIcon(),
-		container.NewThemeOverride(container.NewGridWithColumns(2,
+		container.NewGridWithColumns(2,
 			container.NewVBox(
 				authorizeDreadnoughtMissionsSwitch,
 				repairDreadnoughtSwitch,
@@ -258,22 +258,20 @@ func main() {
 				unlockAssassinsSwitch,
 				unlockGladiusFrigateSwitch,
 				unlockPuritySealsSwitch,
-				removeMarketingWeaponsSwitch)), ui.Theme{}))
+				removeMarketingWeaponsSwitch)))
 	unitsTab := container.NewTabItemWithIcon("Units", ui.GetAppTabUnitsIcon(),
-		container.NewThemeOverride(
-			container.NewGridWithColumns(2, unitsList, unitsScrollBox), ui.Theme{}))
+		container.NewGridWithColumns(2, unitsList, unitsScrollBox))
 	aboutTab := container.NewTabItemWithIcon("About", ui.GetAppTabAboutIcon(),
-		container.NewThemeOverride(container.NewBorder(nil, nil,
+		container.NewBorder(nil, nil,
 			widget.NewRichTextFromMarkdown(`
 [> Visit Nexus Mods for more information](https://www.nexusmods.com/warhammer40kchaosgatedaemonhunters/mods/5)
 
 [> Visit Fyne.io for app details](https://apps.fyne.io/apps/chaos.gate.unlocker.html)
 
 [> Visit Reddit for discussion](https://www.reddit.com/r/ChaosGateGame/comments/1hz3s5g/chaosgateunlocker)`),
-			widget.NewRichTextFromMarkdown(fmt.Sprintf(version, a.Metadata().Build))), ui.Theme{}))
+			widget.NewRichTextFromMarkdown(fmt.Sprintf(version, a.Metadata().Build))))
 
 	var acancel context.CancelFunc
-	var tabsThemed *container.ThemeOverride
 	layoutTabs := container.NewAppTabs(mainTab, unitsTab, aboutTab)
 	layoutTabs.SetTabLocation(container.TabLocationTrailing)
 	layoutTabs.OnSelected = func(item *container.TabItem) {
@@ -314,7 +312,7 @@ func main() {
 	animateTop := func(open bool, onDone func()) context.CancelFunc {
 		ctx, cancel := context.WithCancel(context.Background())
 		go func() {
-			aquila.AnimateTop(ctx, leftAquila, rightAquila, progressLine, open)
+			aquila.Animate(ctx, leftAquila, rightAquila, progressLine, open)
 			fyne.DoAndWait(func() {
 				openButton.Enable()
 				if ctx.Err() == nil && onDone != nil {
@@ -343,9 +341,6 @@ func main() {
 
 			cancel := animateTop(true, func() {
 				layoutTabs.Show()
-				if tabsThemed != nil {
-					tabsThemed.Refresh()
-				}
 				status.Set(filesManager.Status())
 			})
 
@@ -419,7 +414,6 @@ func main() {
 	})
 	saveButton.Disable()
 
-	tabsThemed = container.NewThemeOverride(layoutTabs, ui.TabTheme{})
 	content := container.NewBorder(
 		container.NewBorder(nil, nil, leftAquila, rightAquila,
 			container.NewVBox(openButton, saveButton, progressLine)),
@@ -427,7 +421,7 @@ func main() {
 		nil, nil,
 		back,
 		eyeGlowOverlay,
-		tabsThemed,
+		layoutTabs,
 	)
 
 	validateScale()

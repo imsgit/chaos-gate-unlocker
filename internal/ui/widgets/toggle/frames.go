@@ -7,8 +7,6 @@ import (
 	"sync"
 
 	"chaos-gate-unlocker/internal/ui"
-
-	"fyne.io/fyne/v2"
 )
 
 var (
@@ -33,16 +31,16 @@ func getSwitchFrames() []image.Image {
 func getStaticFrames() switchStatics {
 	staticFramesOnce.Do(func() {
 		staticImgs = switchStatics{
-			off: decodeResource(ui.GetWidgetSwitchOffIcon()),
-			on:  decodeResource(ui.GetWidgetSwitchOnIcon()),
+			off: ui.DecodeIcon(ui.GetWidgetSwitchOffIcon()),
+			on:  ui.DecodeIcon(ui.GetWidgetSwitchOnIcon()),
 		}
 	})
 	return staticImgs
 }
 
 func buildSwitchFrames() {
-	off := decodeResource(ui.GetWidgetSwitchOffIcon())
-	on := decodeResource(ui.GetWidgetSwitchOnIcon())
+	off := ui.DecodeIcon(ui.GetWidgetSwitchOffIcon())
+	on := ui.DecodeIcon(ui.GetWidgetSwitchOnIcon())
 	if off == nil || on == nil {
 		return
 	}
@@ -71,10 +69,6 @@ func buildSwitchFrames() {
 		frames[i] = dst
 	}
 	switchFrames = frames
-}
-
-func decodeResource(res fyne.Resource) image.Image {
-	return ui.DecodeIcon(res)
 }
 
 func maskCircle(src image.Image, cx, cy, r int, inside bool) *image.RGBA {

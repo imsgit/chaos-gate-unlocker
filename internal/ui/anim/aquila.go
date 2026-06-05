@@ -17,7 +17,28 @@ import (
 	"golang.org/x/image/math/f64"
 )
 
-func AquilaFrames(res fyne.Resource, pivotX, fromDeg, toDeg float64, count int) []image.Image {
+type Aquila struct {
+	leftRes, rightRes fyne.Resource
+
+	once        sync.Once
+	left, right []image.Image
+}
+
+func NewAquila(left, right fyne.Resource) *Aquila {
+	return &Aquila{leftRes: left, rightRes: right}
+}
+
+func (a *Aquila) Prewarm() { go a.frames() }
+
+func (a *Aquila) frames() (left, right []image.Image) {
+	a.once.Do(func() {
+		a.left = aquilaFrames(a.leftRes, 1.0, -30, 0, 18)
+		a.right = aquilaFrames(a.rightRes, 0.0, 30, 0, 18)
+	})
+	return a.left, a.right
+}
+
+func aquilaFrames(res fyne.Resource, pivotX, fromDeg, toDeg float64, count int) []image.Image {
 	src, _, err := image.Decode(bytes.NewReader(res.Content()))
 	if err != nil || count < 2 {
 		return nil
@@ -44,28 +65,7 @@ func AquilaFrames(res fyne.Resource, pivotX, fromDeg, toDeg float64, count int) 
 	return frames
 }
 
-type Aquila struct {
-	leftRes, rightRes fyne.Resource
-
-	once        sync.Once
-	left, right []image.Image
-}
-
-func NewAquila(left, right fyne.Resource) *Aquila {
-	return &Aquila{leftRes: left, rightRes: right}
-}
-
-func (a *Aquila) Prewarm() { go a.frames() }
-
-func (a *Aquila) frames() (left, right []image.Image) {
-	a.once.Do(func() {
-		a.left = AquilaFrames(a.leftRes, 1.0, -30, 0, 18)
-		a.right = AquilaFrames(a.rightRes, 0.0, 30, 0, 18)
-	})
-	return a.left, a.right
-}
-
-func (a *Aquila) AnimateTop(ctx context.Context, im, im2 *canvas.Image, p *progress.Widget, open bool) {
+func (a *Aquila) Animate(ctx context.Context, im, im2 *canvas.Image, p *progress.Widget, open bool) {
 	leftFrames, rightFrames := a.frames()
 
 	width := float32(0)

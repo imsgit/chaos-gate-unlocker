@@ -3,24 +3,26 @@ package toggle
 import (
 	"chaos-gate-unlocker/internal/ui"
 	"chaos-gate-unlocker/internal/ui/anim"
-	"chaos-gate-unlocker/internal/ui/widgets/snapimage"
+	"chaos-gate-unlocker/internal/ui/widgets/tooltip"
 
 	"context"
+	"image"
 	"image/color"
 	"time"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
-	"fyne.io/fyne/v2/theme"
+	"fyne.io/fyne/v2/driver/desktop"
 	"fyne.io/fyne/v2/widget"
 )
 
 type Widget struct {
 	widget.DisableableWidget
+	tooltip.WidgetExtend
 
-	icon *snapimage.Widget
-	sw   *snapimage.Widget
+	icon *canvas.Image
+	sw   *canvas.Image
 
 	animCancel context.CancelFunc
 
@@ -33,18 +35,16 @@ type Widget struct {
 
 func New(onChanged func(on bool), icon, name, toolTip string) *Widget {
 	s := &Widget{
-		icon:      snapimage.New(fyne.NewSize(46, 46)),
-		sw:        snapimage.New(fyne.NewSize(46, 46)),
+		icon:      ui.NewIcon(fyne.NewSize(46, 46)),
+		sw:        ui.NewIcon(fyne.NewSize(46, 46)),
 		textName:  canvas.NewText("", color.White),
 		onChanged: onChanged,
 	}
 
 	s.textName.Text = name
+	s.SetToolTip(toolTip)
 
-	s.icon.SetToolTip(toolTip)
-	s.sw.SetToolTip(toolTip)
-
-	s.icon.SetResource(ui.GetIconByName(icon))
+	s.icon.Image = ui.DecodeIcon(ui.GetIconByName(icon))
 
 	prewarmOnce.Do(func() { go getSwitchFrames() })
 
@@ -53,10 +53,14 @@ func New(onChanged func(on bool), icon, name, toolTip string) *Widget {
 	return s
 }
 
-func (s *Widget) SetToolTip(toolTip string) {
-	s.icon.SetToolTip(toolTip)
-	s.sw.SetToolTip(toolTip)
+func (s *Widget) ExtendBaseWidget(wid fyne.Widget) {
+	s.ExtendToolTipWidget(wid)
+	s.BaseWidget.ExtendBaseWidget(wid)
 }
+
+func (s *Widget) MouseIn(e *desktop.MouseEvent)    { s.WidgetExtend.MouseIn(e) }
+func (s *Widget) MouseMoved(e *desktop.MouseEvent) { s.WidgetExtend.MouseMoved(e) }
+func (s *Widget) MouseOut()                        { s.WidgetExtend.MouseOut() }
 
 func (s *Widget) SetState(on, notify bool) {
 	s.set(on, notify, false)
@@ -80,19 +84,17 @@ func (s *Widget) set(on, notify, animate bool) {
 		s.onChanged(on)
 	}
 
-	c, style, dim := color.Color(color.White), fyne.TextStyle{Bold: true}, 0.0
+	c, dim := color.Color(color.White), 0.0
 	if s.Disabled() {
-		c = fyne.CurrentApp().Settings().Theme().Color(theme.ColorNamePrimary, 0)
-		style = fyne.TextStyle{}
+		c = ui.MutedForeground
 		dim = 0.5
 	}
-	if s.textName.Color != c || s.textName.TextStyle != style {
+	if s.textName.Color != c {
 		s.textName.Color = c
-		s.textName.TextStyle = style
 		s.textName.Refresh()
 	}
-	s.icon.SetTranslucency(dim)
-	s.sw.SetTranslucency(dim)
+	setTranslucency(s.icon, dim)
+	setTranslucency(s.sw, dim)
 
 	if animate && changed && !s.Disabled() {
 		s.animateTo(on)
@@ -106,12 +108,25 @@ func (s *Widget) set(on, notify, animate bool) {
 	s.showStatic()
 }
 
+func setTranslucency(img *canvas.Image, t float64) {
+	if img.Translucency == t {
+		return
+	}
+	img.Translucency = t
+	img.Refresh()
+}
+
+func (s *Widget) setSwitch(img image.Image) {
+	s.sw.Image = img
+	s.sw.Refresh()
+}
+
 func (s *Widget) showStatic() {
 	st := getStaticFrames()
 	if s.on {
-		s.sw.SetImage(st.on)
+		s.setSwitch(st.on)
 	} else {
-		s.sw.SetImage(st.off)
+		s.setSwitch(st.off)
 	}
 }
 
@@ -128,9 +143,9 @@ func (s *Widget) animateTo(on bool) {
 
 	n := len(frames)
 	if on {
-		s.sw.SetImage(frames[0])
+		s.setSwitch(frames[0])
 	} else {
-		s.sw.SetImage(frames[n-1])
+		s.setSwitch(frames[n-1])
 	}
 
 	s.animCancel = anim.Frames(n, 16*time.Millisecond, s.showStatic, func(i int) {
@@ -138,7 +153,7 @@ func (s *Widget) animateTo(on bool) {
 		if !on {
 			idx = n - i
 		}
-		s.sw.SetImage(frames[idx])
+		s.setSwitch(frames[idx])
 	})
 }
 
@@ -191,12 +206,13 @@ func (s *Widget) TappedSecondary(*fyne.PointEvent) {
 }
 
 func (s *Widget) CreateRenderer() fyne.WidgetRenderer {
-	iconContainer := container.NewPadded(s.icon)
+	iconContainer := container.NewPadded(container.NewStack(s.icon))
+	swContainer := container.NewStack(s.sw)
 	nameContainer := container.NewPadded(s.textName)
 
 	return widget.NewSimpleRenderer(container.NewHBox(
 		iconContainer,
-		s.sw,
+		swContainer,
 		nameContainer,
 	))
 }

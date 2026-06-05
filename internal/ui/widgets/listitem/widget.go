@@ -4,7 +4,6 @@ import (
 	"chaos-gate-unlocker/internal/features"
 	"chaos-gate-unlocker/internal/objects"
 	"chaos-gate-unlocker/internal/ui"
-	"chaos-gate-unlocker/internal/ui/pixelsnap"
 	"chaos-gate-unlocker/internal/ui/widgets/tooltip"
 
 	"image/color"
@@ -42,19 +41,15 @@ type Widget struct {
 func New() fyne.CanvasObject {
 	i := &Widget{
 		hoverBg:    canvas.NewRectangle(color.Transparent),
-		iconClass:  &canvas.Image{FillMode: canvas.ImageFillStretch, ScaleMode: canvas.ImageScaleFastest},
-		imgLvl:     canvas.NewImageFromImage(ui.DecodeIcon(ui.GetWidgetUnitLevelIcon())),
+		iconClass:  ui.NewIcon(fyne.NewSize(46, 46)),
+		imgLvl:     ui.NewIcon(fyne.NewSize(30, 30)),
 		textName:   canvas.NewText("", color.White),
-		textLvl:    canvas.NewText("", color.Black),
+		textLvl:    canvas.NewText("", fyne.CurrentApp().Settings().Theme().Color(theme.ColorNameBackground, 0)),
 		textStatus: canvas.NewText("", color.White),
 	}
 
-	i.iconClass.SetMinSize(fyne.NewSize(46, 46))
-	i.classBox = container.New(pixelsnap.NewLayout(), i.iconClass)
-
-	i.imgLvl.FillMode = canvas.ImageFillContain
-	i.imgLvl.ScaleMode = canvas.ImageScaleFastest
-	i.imgLvl.SetMinSize(fyne.NewSize(32, 32))
+	i.imgLvl.Image = ui.DecodeIcon(ui.GetWidgetUnitLevelIcon())
+	i.classBox = container.NewStack(i.iconClass)
 
 	i.textName.TextStyle = fyne.TextStyle{Bold: true}
 	i.textLvl.TextStyle = fyne.TextStyle{Bold: true}
@@ -78,10 +73,7 @@ func (i *Widget) MouseIn(e *desktop.MouseEvent) {
 	if !tooltip.OverlayShown(i) {
 		i.WidgetExtend.MouseIn(e)
 	}
-	hover := i.Theme().Color(theme.ColorNameHover, fyne.CurrentApp().Settings().ThemeVariant())
-	nc := color.NRGBAModel.Convert(hover).(color.NRGBA)
-	nc.A = uint8(float64(nc.A) * 0.7)
-	i.hoverBg.FillColor = nc
+	i.hoverBg.FillColor = i.Theme().Color(theme.ColorNameHover, fyne.CurrentApp().Settings().ThemeVariant())
 	i.hoverBg.Refresh()
 }
 
@@ -146,14 +138,14 @@ func (i *Widget) Bind(val interface{}) {
 	}
 
 	i.iconClass.Resource = nil
-	i.iconClass.Image = ui.DecodeIconByName(class)
+	i.iconClass.Image = ui.DecodeIcon(ui.GetIconByName(class))
 	i.iconClass.Refresh()
 	i.classBox.Refresh()
 	i.SetToolTip(splitOnCapital(class))
 
 	i.textName.Text = name
 	i.textLvl.Text = lvl
-	i.textStatus.Color = fyne.CurrentApp().Settings().Theme().Color(theme.ColorNamePrimary, 0)
+	i.textStatus.Color = ui.MutedForeground
 	i.textStatus.Text = "Battle ready"
 
 	switch healthStatus {

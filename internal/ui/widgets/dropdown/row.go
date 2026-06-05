@@ -5,7 +5,6 @@ import (
 	"math"
 
 	"chaos-gate-unlocker/internal/ui"
-	"chaos-gate-unlocker/internal/ui/pixelsnap"
 	"chaos-gate-unlocker/internal/ui/widgets/tooltip"
 
 	"fyne.io/fyne/v2"
@@ -86,9 +85,8 @@ func (r *selectRow) CreateRenderer() fyne.WidgetRenderer {
 
 	rr := &selectRowRenderer{row: r, bg: bg, text: text}
 	if img := ui.DecodeIcon(r.icon); img != nil {
-		rr.img = canvas.NewImageFromImage(img)
-		rr.img.FillMode = canvas.ImageFillStretch
-		rr.img.ScaleMode = canvas.ImageScaleFastest
+		rr.img = ui.NewIcon(fyne.Size{})
+		rr.img.Image = img
 	}
 	rr.Refresh()
 	return rr
@@ -118,9 +116,8 @@ func (r *selectRowRenderer) Layout(size fyne.Size) {
 	textX := pad * 2
 	if r.img != nil {
 		s := r.iconSize()
-		sz, off := pixelsnap.Fit(fyne.NewSize(s, s), r.img.Aspect(), pixelsnap.Scale(r.row))
-		r.img.Resize(sz)
-		r.img.Move(fyne.NewPos(pad*2, (size.Height-s)/2).Add(off))
+		r.img.Resize(fyne.NewSize(s, s))
+		r.img.Move(fyne.NewPos(pad*2, (size.Height-s)/2))
 		textX = pad*2 + s + iconTextGap
 	}
 	r.text.Move(fyne.NewPos(textX, pad))

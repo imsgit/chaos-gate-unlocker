@@ -33,11 +33,20 @@ func DecodeIcon(res fyne.Resource) image.Image {
 	return img
 }
 
-func DecodeIconByName(name string) image.Image {
-	return DecodeIcon(GetIconByName(name))
+// DecodeRaw decodes a resource without the dropBlack pass. Use it for images
+// assigned to a canvas.Image so refreshes don't re-decode the resource.
+func DecodeRaw(res fyne.Resource) image.Image {
+	if res == nil {
+		return nil
+	}
+	img, _, err := image.Decode(bytes.NewReader(res.Content()))
+	if err != nil {
+		return nil
+	}
+	return img
 }
 
-const blackKnee = 160
+const blackKnee = 180
 
 func dropBlack(src image.Image) image.Image {
 	b := src.Bounds()

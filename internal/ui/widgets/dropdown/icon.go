@@ -1,8 +1,6 @@
 package dropdown
 
 import (
-	"chaos-gate-unlocker/internal/ui/widgets/snapimage"
-
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/widget"
@@ -11,18 +9,15 @@ import (
 type IconWidget struct {
 	widget.BaseWidget
 
-	icon    *snapimage.Widget
-	sel     *Widget
-	selWrap *container.ThemeOverride
+	icon *iconImage
+	sel  *Widget
 }
 
 func NewIconWidget() *IconWidget {
 	s := &IconWidget{
-		icon: snapimage.New(fyne.NewSize(46, 46)),
+		icon: newIconImage(fyne.NewSize(46, 46)),
 		sel:  New(),
 	}
-
-	s.selWrap = container.NewThemeOverride(s.sel, selectPadTheme{fyne.CurrentApp().Settings().Theme()})
 
 	s.ExtendBaseWidget(s)
 	return s
@@ -79,5 +74,5 @@ func (s *IconWidget) CreateRenderer() fyne.WidgetRenderer {
 		container.NewPadded(
 			container.NewBorder(nil, nil, s.icon, nil,
 				container.NewPadded(
-					container.NewVBox(s.selWrap)))))
+					container.NewVBox(s.sel)))))
 }

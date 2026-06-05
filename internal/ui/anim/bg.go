@@ -21,7 +21,7 @@ func AnimateAbout(ctx context.Context, im *canvas.Image) {
 
 	fade := func() {
 		im.Translucency = clamp(im.Translucency - 0.04)
-		im.Refresh()
+		canvas.Refresh(im)
 	}
 
 	for i := 0; i < 30; i++ {
