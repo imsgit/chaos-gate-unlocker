@@ -42,8 +42,8 @@ type Widget struct {
 func New() fyne.CanvasObject {
 	i := &Widget{
 		hoverBg:    canvas.NewRectangle(color.Transparent),
-		iconClass:  &canvas.Image{FillMode: canvas.ImageFillStretch},
-		imgLvl:     canvas.NewImageFromResource(ui.GetWidgetUnitLevelIcon()),
+		iconClass:  &canvas.Image{FillMode: canvas.ImageFillStretch, ScaleMode: canvas.ImageScaleFastest},
+		imgLvl:     canvas.NewImageFromImage(ui.DecodeIcon(ui.GetWidgetUnitLevelIcon())),
 		textName:   canvas.NewText("", color.White),
 		textLvl:    canvas.NewText("", color.Black),
 		textStatus: canvas.NewText("", color.White),
@@ -53,6 +53,7 @@ func New() fyne.CanvasObject {
 	i.classBox = container.New(pixelsnap.NewLayout(), i.iconClass)
 
 	i.imgLvl.FillMode = canvas.ImageFillContain
+	i.imgLvl.ScaleMode = canvas.ImageScaleFastest
 	i.imgLvl.SetMinSize(fyne.NewSize(32, 32))
 
 	i.textName.TextStyle = fyne.TextStyle{Bold: true}
@@ -144,7 +145,8 @@ func (i *Widget) Bind(val interface{}) {
 		sideMission = object.CurrentSideMission.MissionID != ""
 	}
 
-	i.iconClass.Resource = ui.GetIconByName(class)
+	i.iconClass.Resource = nil
+	i.iconClass.Image = ui.DecodeIconByName(class)
 	i.iconClass.Refresh()
 	i.classBox.Refresh()
 	i.SetToolTip(splitOnCapital(class))

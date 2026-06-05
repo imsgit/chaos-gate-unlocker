@@ -17,6 +17,7 @@ import (
 	"os/exec"
 	"regexp"
 	"runtime"
+	"runtime/debug"
 	"slices"
 	"strconv"
 
@@ -69,9 +70,43 @@ var featureActions = []struct {
 }
 
 func main() {
+	debug.SetGCPercent(50)
+
 	a := app.NewWithID("chaos.gate.unlocker")
 	a.Settings().SetTheme(ui.Theme{})
 	w := a.NewWindow("Chaos Gate Unlocker")
+
+	var saveButton *widget.Button
+	refreshSaveButton = func() {
+		var augmeticsChanged bool
+		for _, augmetics := range augmeticsUnits {
+			if !slices.Equal(augmetics[0], augmetics[1]) {
+				augmeticsChanged = true
+				break
+			}
+		}
+
+		var talentsChanged bool
+		for _, talents := range talentsUnits {
+			if !slices.Equal(talents[0], talents[1]) {
+				talentsChanged = true
+				break
+			}
+		}
+
+		canApplyChanges := len(healUnits) > 0 || augmeticsChanged || talentsChanged
+		for _, action := range featureActions {
+			if *action.flag {
+				canApplyChanges = true
+				break
+			}
+		}
+
+		saveButton.Disable()
+		if canApplyChanges {
+			saveButton.Enable()
+		}
+	}
 
 	filesManager.OnLoadState(featuresManager.ApplyState())
 
@@ -199,6 +234,7 @@ func main() {
 
 	back := canvas.NewImageFromResource(ui.GetAppBackgroundIcon())
 	back.FillMode = canvas.ImageFillContain
+	back.ScaleMode = canvas.ImageScaleFastest
 	back.Translucency = 0.96
 
 	eyeGlow := anim.NewEyeGlow(ui.GetAppBackgroundIcon())
@@ -259,10 +295,12 @@ func main() {
 	layoutTabs.Hide()
 
 	leftAquila := canvas.NewImageFromResource(ui.GetAppLeftAquilaIcon())
+	leftAquila.ScaleMode = canvas.ImageScaleFastest
 	leftAquila.SetMinSize(fyne.NewSize(100, 0))
 	leftAquila.Translucency = 1
 
 	rightAquila := canvas.NewImageFromResource(ui.GetAppRightAquilaIcon())
+	rightAquila.ScaleMode = canvas.ImageScaleFastest
 	rightAquila.SetMinSize(fyne.NewSize(100, 0))
 	rightAquila.Translucency = 1
 
@@ -401,9 +439,9 @@ func main() {
 }
 
 type dropdownItem struct {
-	id   string
-	name string
-	desc string
+	ID          string
+	Name        string
+	Description string
 }
 
 type dropdownSpec struct {
@@ -436,27 +474,27 @@ func renderDropdown(idx int, init bool, spec dropdownSpec) *dropdown.IconWidget 
 	sel.SetOptions(options)
 
 	if init {
-		sel.SetSelected(item.name)
-		spec.store[currUnit][0] = append(spec.store[currUnit][0], item.name)
-		spec.store[currUnit][1] = append(spec.store[currUnit][1], item.name)
+		sel.SetSelected(item.Name)
+		spec.store[currUnit][0] = append(spec.store[currUnit][0], item.Name)
+		spec.store[currUnit][1] = append(spec.store[currUnit][1], item.Name)
 	} else {
 		sel.SetSelected(spec.store[currUnit][1][idx])
 		item = spec.lookup(sel.Selected())
 	}
 
-	sel.SetResource(ui.GetIconByName(item.id))
-	sel.SetToolTip(item.desc)
+	sel.SetResource(ui.GetIconByName(item.ID))
+	sel.SetToolTip(item.Description)
 	sel.SetOptionToolTip(func(opt string) string {
-		return spec.lookup(opt).desc
+		return spec.lookup(opt).Description
 	})
 	sel.SetOptionIcon(func(opt string) fyne.Resource {
-		return ui.GetIconByName(spec.lookup(opt).id)
+		return ui.GetIconByName(spec.lookup(opt).ID)
 	})
 
 	sel.OnChanged(func(newVal string) {
 		changed := spec.lookup(newVal)
-		sel.SetResource(ui.GetIconByName(changed.id))
-		sel.SetToolTip(changed.desc)
+		sel.SetResource(ui.GetIconByName(changed.ID))
+		sel.SetToolTip(changed.Description)
 		spec.store[currUnit][1][idx] = newVal
 		refreshSaveButton()
 	})
@@ -479,11 +517,10 @@ func renderTalent(idx int, init bool) *dropdown.IconWidget {
 		store:       talentsUnits,
 		canChange: func(idx int) (bool, dropdownItem, []string) {
 			canChange, talent, options := featuresManager.CanChangeUnitTalents(currUnit, idx)
-			return canChange, dropdownItem{id: talent.ID, name: talent.Name, desc: talent.Description}, options
+			return canChange, dropdownItem(talent), options
 		},
 		lookup: func(name string) dropdownItem {
-			talent := featuresManager.TalentByName(name)
-			return dropdownItem{id: talent.ID, name: talent.Name, desc: talent.Description}
+			return dropdownItem(featuresManager.TalentByName(name))
 		},
 	})
 }
@@ -494,11 +531,10 @@ func renderAugmetic(idx int, init bool) *dropdown.IconWidget {
 		store:       augmeticsUnits,
 		canChange: func(idx int) (bool, dropdownItem, []string) {
 			canChange, augmetic, options := featuresManager.CanChangeUnitAugmetics(currUnit, idx, healUnits[currUnit])
-			return canChange, dropdownItem{id: augmetic.ID, name: augmetic.Name, desc: augmetic.Description}, options
+			return canChange, dropdownItem(augmetic), options
 		},
 		lookup: func(name string) dropdownItem {
-			augmetic := featuresManager.AugmeticByName(name)
-			return dropdownItem{id: augmetic.ID, name: augmetic.Name, desc: augmetic.Description}
+			return dropdownItem(featuresManager.AugmeticByName(name))
 		},
 	})
 }
@@ -515,38 +551,7 @@ func containsOpt(list []string, val string) bool {
 	return false
 }
 
-var saveButton *widget.Button
-
-func refreshSaveButton() {
-	var augmeticsChanged bool
-	for _, augmetics := range augmeticsUnits {
-		if !slices.Equal(augmetics[0], augmetics[1]) {
-			augmeticsChanged = true
-			break
-		}
-	}
-
-	var talentsChanged bool
-	for _, talents := range talentsUnits {
-		if !slices.Equal(talents[0], talents[1]) {
-			talentsChanged = true
-			break
-		}
-	}
-
-	canApplyChanges := len(healUnits) > 0 || augmeticsChanged || talentsChanged
-	for _, action := range featureActions {
-		if *action.flag {
-			canApplyChanges = true
-			break
-		}
-	}
-
-	saveButton.Disable()
-	if canApplyChanges {
-		saveButton.Enable()
-	}
-}
+var refreshSaveButton func()
 
 func applyChanges() {
 	for _, action := range featureActions {

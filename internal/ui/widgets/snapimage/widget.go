@@ -3,6 +3,7 @@ package snapimage
 import (
 	"image"
 
+	"chaos-gate-unlocker/internal/ui"
 	"chaos-gate-unlocker/internal/ui/pixelsnap"
 	"chaos-gate-unlocker/internal/ui/widgets/tooltip"
 
@@ -22,7 +23,7 @@ type Widget struct {
 
 func New(min fyne.Size) *Widget {
 	w := &Widget{
-		img: &canvas.Image{FillMode: canvas.ImageFillStretch, ScaleMode: canvas.ImageScaleSmooth},
+		img: &canvas.Image{FillMode: canvas.ImageFillStretch, ScaleMode: canvas.ImageScaleFastest},
 		min: min,
 	}
 	w.ExtendBaseWidget(w)
@@ -35,9 +36,7 @@ func (w *Widget) ExtendBaseWidget(wid fyne.Widget) {
 }
 
 func (w *Widget) SetResource(res fyne.Resource) {
-	w.img.Image = nil
-	w.img.Resource = res
-	w.Refresh()
+	w.SetImage(ui.DecodeIcon(res))
 }
 
 func (w *Widget) SetImage(img image.Image) {

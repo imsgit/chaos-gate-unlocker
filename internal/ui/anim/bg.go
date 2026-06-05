@@ -37,7 +37,7 @@ func AnimateAbout(ctx context.Context, im *canvas.Image) {
 }
 
 const (
-	eyeGlowPeriod = 15 * time.Second
+	eyeGlowPeriod = 30 * time.Second
 	eyeGlowSteps  = 180
 	eyeGlowFrame  = 33 * time.Millisecond
 	eyeGlowRise   = 0.4
@@ -94,7 +94,7 @@ func (g *EyeGlow) build() {
 
 		b := src.Bounds()
 		g.img = image.NewRGBA(b)
-		g.cv = &canvas.Image{Image: g.img, FillMode: canvas.ImageFillContain, ScaleMode: canvas.ImageScaleSmooth}
+		g.cv = &canvas.Image{Image: g.img, FillMode: canvas.ImageFillContain, ScaleMode: canvas.ImageScaleFastest}
 
 		tintR, tintG, tintB := float64(g.tint.R), float64(g.tint.G), float64(g.tint.B)
 		for _, e := range g.eyes {
@@ -102,20 +102,10 @@ func (g *EyeGlow) build() {
 			if e.bloom > 0 {
 				margin = eyeBloomBlur + 2
 			}
-			x0, y0 := int(e.cx-e.rx)-margin, int(e.cy-e.ry)-margin
-			x1, y1 := int(e.cx+e.rx)+1+margin, int(e.cy+e.ry)+1+margin
-			if x0 < b.Min.X {
-				x0 = b.Min.X
-			}
-			if y0 < b.Min.Y {
-				y0 = b.Min.Y
-			}
-			if x1 > b.Max.X {
-				x1 = b.Max.X
-			}
-			if y1 > b.Max.Y {
-				y1 = b.Max.Y
-			}
+			x0 := max(int(e.cx-e.rx)-margin, b.Min.X)
+			y0 := max(int(e.cy-e.ry)-margin, b.Min.Y)
+			x1 := min(int(e.cx+e.rx)+1+margin, b.Max.X)
+			y1 := min(int(e.cy+e.ry)+1+margin, b.Max.Y)
 			w, h := x1-x0, y1-y0
 			if w <= 0 || h <= 0 {
 				continue
@@ -173,30 +163,25 @@ func (g *EyeGlow) build() {
 	})
 }
 
-func glowWindow(d float64) float64 {
-	if d < 0.7 {
-		return 1
-	}
-	if d >= 1 {
+func smoothstep(t float64) float64 {
+	if t <= 0 {
 		return 0
 	}
-	x := (d - 0.7) / 0.3
-	return 1 - x*x*(3-2*x)
+	if t >= 1 {
+		return 1
+	}
+	return t * t * (3 - 2*t)
+}
+
+func glowWindow(d float64) float64 {
+	return 1 - smoothstep((d-0.7)/0.3)
 }
 
 func gradWindow(dx, dy, grad float64) float64 {
 	if dy < -1 || dy > 1 {
 		return 0
 	}
-	hx := math.Abs(dx)
-	if hx >= 1 {
-		return 0
-	}
-	h := 1.0
-	if hx > 0.75 {
-		x := (hx - 0.75) / 0.25
-		h = 1 - x*x*(3-2*x)
-	}
+	h := 1 - smoothstep((math.Abs(dx)-0.75)/0.25)
 	fy := (dy + 1) / 2
 	return h * (grad + (1-grad)*math.Pow(1-fy, 1.6))
 }
@@ -244,14 +229,7 @@ func blurMask(m []float64, w, h, radius int) []float64 {
 
 func lensMask(r, g, b, lo, hi float64) float64 {
 	l := 0.299*r + 0.587*g + 0.114*b
-	t := (l - lo) / (hi - lo)
-	if t <= 0 {
-		return 0
-	}
-	if t >= 1 {
-		return 1
-	}
-	return t * t * (3 - 2*t)
+	return smoothstep((l - lo) / (hi - lo))
 }
 
 func (g *EyeGlow) apply(t float64) {

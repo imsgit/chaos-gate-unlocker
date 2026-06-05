@@ -38,7 +38,7 @@ func (p *selectPopup) TypedKey(e *fyne.KeyEvent) {
 		p.move(-1)
 	case fyne.KeyReturn, fyne.KeyEnter:
 		p.activate()
-	case fyne.KeyEscape:
+	case fyne.KeyEscape, fyne.KeySpace:
 		if p.onDismiss != nil {
 			p.onDismiss()
 		}

@@ -1,11 +1,9 @@
 package toggle
 
 import (
-	"bytes"
 	"image"
 	"image/color"
 	"image/draw"
-	_ "image/png"
 	"sync"
 
 	"chaos-gate-unlocker/internal/ui"
@@ -24,7 +22,7 @@ var (
 )
 
 type switchStatics struct {
-	off, on, offHover, onHover image.Image
+	off, on image.Image
 }
 
 func getSwitchFrames() []image.Image {
@@ -35,10 +33,8 @@ func getSwitchFrames() []image.Image {
 func getStaticFrames() switchStatics {
 	staticFramesOnce.Do(func() {
 		staticImgs = switchStatics{
-			off:      decodeResource(ui.GetWidgetSwitchOffIcon()),
-			on:       decodeResource(ui.GetWidgetSwitchOnIcon()),
-			offHover: decodeResource(ui.GetWidgetSwitchOffHoverIcon()),
-			onHover:  decodeResource(ui.GetWidgetSwitchOnHoverIcon()),
+			off: decodeResource(ui.GetWidgetSwitchOffIcon()),
+			on:  decodeResource(ui.GetWidgetSwitchOnIcon()),
 		}
 	})
 	return staticImgs
@@ -78,11 +74,7 @@ func buildSwitchFrames() {
 }
 
 func decodeResource(res fyne.Resource) image.Image {
-	img, _, err := image.Decode(bytes.NewReader(res.Content()))
-	if err != nil {
-		return nil
-	}
-	return img
+	return ui.DecodeIcon(res)
 }
 
 func maskCircle(src image.Image, cx, cy, r int, inside bool) *image.RGBA {

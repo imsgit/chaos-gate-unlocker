@@ -4,6 +4,7 @@ import (
 	"image/color"
 	"math"
 
+	"chaos-gate-unlocker/internal/ui"
 	"chaos-gate-unlocker/internal/ui/pixelsnap"
 	"chaos-gate-unlocker/internal/ui/widgets/tooltip"
 
@@ -84,9 +85,10 @@ func (r *selectRow) CreateRenderer() fyne.WidgetRenderer {
 	text.TextSize = th.Size(theme.SizeNameText)
 
 	rr := &selectRowRenderer{row: r, bg: bg, text: text}
-	if r.icon != nil {
-		rr.img = canvas.NewImageFromResource(r.icon)
+	if img := ui.DecodeIcon(r.icon); img != nil {
+		rr.img = canvas.NewImageFromImage(img)
 		rr.img.FillMode = canvas.ImageFillStretch
+		rr.img.ScaleMode = canvas.ImageScaleFastest
 	}
 	rr.Refresh()
 	return rr

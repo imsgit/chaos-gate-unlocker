@@ -33,11 +33,9 @@ var icons = map[string]fyne.Resource{
 	"ActAssassins":     resourceActAssassinsPng,
 	"ActPreorder":      resourceActPreorderPng,
 
-	"WidgetUnitLevel":      resourceWidgetUnitLevelPng,
-	"WidgetSwitchOn":       resourceWidgetSwitchOnPng,
-	"WidgetSwitchOff":      resourceWidgetSwitchOffPng,
-	"WidgetSwitchOnHover":  resourceWidgetSwitchOnHoverPng,
-	"WidgetSwitchOffHover": resourceWidgetSwitchOffHoverPng,
+	"WidgetUnitLevel": resourceWidgetUnitLevelPng,
+	"WidgetSwitchOn":  resourceWidgetSwitchOnPng,
+	"WidgetSwitchOff": resourceWidgetSwitchOffPng,
 
 	"AppTabMain":     resourceAppTabMainPng,
 	"AppTabUnits":    resourceAppTabUnitsPng,
@@ -105,11 +103,9 @@ func GetIconByName(name string) fyne.Resource {
 	return icons[name]
 }
 
-func GetWidgetUnitLevelIcon() fyne.Resource      { return GetIconByName("WidgetUnitLevel") }
-func GetWidgetSwitchOnIcon() fyne.Resource       { return GetIconByName("WidgetSwitchOn") }
-func GetWidgetSwitchOffIcon() fyne.Resource      { return GetIconByName("WidgetSwitchOff") }
-func GetWidgetSwitchOnHoverIcon() fyne.Resource  { return GetIconByName("WidgetSwitchOnHover") }
-func GetWidgetSwitchOffHoverIcon() fyne.Resource { return GetIconByName("WidgetSwitchOffHover") }
+func GetWidgetUnitLevelIcon() fyne.Resource { return GetIconByName("WidgetUnitLevel") }
+func GetWidgetSwitchOnIcon() fyne.Resource  { return GetIconByName("WidgetSwitchOn") }
+func GetWidgetSwitchOffIcon() fyne.Resource { return GetIconByName("WidgetSwitchOff") }
 
 func GetAppLeftAquilaIcon() fyne.Resource  { return GetIconByName("AppLeftAquila") }
 func GetAppRightAquilaIcon() fyne.Resource { return GetIconByName("AppRightAquila") }

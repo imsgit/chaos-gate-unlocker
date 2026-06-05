@@ -6,7 +6,6 @@ import (
 	"chaos-gate-unlocker/internal/ui/widgets/snapimage"
 
 	"context"
-	"image"
 	"image/color"
 	"time"
 
@@ -109,19 +108,11 @@ func (s *Widget) set(on, notify, animate bool) {
 
 func (s *Widget) showStatic() {
 	st := getStaticFrames()
-
-	var img image.Image
-	switch {
-	case s.on && s.Disabled():
-		img = st.onHover
-	case s.on:
-		img = st.on
-	case s.Disabled():
-		img = st.offHover
-	default:
-		img = st.off
+	if s.on {
+		s.sw.SetImage(st.on)
+	} else {
+		s.sw.SetImage(st.off)
 	}
-	s.sw.SetImage(img)
 }
 
 func (s *Widget) animateTo(on bool) {

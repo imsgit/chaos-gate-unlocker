@@ -1,12 +1,10 @@
 package dropdown
 
 import (
-	"chaos-gate-unlocker/internal/ui/anim"
 	"chaos-gate-unlocker/internal/ui/widgets/tooltip"
 
 	"image/color"
 	"math"
-	"time"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
@@ -233,12 +231,8 @@ func (s *Widget) showPopup() {
 	container.NewThemeOverride(pop, flatPopupTheme{th})
 	container.NewThemeOverride(scroll, th)
 
-	pop.Resize(fyne.NewSize(popWidth, 1))
-	if openAbove {
-		pop.ShowAtPosition(fyne.NewPos(pos.X, pos.Y+popHeight-1))
-	} else {
-		pop.ShowAtPosition(pos)
-	}
+	pop.Resize(fyne.NewSize(popWidth, popHeight))
+	pop.ShowAtPosition(pos)
 	cv.Focus(content)
 
 	if selectedIdx >= 0 && step > 0 {
@@ -250,19 +244,6 @@ func (s *Widget) showPopup() {
 	}
 
 	s.popup = pop
-
-	const growSteps = 12
-	anim.Frames(growSteps, 16*time.Millisecond, nil, func(i int) {
-		if s.popup != pop {
-			return
-		}
-		t := float32(i) / growSteps
-		h := popHeight * (1 - (1-t)*(1-t))
-		if openAbove {
-			pop.Move(fyne.NewPos(pos.X, pos.Y+popHeight-h))
-		}
-		pop.Resize(fyne.NewSize(popWidth, h))
-	})
 }
 
 func (s *Widget) hidePopup() {
