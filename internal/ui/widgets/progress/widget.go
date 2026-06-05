@@ -9,7 +9,7 @@ import (
 	"fyne.io/fyne/v2/widget"
 )
 
-type ProgressWidget struct {
+type Widget struct {
 	widget.BaseWidget
 
 	bar  *canvas.Rectangle
@@ -19,8 +19,8 @@ type ProgressWidget struct {
 	active bool
 }
 
-func NewProgressWidget() *ProgressWidget {
-	p := &ProgressWidget{
+func New() *Widget {
+	p := &Widget{
 		bar:  canvas.NewRectangle(color.Transparent),
 		edge: canvas.NewRectangle(color.White),
 	}
@@ -28,36 +28,36 @@ func NewProgressWidget() *ProgressWidget {
 	return p
 }
 
-func (p *ProgressWidget) MinSize() fyne.Size {
+func (p *Widget) MinSize() fyne.Size {
 	p.ExtendBaseWidget(p)
 	return fyne.NewSize(0, 4)
 }
 
-func (p *ProgressWidget) Grow(width float32) {
+func (p *Widget) Grow(width float32) {
 	p.width = width
 	p.active = true
 	p.bar.FillColor = p.Theme().Color(theme.ColorNameShadow, 0)
 	p.Refresh()
 }
 
-func (p *ProgressWidget) Complete() {
+func (p *Widget) Complete() {
 	p.active = false
 	p.Refresh()
 }
 
-func (p *ProgressWidget) Reset() {
+func (p *Widget) Reset() {
 	p.width = 0
 	p.active = false
 	p.bar.FillColor = color.Transparent
 	p.Refresh()
 }
 
-func (p *ProgressWidget) CreateRenderer() fyne.WidgetRenderer {
+func (p *Widget) CreateRenderer() fyne.WidgetRenderer {
 	return &progressRenderer{progress: p}
 }
 
 type progressRenderer struct {
-	progress *ProgressWidget
+	progress *Widget
 }
 
 func (r *progressRenderer) Layout(size fyne.Size) {

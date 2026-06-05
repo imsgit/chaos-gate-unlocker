@@ -57,11 +57,20 @@ func (m *Manager) SaveDir() string {
 }
 
 func (m *Manager) DefaultLocationHint() string {
+	home, _ := os.UserHomeDir()
+
 	switch runtime.GOOS {
 	case "windows":
-		return `%USERPROFILE%\` + filepath.FromSlash(saveDir)
+		if home == "" {
+			return `%USERPROFILE%\` + filepath.FromSlash(saveDir)
+		}
+		return filepath.Join(home, filepath.FromSlash(saveDir))
 	case "linux":
-		return ".../Steam/steamapps/compatdata/" + appID + "/" + protonUser + "/" + saveDir
+		if dir := steamSaveDir(home); dir != "" {
+			return dir
+		}
+		base := filepath.Join(home, ".steam", "steam")
+		return filepath.Join(base, "steamapps", "compatdata", appID, protonUser, saveDir)
 	default:
 		return saveDir
 	}

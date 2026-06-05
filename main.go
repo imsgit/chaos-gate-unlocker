@@ -4,6 +4,7 @@ import (
 	"chaos-gate-unlocker/internal/features"
 	"chaos-gate-unlocker/internal/files"
 	"chaos-gate-unlocker/internal/ui"
+	"chaos-gate-unlocker/internal/ui/anim"
 	"chaos-gate-unlocker/internal/ui/widgets/dropdown"
 	"chaos-gate-unlocker/internal/ui/widgets/listitem"
 	"chaos-gate-unlocker/internal/ui/widgets/progress"
@@ -30,7 +31,7 @@ import (
 )
 
 const (
-	version = "Ver: 1.0.0.%d | Author: imsgit | 2026-06-04"
+	version = "Ver: 1.0.0.%d | Author: imsgit | 2026-06-06"
 )
 
 var (
@@ -88,8 +89,8 @@ func main() {
 	unlockPuritySealsSwitch := boolSwitch(&unlockPuritySeals, "ActSeals", "Unlock purity seals", "Unlocks purity seals upgrades;\nPoxus seeds access is required;\nAdvance current day to unlock")
 	removeMarketingWeaponsSwitch := boolSwitch(&removeMarketingWeapons, "ActMarketing", "Remove marketing weapons", "Unequips and removes all weapons classified as Twitch drops")
 
-	var repairDamageSwitch *toggle.ToggleWidget
-	repairDreadnoughtSwitch := toggle.NewToggleWidget(func(on bool) {
+	var repairDamageSwitch *toggle.Widget
+	repairDreadnoughtSwitch := toggle.New(func(on bool) {
 		repairDreadnought = on
 		refreshSaveButton()
 		if repairDamageSwitch.Visible() {
@@ -100,7 +101,7 @@ func main() {
 	unitsBox := container.NewVBox()
 	unitsScrollBox := container.NewVScroll(unitsBox)
 
-	healWoundSwitch := toggle.NewToggleWidget(func(on bool) {
+	healWoundSwitch := toggle.New(func(on bool) {
 		delete(healUnits, currUnit)
 		if on {
 			healUnits[currUnit] = on
@@ -123,7 +124,7 @@ func main() {
 	}, "ActHeal", "Heal wound", "Heals the wound")
 	healWoundSwitch.Hide()
 
-	repairDamageSwitch = toggle.NewToggleWidget(func(on bool) {
+	repairDamageSwitch = toggle.New(func(on bool) {
 		repairDreadnought = on
 		refreshSaveButton()
 		repairDreadnoughtSwitch.SetState(on, false)
@@ -138,10 +139,10 @@ func main() {
 
 	unitsList := widget.NewListWithData(
 		unitsProvider,
-		listitem.NewListItemWidget,
+		listitem.New,
 		func(item binding.DataItem, o fyne.CanvasObject) {
 			val, ok := item.(binding.Untyped)
-			listItem, ok2 := o.(*listitem.ListItemWidget)
+			listItem, ok2 := o.(*listitem.Widget)
 			if ok && ok2 {
 				v, _ := val.Get()
 				listItem.Bind(v)
@@ -200,6 +201,10 @@ func main() {
 	back.FillMode = canvas.ImageFillContain
 	back.Translucency = 0.96
 
+	eyeGlow := anim.NewEyeGlow(ui.GetAppBackgroundIcon())
+	eyeGlowOverlay := eyeGlow.Overlay()
+	eyeGlow.Start()
+
 	mainTab := container.NewTabItemWithIcon("Main", ui.GetAppTabMainIcon(),
 		container.NewThemeOverride(container.NewGridWithColumns(2,
 			container.NewVBox(
@@ -241,7 +246,7 @@ func main() {
 			var actx context.Context
 			actx, acancel = context.WithCancel(context.Background())
 			go func() {
-				ui.AnimateAbout(actx, back)
+				anim.AnimateAbout(actx, back)
 				acancel()
 			}()
 		default:
@@ -261,16 +266,17 @@ func main() {
 	rightAquila.SetMinSize(fyne.NewSize(100, 0))
 	rightAquila.Translucency = 1
 
-	ui.PrewarmAquilaFrames()
+	aquila := anim.NewAquila(ui.GetAppLeftAquilaIcon(), ui.GetAppRightAquilaIcon())
+	aquila.Prewarm()
 
-	progressLine := progress.NewProgressWidget()
+	progressLine := progress.New()
 
 	var openButton *tooltip.Button
 
 	animateTop := func(open bool, onDone func()) context.CancelFunc {
 		ctx, cancel := context.WithCancel(context.Background())
 		go func() {
-			ui.AnimateTop(ctx, leftAquila, rightAquila, progressLine, open)
+			aquila.AnimateTop(ctx, leftAquila, rightAquila, progressLine, open)
 			fyne.DoAndWait(func() {
 				openButton.Enable()
 				if ctx.Err() == nil && onDone != nil {
@@ -345,7 +351,7 @@ func main() {
 		fileDialog.SetFilter(storage.NewExtensionFileFilter([]string{".gksave"}))
 		fileDialog.Show()
 	})
-	openButton.SetToolTip("Can't find your save? It's usually in:\n" + filesManager.DefaultLocationHint())
+	openButton.SetToolTip("Can't find your save? It's in:\n" + filesManager.DefaultLocationHint())
 
 	saveButton = widget.NewButton("Save", func() {
 		confirmDialog := dialog.NewConfirm(
@@ -382,6 +388,7 @@ func main() {
 		widget.NewLabelWithData(status),
 		nil, nil,
 		back,
+		eyeGlowOverlay,
 		tabsThemed,
 	)
 
@@ -406,7 +413,7 @@ type dropdownSpec struct {
 	lookup      func(name string) dropdownItem
 }
 
-func fillDropdownBox(render func(idx int, init bool) *dropdown.DropdownIconWidget, init bool) *fyne.Container {
+func fillDropdownBox(render func(idx int, init bool) *dropdown.IconWidget, init bool) *fyne.Container {
 	box := container.NewVBox()
 	for i := 0; ; i++ {
 		sel := render(i, init)
@@ -418,13 +425,13 @@ func fillDropdownBox(render func(idx int, init bool) *dropdown.DropdownIconWidge
 	return box
 }
 
-func renderDropdown(idx int, init bool, spec dropdownSpec) *dropdown.DropdownIconWidget {
+func renderDropdown(idx int, init bool, spec dropdownSpec) *dropdown.IconWidget {
 	canChange, item, options := spec.canChange(idx)
 	if !canChange {
 		return nil
 	}
 
-	sel := dropdown.NewDropdownIconWidget()
+	sel := dropdown.NewIconWidget()
 	sel.SetPlaceHolder(spec.placeholder)
 	sel.SetOptions(options)
 
@@ -466,7 +473,7 @@ func renderDropdown(idx int, init bool, spec dropdownSpec) *dropdown.DropdownIco
 	return sel
 }
 
-func renderTalent(idx int, init bool) *dropdown.DropdownIconWidget {
+func renderTalent(idx int, init bool) *dropdown.IconWidget {
 	return renderDropdown(idx, init, dropdownSpec{
 		placeholder: "(Select talent)",
 		store:       talentsUnits,
@@ -481,7 +488,7 @@ func renderTalent(idx int, init bool) *dropdown.DropdownIconWidget {
 	})
 }
 
-func renderAugmetic(idx int, init bool) *dropdown.DropdownIconWidget {
+func renderAugmetic(idx int, init bool) *dropdown.IconWidget {
 	return renderDropdown(idx, init, dropdownSpec{
 		placeholder: "(Select augmetic)",
 		store:       augmeticsUnits,
@@ -578,14 +585,14 @@ func validateScale() {
 	}
 }
 
-func boolSwitch(flag *bool, icon, name, tooltip string) *toggle.ToggleWidget {
-	return toggle.NewToggleWidget(func(on bool) {
+func boolSwitch(flag *bool, icon, name, tooltip string) *toggle.Widget {
+	return toggle.New(func(on bool) {
 		*flag = on
 		refreshSaveButton()
 	}, icon, name, tooltip)
 }
 
-func resetSwitch(sw *toggle.ToggleWidget, status func() (bool, bool)) {
+func resetSwitch(sw *toggle.Widget, status func() (bool, bool)) {
 	sw.Enable()
 	sw.SetState(false, true)
 	if available, state := status(); !available {
@@ -594,6 +601,6 @@ func resetSwitch(sw *toggle.ToggleWidget, status func() (bool, bool)) {
 	}
 }
 
-func resetSwitchOn(sw *toggle.ToggleWidget, available bool) {
+func resetSwitchOn(sw *toggle.Widget, available bool) {
 	resetSwitch(sw, func() (bool, bool) { return available, true })
 }

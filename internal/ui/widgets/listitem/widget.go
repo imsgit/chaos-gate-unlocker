@@ -4,6 +4,7 @@ import (
 	"chaos-gate-unlocker/internal/features"
 	"chaos-gate-unlocker/internal/objects"
 	"chaos-gate-unlocker/internal/ui"
+	"chaos-gate-unlocker/internal/ui/pixelsnap"
 	"chaos-gate-unlocker/internal/ui/widgets/tooltip"
 
 	"image/color"
@@ -24,12 +25,13 @@ var (
 	lightColor    = color.RGBA{R: 255, G: 255, B: 127, A: 255}
 )
 
-type ListItemWidget struct {
+type Widget struct {
 	widget.BaseWidget
-	tooltip.ToolTipWidgetExtend
+	tooltip.WidgetExtend
 
 	hoverBg   *canvas.Rectangle
 	iconClass *canvas.Image
+	classBox  *fyne.Container
 	imgLvl    *canvas.Image
 
 	textName   *canvas.Text
@@ -37,10 +39,10 @@ type ListItemWidget struct {
 	textStatus *canvas.Text
 }
 
-func NewListItemWidget() fyne.CanvasObject {
-	i := &ListItemWidget{
+func New() fyne.CanvasObject {
+	i := &Widget{
 		hoverBg:    canvas.NewRectangle(color.Transparent),
-		iconClass:  &canvas.Image{FillMode: canvas.ImageFillContain},
+		iconClass:  &canvas.Image{FillMode: canvas.ImageFillStretch},
 		imgLvl:     canvas.NewImageFromResource(ui.GetWidgetUnitLevelIcon()),
 		textName:   canvas.NewText("", color.White),
 		textLvl:    canvas.NewText("", color.Black),
@@ -48,6 +50,7 @@ func NewListItemWidget() fyne.CanvasObject {
 	}
 
 	i.iconClass.SetMinSize(fyne.NewSize(46, 46))
+	i.classBox = container.New(pixelsnap.NewLayout(), i.iconClass)
 
 	i.imgLvl.FillMode = canvas.ImageFillContain
 	i.imgLvl.SetMinSize(fyne.NewSize(32, 32))
@@ -60,38 +63,41 @@ func NewListItemWidget() fyne.CanvasObject {
 	return i
 }
 
-func (i *ListItemWidget) ExtendBaseWidget(wid fyne.Widget) {
+func (i *Widget) ExtendBaseWidget(wid fyne.Widget) {
 	i.ExtendToolTipWidget(wid)
 	i.BaseWidget.ExtendBaseWidget(wid)
 }
 
-func (i *ListItemWidget) MinSize() fyne.Size {
+func (i *Widget) MinSize() fyne.Size {
 	i.ExtendBaseWidget(i)
 	return fyne.NewSize(0, 54)
 }
 
-func (i *ListItemWidget) MouseIn(e *desktop.MouseEvent) {
+func (i *Widget) MouseIn(e *desktop.MouseEvent) {
 	if !tooltip.OverlayShown(i) {
-		i.ToolTipWidgetExtend.MouseIn(e)
+		i.WidgetExtend.MouseIn(e)
 	}
-	i.hoverBg.FillColor = i.Theme().Color(theme.ColorNameHover, fyne.CurrentApp().Settings().ThemeVariant())
+	hover := i.Theme().Color(theme.ColorNameHover, fyne.CurrentApp().Settings().ThemeVariant())
+	nc := color.NRGBAModel.Convert(hover).(color.NRGBA)
+	nc.A = uint8(float64(nc.A) * 0.7)
+	i.hoverBg.FillColor = nc
 	i.hoverBg.Refresh()
 }
 
-func (i *ListItemWidget) MouseMoved(e *desktop.MouseEvent) {
-	i.ToolTipWidgetExtend.MouseMoved(e)
+func (i *Widget) MouseMoved(e *desktop.MouseEvent) {
+	i.WidgetExtend.MouseMoved(e)
 }
 
-func (i *ListItemWidget) MouseOut() {
-	i.ToolTipWidgetExtend.MouseOut()
+func (i *Widget) MouseOut() {
+	i.WidgetExtend.MouseOut()
 	i.hoverBg.FillColor = color.Transparent
 	i.hoverBg.Refresh()
 }
 
-func (i *ListItemWidget) CreateRenderer() fyne.WidgetRenderer {
+func (i *Widget) CreateRenderer() fyne.WidgetRenderer {
 	i.hoverBg.CornerRadius = i.Theme().Size(theme.SizeNameSelectionRadius)
 
-	classContainer := container.NewPadded(i.iconClass)
+	classContainer := container.NewPadded(i.classBox)
 
 	lvlContainer := container.NewPadded(container.NewCenter(
 		i.imgLvl,
@@ -112,7 +118,7 @@ func (i *ListItemWidget) CreateRenderer() fyne.WidgetRenderer {
 			)))
 }
 
-func (i *ListItemWidget) Bind(val interface{}) {
+func (i *Widget) Bind(val interface{}) {
 	var name, class, lvl string
 	var healthStatus int
 	var noPilot, underRepair, sideMission bool
@@ -140,6 +146,7 @@ func (i *ListItemWidget) Bind(val interface{}) {
 
 	i.iconClass.Resource = ui.GetIconByName(class)
 	i.iconClass.Refresh()
+	i.classBox.Refresh()
 	i.SetToolTip(splitOnCapital(class))
 
 	i.textName.Text = name

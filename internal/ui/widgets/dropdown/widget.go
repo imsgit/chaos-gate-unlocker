@@ -1,7 +1,7 @@
 package dropdown
 
 import (
-	"chaos-gate-unlocker/internal/ui"
+	"chaos-gate-unlocker/internal/ui/anim"
 	"chaos-gate-unlocker/internal/ui/widgets/tooltip"
 
 	"image/color"
@@ -45,9 +45,20 @@ func (t selectPadTheme) Size(n fyne.ThemeSizeName) float32 {
 	return t.Theme.Size(n)
 }
 
-type DropdownWidget struct {
+func (t selectPadTheme) Color(n fyne.ThemeColorName, v fyne.ThemeVariant) color.Color {
+	c := t.Theme.Color(n, v)
+	switch n {
+	case theme.ColorNameButton, theme.ColorNameInputBackground, theme.ColorNameHover:
+		nc := color.NRGBAModel.Convert(c).(color.NRGBA)
+		nc.A = uint8(float64(nc.A) * 0.7)
+		return nc
+	}
+	return c
+}
+
+type Widget struct {
 	widget.Select
-	tooltip.ToolTipWidgetExtend
+	tooltip.WidgetExtend
 
 	OnBeforeShowPopup func()
 
@@ -57,41 +68,41 @@ type DropdownWidget struct {
 	popup *widget.PopUp
 }
 
-func NewDropdownWidget() *DropdownWidget {
-	s := &DropdownWidget{}
+func New() *Widget {
+	s := &Widget{}
 
 	s.ExtendBaseWidget(s)
 	return s
 }
 
-func (s *DropdownWidget) ExtendBaseWidget(wid fyne.Widget) {
+func (s *Widget) ExtendBaseWidget(wid fyne.Widget) {
 	s.ExtendToolTipWidget(wid)
 	s.Select.ExtendBaseWidget(wid)
 }
 
-func (s *DropdownWidget) MinSize() fyne.Size {
+func (s *Widget) MinSize() fyne.Size {
 	s.ExtendBaseWidget(s)
 	return fyne.NewSize(0, 36)
 }
 
-func (s *DropdownWidget) MouseIn(e *desktop.MouseEvent) {
+func (s *Widget) MouseIn(e *desktop.MouseEvent) {
 	if !tooltip.OverlayShown(s) {
-		s.ToolTipWidgetExtend.MouseIn(e)
+		s.WidgetExtend.MouseIn(e)
 	}
 	s.Select.MouseIn(e)
 }
 
-func (s *DropdownWidget) MouseMoved(e *desktop.MouseEvent) {
-	s.ToolTipWidgetExtend.MouseMoved(e)
+func (s *Widget) MouseMoved(e *desktop.MouseEvent) {
+	s.WidgetExtend.MouseMoved(e)
 	s.Select.MouseMoved(e)
 }
 
-func (s *DropdownWidget) MouseOut() {
-	s.ToolTipWidgetExtend.MouseOut()
+func (s *Widget) MouseOut() {
+	s.WidgetExtend.MouseOut()
 	s.Select.MouseOut()
 }
 
-func (s *DropdownWidget) TypedKey(event *fyne.KeyEvent) {
+func (s *Widget) TypedKey(event *fyne.KeyEvent) {
 	switch event.Name {
 	case fyne.KeySpace, fyne.KeyUp, fyne.KeyDown:
 		s.showPopup()
@@ -100,7 +111,7 @@ func (s *DropdownWidget) TypedKey(event *fyne.KeyEvent) {
 	}
 }
 
-func (s *DropdownWidget) Tapped(*fyne.PointEvent) {
+func (s *Widget) Tapped(*fyne.PointEvent) {
 	if s.Disabled() {
 		return
 	}
@@ -110,16 +121,16 @@ func (s *DropdownWidget) Tapped(*fyne.PointEvent) {
 	s.showPopup()
 }
 
-func (s *DropdownWidget) TappedSecondary(*fyne.PointEvent) {
+func (s *Widget) TappedSecondary(*fyne.PointEvent) {
 }
 
-func (s *DropdownWidget) Hide() {
+func (s *Widget) Hide() {
 	s.hidePopup()
 	s.Select.Hide()
 }
 
-func (s *DropdownWidget) showPopup() {
-	s.ToolTipWidgetExtend.MouseOut()
+func (s *Widget) showPopup() {
+	s.WidgetExtend.MouseOut()
 
 	if s.OnBeforeShowPopup != nil {
 		s.OnBeforeShowPopup()
@@ -241,7 +252,7 @@ func (s *DropdownWidget) showPopup() {
 	s.popup = pop
 
 	const growSteps = 12
-	ui.Frames(growSteps, 16*time.Millisecond, nil, func(i int) {
+	anim.Frames(growSteps, 16*time.Millisecond, nil, func(i int) {
 		if s.popup != pop {
 			return
 		}
@@ -254,7 +265,7 @@ func (s *DropdownWidget) showPopup() {
 	})
 }
 
-func (s *DropdownWidget) hidePopup() {
+func (s *Widget) hidePopup() {
 	if s.popup == nil {
 		return
 	}

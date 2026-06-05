@@ -8,7 +8,7 @@ import (
 
 type Button struct {
 	widget.Button
-	ToolTipWidgetExtend
+	WidgetExtend
 }
 
 func NewButton(text string, onTapped func()) *Button {
@@ -23,16 +23,16 @@ func (b *Button) ExtendBaseWidget(wid fyne.Widget) {
 }
 
 func (b *Button) MouseIn(e *desktop.MouseEvent) {
-	b.ToolTipWidgetExtend.MouseIn(e)
+	b.WidgetExtend.MouseIn(e)
 	b.Button.MouseIn(e)
 }
 
 func (b *Button) MouseMoved(e *desktop.MouseEvent) {
-	b.ToolTipWidgetExtend.MouseMoved(e)
+	b.WidgetExtend.MouseMoved(e)
 	b.Button.MouseMoved(e)
 }
 
 func (b *Button) MouseOut() {
-	b.ToolTipWidgetExtend.MouseOut()
+	b.WidgetExtend.MouseOut()
 	b.Button.MouseOut()
 }

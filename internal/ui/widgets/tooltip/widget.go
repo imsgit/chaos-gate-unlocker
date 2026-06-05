@@ -8,7 +8,7 @@ import (
 	"fyne.io/fyne/v2/driver/desktop"
 )
 
-type ToolTipWidgetExtend struct {
+type WidgetExtend struct {
 	Obj fyne.CanvasObject
 
 	toolTip string
@@ -18,13 +18,13 @@ type ToolTipWidgetExtend struct {
 	pendingCancel    context.CancelFunc
 }
 
-func (t *ToolTipWidgetExtend) SetToolTip(toolTip string) { t.toolTip = toolTip }
+func (t *WidgetExtend) SetToolTip(toolTip string) { t.toolTip = toolTip }
 
-func (t *ToolTipWidgetExtend) ToolTip() string { return t.toolTip }
+func (t *WidgetExtend) ToolTip() string { return t.toolTip }
 
-func (t *ToolTipWidgetExtend) ExtendToolTipWidget(wid fyne.Widget) { t.Obj = wid }
+func (t *WidgetExtend) ExtendToolTipWidget(wid fyne.Widget) { t.Obj = wid }
 
-func (t *ToolTipWidgetExtend) MouseIn(e *desktop.MouseEvent) {
+func (t *WidgetExtend) MouseIn(e *desktop.MouseEvent) {
 	if t.toolTip == "" {
 		return
 	}
@@ -32,15 +32,15 @@ func (t *ToolTipWidgetExtend) MouseIn(e *desktop.MouseEvent) {
 	t.setPending()
 }
 
-func (t *ToolTipWidgetExtend) MouseMoved(e *desktop.MouseEvent) {
+func (t *WidgetExtend) MouseMoved(e *desktop.MouseEvent) {
 	t.absoluteMousePos = e.AbsolutePosition
 }
 
-func (t *ToolTipWidgetExtend) MouseOut() {
+func (t *WidgetExtend) MouseOut() {
 	t.cancel()
 }
 
-func (t *ToolTipWidgetExtend) setPending() {
+func (t *WidgetExtend) setPending() {
 	ctx, cancel := context.WithCancel(context.Background())
 	t.pendingCancel = cancel
 
@@ -61,7 +61,7 @@ func (t *ToolTipWidgetExtend) setPending() {
 	}()
 }
 
-func (t *ToolTipWidgetExtend) cancel() {
+func (t *WidgetExtend) cancel() {
 	if t.pendingCancel != nil {
 		t.pendingCancel()
 		t.pendingCancel = nil

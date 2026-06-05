@@ -2,9 +2,11 @@ package toggle
 
 import (
 	"chaos-gate-unlocker/internal/ui"
-	iconw "chaos-gate-unlocker/internal/ui/widgets/icon"
+	"chaos-gate-unlocker/internal/ui/anim"
+	"chaos-gate-unlocker/internal/ui/widgets/snapimage"
 
 	"context"
+	"image"
 	"image/color"
 	"time"
 
@@ -15,16 +17,12 @@ import (
 	"fyne.io/fyne/v2/widget"
 )
 
-type ToggleWidget struct {
+type Widget struct {
 	widget.DisableableWidget
 
-	icon         *iconw.IconWidget
-	onIcon       *iconw.IconWidget
-	offIcon      *iconw.IconWidget
-	onHoverIcon  *iconw.IconWidget
-	offHoverIcon *iconw.IconWidget
+	icon *snapimage.Widget
+	sw   *snapimage.Widget
 
-	anim       *canvas.Image
 	animCancel context.CancelFunc
 
 	textName *canvas.Text
@@ -34,50 +32,48 @@ type ToggleWidget struct {
 	focused   bool
 }
 
-func NewToggleWidget(onChanged func(on bool), icon, name, toolTip string) *ToggleWidget {
-	s := &ToggleWidget{
-		icon:         iconw.NewIconWidget(),
-		onIcon:       iconw.NewIconWidget(),
-		offIcon:      iconw.NewIconWidget(),
-		onHoverIcon:  iconw.NewIconWidget(),
-		offHoverIcon: iconw.NewIconWidget(),
-		textName:     canvas.NewText("", color.White),
-		onChanged:    onChanged,
+func New(onChanged func(on bool), icon, name, toolTip string) *Widget {
+	s := &Widget{
+		icon:      snapimage.New(fyne.NewSize(46, 46)),
+		sw:        snapimage.New(fyne.NewSize(46, 46)),
+		textName:  canvas.NewText("", color.White),
+		onChanged: onChanged,
 	}
 
 	s.textName.Text = name
 
 	s.icon.SetToolTip(toolTip)
-	s.onIcon.SetToolTip(toolTip)
-	s.offIcon.SetToolTip(toolTip)
+	s.sw.SetToolTip(toolTip)
 
 	s.icon.SetResource(ui.GetIconByName(icon))
-	s.onIcon.SetResource(ui.GetWidgetSwitchOnIcon())
-	s.offIcon.SetResource(ui.GetWidgetSwitchOffIcon())
-	s.onHoverIcon.SetResource(ui.GetWidgetSwitchOnHoverIcon())
-	s.offHoverIcon.SetResource(ui.GetWidgetSwitchOffHoverIcon())
-
-	s.anim = &canvas.Image{FillMode: canvas.ImageFillContain}
-	s.anim.SetMinSize(fyne.NewSize(46, 46))
-	s.anim.Hide()
 
 	prewarmOnce.Do(func() { go getSwitchFrames() })
 
 	s.ExtendBaseWidget(s)
+	s.showStatic()
 	return s
 }
 
-func (s *ToggleWidget) SetToolTip(toolTip string) {
+func (s *Widget) SetToolTip(toolTip string) {
 	s.icon.SetToolTip(toolTip)
-	s.onIcon.SetToolTip(toolTip)
-	s.offIcon.SetToolTip(toolTip)
+	s.sw.SetToolTip(toolTip)
 }
 
-func (s *ToggleWidget) SetState(on, notify bool) {
+func (s *Widget) SetState(on, notify bool) {
 	s.set(on, notify, false)
 }
 
-func (s *ToggleWidget) set(on, notify, animate bool) {
+func (s *Widget) Enable() {
+	s.DisableableWidget.Enable()
+	s.set(s.on, false, false)
+}
+
+func (s *Widget) Disable() {
+	s.DisableableWidget.Disable()
+	s.set(s.on, false, false)
+}
+
+func (s *Widget) set(on, notify, animate bool) {
 	changed := s.on != on
 	s.on = on
 
@@ -85,16 +81,19 @@ func (s *ToggleWidget) set(on, notify, animate bool) {
 		s.onChanged(on)
 	}
 
-	c, style := color.Color(color.White), fyne.TextStyle{Bold: true}
+	c, style, dim := color.Color(color.White), fyne.TextStyle{Bold: true}, 0.0
 	if s.Disabled() {
 		c = fyne.CurrentApp().Settings().Theme().Color(theme.ColorNamePrimary, 0)
 		style = fyne.TextStyle{}
+		dim = 0.5
 	}
 	if s.textName.Color != c || s.textName.TextStyle != style {
 		s.textName.Color = c
 		s.textName.TextStyle = style
 		s.textName.Refresh()
 	}
+	s.icon.SetTranslucency(dim)
+	s.sw.SetTranslucency(dim)
 
 	if animate && changed && !s.Disabled() {
 		s.animateTo(on)
@@ -108,26 +107,24 @@ func (s *ToggleWidget) set(on, notify, animate bool) {
 	s.showStatic()
 }
 
-func (s *ToggleWidget) showStatic() {
-	s.anim.Hide()
-	s.onIcon.Hide()
-	s.onHoverIcon.Hide()
-	s.offIcon.Hide()
-	s.offHoverIcon.Hide()
+func (s *Widget) showStatic() {
+	st := getStaticFrames()
 
+	var img image.Image
 	switch {
 	case s.on && s.Disabled():
-		s.onHoverIcon.Show()
+		img = st.onHover
 	case s.on:
-		s.onIcon.Show()
+		img = st.on
 	case s.Disabled():
-		s.offHoverIcon.Show()
+		img = st.offHover
 	default:
-		s.offIcon.Show()
+		img = st.off
 	}
+	s.sw.SetImage(img)
 }
 
-func (s *ToggleWidget) animateTo(on bool) {
+func (s *Widget) animateTo(on bool) {
 	frames := getSwitchFrames()
 	if len(frames) == 0 {
 		s.showStatic()
@@ -138,35 +135,28 @@ func (s *ToggleWidget) animateTo(on bool) {
 		s.animCancel()
 	}
 
-	s.onIcon.Hide()
-	s.onHoverIcon.Hide()
-	s.offIcon.Hide()
-	s.offHoverIcon.Hide()
-
 	n := len(frames)
 	if on {
-		s.anim.Image = frames[0]
+		s.sw.SetImage(frames[0])
 	} else {
-		s.anim.Image = frames[n-1]
+		s.sw.SetImage(frames[n-1])
 	}
-	s.anim.Show()
 
-	s.animCancel = ui.Frames(n, 16*time.Millisecond, s.showStatic, func(i int) {
+	s.animCancel = anim.Frames(n, 16*time.Millisecond, s.showStatic, func(i int) {
 		idx := i - 1
 		if !on {
 			idx = n - i
 		}
-		s.anim.Image = frames[idx]
-		s.anim.Refresh()
+		s.sw.SetImage(frames[idx])
 	})
 }
 
-func (s *ToggleWidget) MinSize() fyne.Size {
+func (s *Widget) MinSize() fyne.Size {
 	s.ExtendBaseWidget(s)
 	return fyne.NewSize(0, 54)
 }
 
-func (s *ToggleWidget) FocusGained() {
+func (s *Widget) FocusGained() {
 	if s.Disabled() {
 		return
 	}
@@ -174,11 +164,11 @@ func (s *ToggleWidget) FocusGained() {
 	s.focused = true
 }
 
-func (s *ToggleWidget) FocusLost() {
+func (s *Widget) FocusLost() {
 	s.focused = false
 }
 
-func (s *ToggleWidget) TypedRune(r rune) {
+func (s *Widget) TypedRune(r rune) {
 	if s.Disabled() {
 		return
 	}
@@ -188,9 +178,9 @@ func (s *ToggleWidget) TypedRune(r rune) {
 	}
 }
 
-func (s *ToggleWidget) TypedKey(*fyne.KeyEvent) {}
+func (s *Widget) TypedKey(*fyne.KeyEvent) {}
 
-func (s *ToggleWidget) Tapped(*fyne.PointEvent) {
+func (s *Widget) Tapped(*fyne.PointEvent) {
 	if s.Disabled() {
 		return
 	}
@@ -206,25 +196,16 @@ func (s *ToggleWidget) Tapped(*fyne.PointEvent) {
 	s.set(!s.on, true, true)
 }
 
-func (s *ToggleWidget) TappedSecondary(*fyne.PointEvent) {
+func (s *Widget) TappedSecondary(*fyne.PointEvent) {
 }
 
-func (s *ToggleWidget) CreateRenderer() fyne.WidgetRenderer {
+func (s *Widget) CreateRenderer() fyne.WidgetRenderer {
 	iconContainer := container.NewPadded(s.icon)
-
-	switchContainer := container.NewStack(
-		s.offIcon,
-		s.onIcon,
-		s.offHoverIcon,
-		s.onHoverIcon,
-		s.anim,
-	)
-
 	nameContainer := container.NewPadded(s.textName)
 
 	return widget.NewSimpleRenderer(container.NewHBox(
 		iconContainer,
-		switchContainer,
+		s.sw,
 		nameContainer,
 	))
 }

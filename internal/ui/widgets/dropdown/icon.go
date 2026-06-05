@@ -1,24 +1,24 @@
 package dropdown
 
 import (
-	iconw "chaos-gate-unlocker/internal/ui/widgets/icon"
+	"chaos-gate-unlocker/internal/ui/widgets/snapimage"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/widget"
 )
 
-type DropdownIconWidget struct {
+type IconWidget struct {
 	widget.BaseWidget
 
-	icon *iconw.IconWidget
-	sel  *DropdownWidget
+	icon *snapimage.Widget
+	sel  *Widget
 }
 
-func NewDropdownIconWidget() *DropdownIconWidget {
-	s := &DropdownIconWidget{
-		icon: iconw.NewIconWidget(),
-		sel:  NewDropdownWidget(),
+func NewIconWidget() *IconWidget {
+	s := &IconWidget{
+		icon: snapimage.New(fyne.NewSize(46, 46)),
+		sel:  New(),
 	}
 
 	container.NewThemeOverride(s.sel, selectPadTheme{fyne.CurrentApp().Settings().Theme()})
@@ -27,53 +27,53 @@ func NewDropdownIconWidget() *DropdownIconWidget {
 	return s
 }
 
-func (s *DropdownIconWidget) MinSize() fyne.Size {
+func (s *IconWidget) MinSize() fyne.Size {
 	s.ExtendBaseWidget(s)
 	return fyne.NewSize(0, 54)
 }
 
-func (s *DropdownIconWidget) SetResource(resource fyne.Resource) {
+func (s *IconWidget) SetResource(resource fyne.Resource) {
 	s.icon.SetResource(resource)
 }
 
-func (s *DropdownIconWidget) SetToolTip(toolTip string) {
+func (s *IconWidget) SetToolTip(toolTip string) {
 	s.icon.SetToolTip(toolTip)
 	s.sel.SetToolTip(toolTip)
 }
 
-func (s *DropdownIconWidget) SetPlaceHolder(placeholder string) {
+func (s *IconWidget) SetPlaceHolder(placeholder string) {
 	s.sel.PlaceHolder = placeholder
 }
 
-func (s *DropdownIconWidget) SetOptions(options []string) {
+func (s *IconWidget) SetOptions(options []string) {
 	s.sel.SetOptions(options)
 }
 
-func (s *DropdownIconWidget) SetSelected(text string) {
+func (s *IconWidget) SetSelected(text string) {
 	s.sel.SetSelected(text)
 }
 
-func (s *DropdownIconWidget) Selected() string {
+func (s *IconWidget) Selected() string {
 	return s.sel.Selected
 }
 
-func (s *DropdownIconWidget) OnChanged(fn func(newVal string)) {
+func (s *IconWidget) OnChanged(fn func(newVal string)) {
 	s.sel.OnChanged = fn
 }
 
-func (s *DropdownIconWidget) OnBeforeShowPopup(fn func()) {
+func (s *IconWidget) OnBeforeShowPopup(fn func()) {
 	s.sel.OnBeforeShowPopup = fn
 }
 
-func (s *DropdownIconWidget) SetOptionToolTip(fn func(option string) string) {
+func (s *IconWidget) SetOptionToolTip(fn func(option string) string) {
 	s.sel.ToolTipForOption = fn
 }
 
-func (s *DropdownIconWidget) SetOptionIcon(fn func(option string) fyne.Resource) {
+func (s *IconWidget) SetOptionIcon(fn func(option string) fyne.Resource) {
 	s.sel.IconForOption = fn
 }
 
-func (s *DropdownIconWidget) CreateRenderer() fyne.WidgetRenderer {
+func (s *IconWidget) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(
 		container.NewPadded(
 			container.NewBorder(nil, nil, s.icon, nil,

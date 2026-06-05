@@ -4,6 +4,7 @@ import (
 	"image/color"
 	"math"
 
+	"chaos-gate-unlocker/internal/ui/pixelsnap"
 	"chaos-gate-unlocker/internal/ui/widgets/tooltip"
 
 	"fyne.io/fyne/v2"
@@ -15,7 +16,7 @@ import (
 
 type selectRow struct {
 	widget.BaseWidget
-	tooltip.ToolTipWidgetExtend
+	tooltip.WidgetExtend
 
 	text     string
 	icon     fyne.Resource
@@ -54,7 +55,7 @@ func (r *selectRow) Tapped(*fyne.PointEvent) {
 }
 
 func (r *selectRow) MouseIn(e *desktop.MouseEvent) {
-	r.ToolTipWidgetExtend.MouseIn(e)
+	r.WidgetExtend.MouseIn(e)
 	if !r.disabled && !r.hovered {
 		r.hovered = true
 		r.Refresh()
@@ -62,11 +63,11 @@ func (r *selectRow) MouseIn(e *desktop.MouseEvent) {
 }
 
 func (r *selectRow) MouseMoved(e *desktop.MouseEvent) {
-	r.ToolTipWidgetExtend.MouseMoved(e)
+	r.WidgetExtend.MouseMoved(e)
 }
 
 func (r *selectRow) MouseOut() {
-	r.ToolTipWidgetExtend.MouseOut()
+	r.WidgetExtend.MouseOut()
 	if r.hovered {
 		r.hovered = false
 		r.Refresh()
@@ -85,7 +86,7 @@ func (r *selectRow) CreateRenderer() fyne.WidgetRenderer {
 	rr := &selectRowRenderer{row: r, bg: bg, text: text}
 	if r.icon != nil {
 		rr.img = canvas.NewImageFromResource(r.icon)
-		rr.img.FillMode = canvas.ImageFillContain
+		rr.img.FillMode = canvas.ImageFillStretch
 	}
 	rr.Refresh()
 	return rr
@@ -105,7 +106,7 @@ func (r *selectRowRenderer) pad() float32 {
 const iconTextGap = 8
 
 func (r *selectRowRenderer) iconSize() float32 {
-	return r.text.MinSize().Height * 1.35
+	return r.text.MinSize().Height * 1.6
 }
 
 func (r *selectRowRenderer) Layout(size fyne.Size) {
@@ -115,8 +116,9 @@ func (r *selectRowRenderer) Layout(size fyne.Size) {
 	textX := pad * 2
 	if r.img != nil {
 		s := r.iconSize()
-		r.img.Resize(fyne.NewSize(s, s))
-		r.img.Move(fyne.NewPos(pad*2, (size.Height-s)/2))
+		sz, off := pixelsnap.Fit(fyne.NewSize(s, s), r.img.Aspect(), pixelsnap.Scale(r.row))
+		r.img.Resize(sz)
+		r.img.Move(fyne.NewPos(pad*2, (size.Height-s)/2).Add(off))
 		textX = pad*2 + s + iconTextGap
 	}
 	r.text.Move(fyne.NewPos(textX, pad))

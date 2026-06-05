@@ -1,4 +1,4 @@
-package ui
+package anim
 
 import (
 	"bytes"
@@ -16,33 +16,6 @@ import (
 	xdraw "golang.org/x/image/draw"
 	"golang.org/x/image/math/f64"
 )
-
-func Frames(n int, interval time.Duration, onDone func(), step func(i int)) context.CancelFunc {
-	ctx, cancel := context.WithCancel(context.Background())
-
-	go func() {
-		ticker := time.NewTicker(interval)
-		defer ticker.Stop()
-
-		i := 0
-		do := func() { step(i) }
-		for i = 1; i <= n; i++ {
-			select {
-			case <-ctx.Done():
-				return
-			case <-ticker.C:
-				fyne.DoAndWait(do)
-			}
-		}
-
-		if ctx.Err() == nil && onDone != nil {
-			fyne.DoAndWait(onDone)
-		}
-		cancel()
-	}()
-
-	return cancel
-}
 
 func AquilaFrames(res fyne.Resource, pivotX, fromDeg, toDeg float64, count int) []image.Image {
 	src, _, err := image.Decode(bytes.NewReader(res.Content()))
@@ -71,26 +44,29 @@ func AquilaFrames(res fyne.Resource, pivotX, fromDeg, toDeg float64, count int) 
 	return frames
 }
 
-var (
-	aquilaFramesOnce  sync.Once
-	leftAquilaFrames  []image.Image
-	rightAquilaFrames []image.Image
-)
+type Aquila struct {
+	leftRes, rightRes fyne.Resource
 
-func PrewarmAquilaFrames() {
-	go AquilaFramesLR()
+	once        sync.Once
+	left, right []image.Image
 }
 
-func AquilaFramesLR() (left, right []image.Image) {
-	aquilaFramesOnce.Do(func() {
-		leftAquilaFrames = AquilaFrames(GetAppLeftAquilaIcon(), 1.0, -30, 0, 18)
-		rightAquilaFrames = AquilaFrames(GetAppRightAquilaIcon(), 0.0, 30, 0, 18)
+func NewAquila(left, right fyne.Resource) *Aquila {
+	return &Aquila{leftRes: left, rightRes: right}
+}
+
+func (a *Aquila) Prewarm() { go a.frames() }
+
+func (a *Aquila) frames() (left, right []image.Image) {
+	a.once.Do(func() {
+		a.left = AquilaFrames(a.leftRes, 1.0, -30, 0, 18)
+		a.right = AquilaFrames(a.rightRes, 0.0, 30, 0, 18)
 	})
-	return leftAquilaFrames, rightAquilaFrames
+	return a.left, a.right
 }
 
-func AnimateTop(ctx context.Context, im, im2 *canvas.Image, p *progress.ProgressWidget, open bool) {
-	leftFrames, rightFrames := AquilaFramesLR()
+func (a *Aquila) AnimateTop(ctx context.Context, im, im2 *canvas.Image, p *progress.Widget, open bool) {
+	leftFrames, rightFrames := a.frames()
 
 	width := float32(0)
 	sOffset := p.Size().Width / 20
@@ -150,35 +126,4 @@ func AnimateTop(ctx context.Context, im, im2 *canvas.Image, p *progress.Progress
 			fyne.DoAndWait(frame)
 		}
 	}
-}
-
-func AnimateAbout(ctx context.Context, im *canvas.Image) {
-	ticker := time.NewTicker(15 * time.Millisecond)
-	defer ticker.Stop()
-
-	fade := func() {
-		im.Translucency = clamp(im.Translucency - 0.04)
-		im.Refresh()
-	}
-
-	for i := 0; i < 30; i++ {
-		select {
-		case <-ctx.Done():
-			return
-		case <-ticker.C:
-			if i > 5 {
-				fyne.DoAndWait(fade)
-			}
-		}
-	}
-}
-
-func clamp(v float64) float64 {
-	if v < 0 {
-		return 0
-	}
-	if v > 1 {
-		return 1
-	}
-	return v
 }

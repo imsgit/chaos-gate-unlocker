@@ -17,12 +17,31 @@ var (
 	switchFramesOnce sync.Once
 	switchFrames     []image.Image
 
+	staticFramesOnce sync.Once
+	staticImgs       switchStatics
+
 	prewarmOnce sync.Once
 )
+
+type switchStatics struct {
+	off, on, offHover, onHover image.Image
+}
 
 func getSwitchFrames() []image.Image {
 	switchFramesOnce.Do(buildSwitchFrames)
 	return switchFrames
+}
+
+func getStaticFrames() switchStatics {
+	staticFramesOnce.Do(func() {
+		staticImgs = switchStatics{
+			off:      decodeResource(ui.GetWidgetSwitchOffIcon()),
+			on:       decodeResource(ui.GetWidgetSwitchOnIcon()),
+			offHover: decodeResource(ui.GetWidgetSwitchOffHoverIcon()),
+			onHover:  decodeResource(ui.GetWidgetSwitchOnHoverIcon()),
+		}
+	})
+	return staticImgs
 }
 
 func buildSwitchFrames() {
