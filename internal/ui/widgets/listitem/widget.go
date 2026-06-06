@@ -195,6 +195,15 @@ func (i *Widget) Bind(val interface{}) {
 		i.textStatus.Color = moderateColor
 	}
 
+	dim := 0.0
+	if strings.HasPrefix(i.textStatus.Text, "Unavailable") {
+		dim = 0.5
+	}
+	i.iconClass.Translucency = dim
+	i.imgLvl.Translucency = dim
+	i.iconClass.Refresh()
+	i.imgLvl.Refresh()
+
 	i.textName.Refresh()
 	i.textLvl.Refresh()
 	i.textStatus.Refresh()
