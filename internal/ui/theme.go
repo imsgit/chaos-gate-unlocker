@@ -33,6 +33,8 @@ func (Theme) Color(c fyne.ThemeColorName, v fyne.ThemeVariant) color.Color {
 		return color.NRGBA{R: 0xFF, G: 0xFF, B: 0xFF, A: 0xE2}
 	case theme.ColorNamePrimary:
 		return color.NRGBA{R: 0xFF, G: 0xFF, B: 0xFF, A: 0xFF}
+	case theme.ColorNameForegroundOnPrimary:
+		return color.NRGBA{R: 0x15, G: 0x15, B: 0x15, A: 0xFF}
 	case theme.ColorNameScrollBar:
 		return color.NRGBA{R: 0xF1, G: 0xEF, B: 0xEF, A: 0x99}
 	case theme.ColorNameScrollBarBackground:
