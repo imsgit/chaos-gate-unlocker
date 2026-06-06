@@ -176,10 +176,8 @@ func (m *Manager) CanChangeUnitAugmetics(unit any, idx int, heal bool) (bool, Au
 	switch object := unit.(type) {
 	case *objects.KnightState:
 		var curr Augmetic
-		for i, augmetic := range object.Augmetics {
-			if i == idx {
-				curr = augmeticsByID[augmetic.Key]
-			}
+		if idx >= 0 && idx < len(object.Augmetics) {
+			curr = augmeticsByID[object.Augmetics[idx].Key]
 		}
 
 		class := getClass(object.CurrentLevelData.Key)

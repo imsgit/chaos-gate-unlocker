@@ -64,10 +64,6 @@ func (r *selectRow) MouseIn(e *desktop.MouseEvent) {
 	}
 }
 
-func (r *selectRow) MouseMoved(e *desktop.MouseEvent) {
-	r.WidgetExtend.MouseMoved(e)
-}
-
 func (r *selectRow) MouseOut() {
 	r.WidgetExtend.MouseOut()
 	if r.hovered {

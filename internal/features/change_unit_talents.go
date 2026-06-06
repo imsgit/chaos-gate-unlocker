@@ -307,10 +307,8 @@ func (m *Manager) CanChangeUnitTalents(unit any, idx int) (bool, Talent, []strin
 	switch object := unit.(type) {
 	case *objects.KnightState:
 		var curr Talent
-		for i, talent := range object.Talents {
-			if idx == i {
-				curr = talentsByID[talent.Key]
-			}
+		if idx >= 0 && idx < len(object.Talents) {
+			curr = talentsByID[object.Talents[idx].Key]
 		}
 
 		talents := knightTalentsStrings
@@ -323,10 +321,8 @@ func (m *Manager) CanChangeUnitTalents(unit any, idx int) (bool, Talent, []strin
 			curr, talents
 	case *objects.DreadnoughtState:
 		var curr Talent
-		for i, talent := range object.Talents {
-			if idx == i {
-				curr = talentsByID[talent.Key]
-			}
+		if idx >= 0 && idx < len(object.Talents) {
+			curr = talentsByID[object.Talents[idx].Key]
 		}
 
 		return object.HasPilot && (idx == 0 || len(object.Talents) > idx),
