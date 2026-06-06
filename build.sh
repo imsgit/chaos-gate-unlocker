@@ -18,6 +18,22 @@ echo "=== fyne-cross $fc_version (>= $required_fyne_cross) ==="
 build=$(grep -oE 'Build *= *[0-9]+' FyneApp.toml | grep -oE '[0-9]+')
 echo "=== Build number pinned to $build (no auto-bump) ==="
 
+work=""
+fontdir="vendor/fyne.io/fyne/v2/theme/font"
+declare -A fontbak=()
+cleanup() {
+	for src in "${!fontbak[@]}"; do mv -f "${fontbak[$src]}" "$src"; done
+	[ -n "$work" ] && rm -rf "$work"
+}
+trap cleanup EXIT
+
+echo "=== Stub unused vendored fonts (italic/bolditalic/mono) ==="
+for f in NotoSans-Italic.ttf NotoSans-BoldItalic.ttf DejaVuSansMono-Powerline.ttf; do
+	fontbak["$fontdir/$f"]="$(mktemp)"
+	cp "$fontdir/$f" "${fontbak[$fontdir/$f]}"
+	cp "$fontdir/InterSymbols-Regular.ttf" "$fontdir/$f"
+done
+
 echo "=== Windows build (amd64) ==="
 fyne-cross windows -arch=amd64 -app-build "$build" -tags no_emoji
 
@@ -32,7 +48,6 @@ strip --strip-all fyne-cross/bin/linux-amd64/chaos-gate-unlocker
 echo "=== Repackage Linux tar.xz with stripped binary ==="
 tarball="$(pwd)/fyne-cross/dist/linux-amd64/ChaosGateUnlocker.tar.xz"
 work="$(mktemp -d)"
-trap 'rm -rf "$work"' EXIT
 tar -xJf "$tarball" -C "$work"
 find "$work" -type f -exec sh -c 'file -b "$1" | grep -q ELF && strip --strip-all "$1"' _ {} \;
 tar -cJf "$tarball" -C "$work" .
