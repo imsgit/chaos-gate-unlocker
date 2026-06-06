@@ -26,6 +26,17 @@ fyne-cross linux -arch=amd64 -app-build "$build"
 
 sed -i -E "s/^(\s*Build *= *).*/\1${build}/" FyneApp.toml
 
+echo "=== Strip Linux binary ==="
+strip --strip-all fyne-cross/bin/linux-amd64/chaos-gate-unlocker
+
+echo "=== Repackage Linux tar.xz with stripped binary ==="
+tarball="$(pwd)/fyne-cross/dist/linux-amd64/ChaosGateUnlocker.tar.xz"
+work="$(mktemp -d)"
+trap 'rm -rf "$work"' EXIT
+tar -xJf "$tarball" -C "$work"
+find "$work" -type f -exec sh -c 'file -b "$1" | grep -q ELF && strip --strip-all "$1"' _ {} \;
+tar -cJf "$tarball" -C "$work" .
+
 echo "=== Checksums ==="
 win_zip="fyne-cross/dist/windows-amd64/ChaosGateUnlocker.exe.zip"
 lin_txz="fyne-cross/dist/linux-amd64/ChaosGateUnlocker.tar.xz"
