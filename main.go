@@ -141,7 +141,6 @@ func main() {
 		if on {
 			healUnits[currUnit] = on
 		}
-
 		augmeticsBox := container.NewVBox()
 		unitsBox.Objects[3] = augmeticsBox
 		for i := 0; ; i++ {
@@ -232,16 +231,16 @@ func main() {
 		unitsScrollBox.ScrollToTop()
 	}
 
-	back := canvas.NewImageFromImage(ui.DecodeRaw(ui.GetAppBackgroundIcon()))
+	back := canvas.NewImageFromImage(ui.Decode(ui.AppBackgroundIcon()))
 	back.FillMode = canvas.ImageFillContain
 	back.ScaleMode = canvas.ImageScaleFastest
 	back.Translucency = 0.96
 
-	eyeGlow := anim.NewEyeGlow(ui.GetAppBackgroundIcon())
+	eyeGlow := anim.NewEyeGlow(ui.AppBackgroundIcon())
 	eyeGlowOverlay := eyeGlow.Overlay()
-	eyeGlow.Start()
+	eyeGlow.Animate()
 
-	mainTab := container.NewTabItemWithIcon("Main", ui.GetAppTabMainIcon(),
+	mainTab := container.NewTabItemWithIcon("Main", ui.AppTabMainIcon(),
 		container.NewGridWithColumns(2,
 			container.NewVBox(
 				authorizeDreadnoughtMissionsSwitch,
@@ -259,9 +258,9 @@ func main() {
 				unlockGladiusFrigateSwitch,
 				unlockPuritySealsSwitch,
 				removeMarketingWeaponsSwitch)))
-	unitsTab := container.NewTabItemWithIcon("Units", ui.GetAppTabUnitsIcon(),
+	unitsTab := container.NewTabItemWithIcon("Units", ui.AppTabUnitsIcon(),
 		container.NewGridWithColumns(2, unitsList, unitsScrollBox))
-	aboutTab := container.NewTabItemWithIcon("About", ui.GetAppTabAboutIcon(),
+	aboutTab := container.NewTabItemWithIcon("About", ui.AppTabAboutIcon(),
 		container.NewBorder(nil, nil,
 			widget.NewRichTextFromMarkdown(`
 [> Visit Nexus Mods for more information](https://www.nexusmods.com/warhammer40kchaosgatedaemonhunters/mods/5)
@@ -292,23 +291,21 @@ func main() {
 	}
 	layoutTabs.Hide()
 
-	leftAquila := canvas.NewImageFromResource(ui.GetAppLeftAquilaIcon())
+	leftAquila := canvas.NewImageFromResource(ui.AppLeftAquilaIcon())
 	leftAquila.ScaleMode = canvas.ImageScaleFastest
 	leftAquila.SetMinSize(fyne.NewSize(100, 0))
 	leftAquila.Translucency = 1
 
-	rightAquila := canvas.NewImageFromResource(ui.GetAppRightAquilaIcon())
+	rightAquila := canvas.NewImageFromResource(ui.AppRightAquilaIcon())
 	rightAquila.ScaleMode = canvas.ImageScaleFastest
 	rightAquila.SetMinSize(fyne.NewSize(100, 0))
 	rightAquila.Translucency = 1
 
-	aquila := anim.NewAquila(ui.GetAppLeftAquilaIcon(), ui.GetAppRightAquilaIcon())
+	aquila := anim.NewAquila(ui.AppLeftAquilaIcon(), ui.AppRightAquilaIcon())
 	aquila.Prewarm()
 
 	progressLine := progress.New()
-
 	var openButton *tooltip.Button
-
 	animateTop := func(open bool, onDone func()) context.CancelFunc {
 		ctx, cancel := context.WithCancel(context.Background())
 		go func() {
@@ -425,7 +422,6 @@ func main() {
 	)
 
 	validateScale()
-
 	w.Resize(fyne.NewSize(800, 600))
 	w.SetContent(tooltip.AddWindowToolTipLayer(content, w.Canvas()))
 	w.CenterOnScreen()
@@ -476,18 +472,18 @@ func renderDropdown(idx int, init bool, spec dropdownSpec) *dropdown.IconWidget 
 		item = spec.lookup(sel.Selected())
 	}
 
-	sel.SetResource(ui.GetIconByName(item.ID))
+	sel.SetResource(ui.IconByName(item.ID))
 	sel.SetToolTip(item.Description)
 	sel.SetOptionToolTip(func(opt string) string {
 		return spec.lookup(opt).Description
 	})
 	sel.SetOptionIcon(func(opt string) fyne.Resource {
-		return ui.GetIconByName(spec.lookup(opt).ID)
+		return ui.IconByName(spec.lookup(opt).ID)
 	})
 
 	sel.OnChanged(func(newVal string) {
 		changed := spec.lookup(newVal)
-		sel.SetResource(ui.GetIconByName(changed.ID))
+		sel.SetResource(ui.IconByName(changed.ID))
 		sel.SetToolTip(changed.Description)
 		spec.store[currUnit][1][idx] = newVal
 		refreshSaveButton()
@@ -568,13 +564,11 @@ func validateScale() {
 	if runtime.GOOS == "windows" {
 		return
 	}
-
 	cmd := exec.Command("xdpyinfo")
 	out, err := cmd.Output()
 	if err != nil {
 		return
 	}
-
 	re := regexp.MustCompile(`resolution:\s+(\d+)x`)
 	match := re.FindStringSubmatch(string(out))
 	if len(match) == 2 {

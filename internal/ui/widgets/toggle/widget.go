@@ -35,8 +35,8 @@ type Widget struct {
 
 func New(onChanged func(on bool), icon, name, toolTip string) *Widget {
 	s := &Widget{
-		icon:      ui.NewIcon(fyne.NewSize(46, 46)),
-		sw:        ui.NewIcon(fyne.NewSize(46, 46)),
+		icon:      ui.NewIconImage(fyne.NewSize(46, 46)),
+		sw:        ui.NewIconImage(fyne.NewSize(46, 46)),
 		textName:  canvas.NewText("", color.White),
 		onChanged: onChanged,
 	}
@@ -44,7 +44,7 @@ func New(onChanged func(on bool), icon, name, toolTip string) *Widget {
 	s.textName.Text = name
 	s.SetToolTip(toolTip)
 
-	s.icon.Image = ui.DecodeIcon(ui.GetIconByName(icon))
+	s.icon.Image = ui.DecodeMasked(ui.IconByName(icon))
 
 	prewarmOnce.Do(func() { go getSwitchFrames() })
 

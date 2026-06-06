@@ -31,16 +31,16 @@ func getSwitchFrames() []image.Image {
 func getStaticFrames() switchStatics {
 	staticFramesOnce.Do(func() {
 		staticImgs = switchStatics{
-			off: ui.DecodeIcon(ui.GetWidgetSwitchOffIcon()),
-			on:  ui.DecodeIcon(ui.GetWidgetSwitchOnIcon()),
+			off: ui.DecodeMasked(ui.WidgetSwitchOffIcon()),
+			on:  ui.DecodeMasked(ui.WidgetSwitchOnIcon()),
 		}
 	})
 	return staticImgs
 }
 
 func buildSwitchFrames() {
-	off := ui.DecodeIcon(ui.GetWidgetSwitchOffIcon())
-	on := ui.DecodeIcon(ui.GetWidgetSwitchOnIcon())
+	off := ui.DecodeMasked(ui.WidgetSwitchOffIcon())
+	on := ui.DecodeMasked(ui.WidgetSwitchOnIcon())
 	if off == nil || on == nil {
 		return
 	}

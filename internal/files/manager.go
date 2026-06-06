@@ -29,10 +29,9 @@ var (
 const (
 	minVersion = 1170
 
-	appID     = "1611910"
-	saveDir   = "AppData/LocalLow/Complex Games Inc_/GreyKnights/SaveGames/Campaign"
-	protonDir = "/1611910/pfx"
-
+	appID      = "1611910"
+	saveDir    = "AppData/LocalLow/Complex Games Inc_/GreyKnights/SaveGames/Campaign"
+	protonDir  = "/1611910/pfx"
 	protonUser = "pfx/drive_c/users/steamuser"
 )
 
@@ -184,7 +183,7 @@ func searchDir(root, searchPath string) string {
 		}
 
 		result = path
-		return fs.SkipDir
+		return filepath.SkipAll
 	})
 
 	return result
@@ -205,7 +204,7 @@ func (m *Manager) Load(reader fyne.URIReadCloser) error {
 		return err
 	}
 
-	chunks := bytes.Split(file, sep)
+	chunks := bytes.SplitN(file, sep, 3)
 	if len(chunks) < 3 {
 		return ErrWrongSaveFileFormat
 	}
@@ -220,7 +219,7 @@ func (m *Manager) Load(reader fyne.URIReadCloser) error {
 		return err
 	}
 
-	m.combatStateBytes = combatStateBytes
+	m.combatStateBytes = bytes.Clone(combatStateBytes)
 
 	for _, callback := range m.onLoadState {
 		callback(m.state)

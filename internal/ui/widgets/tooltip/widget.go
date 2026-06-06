@@ -20,8 +20,6 @@ type WidgetExtend struct {
 
 func (t *WidgetExtend) SetToolTip(toolTip string) { t.toolTip = toolTip }
 
-func (t *WidgetExtend) ToolTip() string { return t.toolTip }
-
 func (t *WidgetExtend) ExtendToolTipWidget(wid fyne.Widget) { t.Obj = wid }
 
 func (t *WidgetExtend) MouseIn(e *desktop.MouseEvent) {
@@ -41,6 +39,9 @@ func (t *WidgetExtend) MouseOut() {
 }
 
 func (t *WidgetExtend) setPending() {
+	if t.pendingCancel != nil {
+		t.pendingCancel()
+	}
 	ctx, cancel := context.WithCancel(context.Background())
 	t.pendingCancel = cancel
 

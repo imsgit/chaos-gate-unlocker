@@ -14,6 +14,8 @@ import (
 	"fyne.io/fyne/v2/widget"
 )
 
+const iconTextGap = 8
+
 type selectRow struct {
 	widget.BaseWidget
 	tooltip.WidgetExtend
@@ -84,8 +86,8 @@ func (r *selectRow) CreateRenderer() fyne.WidgetRenderer {
 	text.TextSize = th.Size(theme.SizeNameText)
 
 	rr := &selectRowRenderer{row: r, bg: bg, text: text}
-	if img := ui.DecodeIcon(r.icon); img != nil {
-		rr.img = ui.NewIcon(fyne.Size{})
+	if img := ui.DecodeMasked(r.icon); img != nil {
+		rr.img = ui.NewIconImage(fyne.Size{})
 		rr.img.Image = img
 	}
 	rr.Refresh()
@@ -102,8 +104,6 @@ type selectRowRenderer struct {
 func (r *selectRowRenderer) pad() float32 {
 	return r.row.Theme().Size(theme.SizeNamePadding)
 }
-
-const iconTextGap = 8
 
 func (r *selectRowRenderer) iconSize() float32 {
 	return r.text.MinSize().Height * 1.6

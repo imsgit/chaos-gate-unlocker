@@ -18,7 +18,7 @@ type iconImage struct {
 }
 
 func newIconImage(min fyne.Size) *iconImage {
-	w := &iconImage{img: ui.NewIcon(min)}
+	w := &iconImage{img: ui.NewIconImage(min)}
 	w.ExtendBaseWidget(w)
 	return w
 }
@@ -30,7 +30,7 @@ func (w *iconImage) ExtendBaseWidget(wid fyne.Widget) {
 
 func (w *iconImage) SetResource(res fyne.Resource) {
 	w.img.Resource = nil
-	w.img.Image = ui.DecodeIcon(res)
+	w.img.Image = ui.DecodeMasked(res)
 	w.Refresh()
 }
 

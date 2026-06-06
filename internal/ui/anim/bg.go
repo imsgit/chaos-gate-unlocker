@@ -15,6 +15,16 @@ import (
 	"fyne.io/fyne/v2/canvas"
 )
 
+const (
+	eyeGlowPeriod = 30 * time.Second
+	eyeGlowSteps  = 180
+	eyeGlowFrame  = 33 * time.Millisecond
+	eyeGlowRise   = 0.4
+	eyeGlowBase   = 0.46
+	eyeGlowFlash  = 0.85
+	eyeBloomBlur  = 9
+)
+
 func AnimateAbout(ctx context.Context, im *canvas.Image) {
 	ticker := time.NewTicker(15 * time.Millisecond)
 	defer ticker.Stop()
@@ -35,16 +45,6 @@ func AnimateAbout(ctx context.Context, im *canvas.Image) {
 		}
 	}
 }
-
-const (
-	eyeGlowPeriod = 30 * time.Second
-	eyeGlowSteps  = 180
-	eyeGlowFrame  = 33 * time.Millisecond
-	eyeGlowRise   = 0.4
-	eyeGlowBase   = 0.46
-	eyeGlowFlash  = 0.85
-	eyeBloomBlur  = 9
-)
 
 type glowEye struct{ cx, cy, rx, ry, reveal, bloom, lo, hi, grad float64 }
 
@@ -248,7 +248,7 @@ func (g *EyeGlow) Overlay() *canvas.Image {
 	return g.cv
 }
 
-func (g *EyeGlow) Start() {
+func (g *EyeGlow) Animate() {
 	if g.cv == nil {
 		return
 	}

@@ -99,17 +99,17 @@ var icons = map[string]fyne.Resource{
 	"Augmetic_Synthmuscle":            resourceAugmeticSynthmusclePng,
 }
 
-func GetIconByName(name string) fyne.Resource {
+func IconByName(name string) fyne.Resource {
 	return icons[name]
 }
 
-func GetWidgetUnitLevelIcon() fyne.Resource { return GetIconByName("WidgetUnitLevel") }
-func GetWidgetSwitchOnIcon() fyne.Resource  { return GetIconByName("WidgetSwitchOn") }
-func GetWidgetSwitchOffIcon() fyne.Resource { return GetIconByName("WidgetSwitchOff") }
+func WidgetUnitLevelIcon() fyne.Resource { return IconByName("WidgetUnitLevel") }
+func WidgetSwitchOnIcon() fyne.Resource  { return IconByName("WidgetSwitchOn") }
+func WidgetSwitchOffIcon() fyne.Resource { return IconByName("WidgetSwitchOff") }
 
-func GetAppLeftAquilaIcon() fyne.Resource  { return GetIconByName("AppLeftAquila") }
-func GetAppRightAquilaIcon() fyne.Resource { return GetIconByName("AppRightAquila") }
-func GetAppTabMainIcon() fyne.Resource     { return GetIconByName("AppTabMain") }
-func GetAppTabUnitsIcon() fyne.Resource    { return GetIconByName("AppTabUnits") }
-func GetAppTabAboutIcon() fyne.Resource    { return GetIconByName("AppTabAbout") }
-func GetAppBackgroundIcon() fyne.Resource  { return GetIconByName("AppBackground") }
+func AppLeftAquilaIcon() fyne.Resource  { return IconByName("AppLeftAquila") }
+func AppRightAquilaIcon() fyne.Resource { return IconByName("AppRightAquila") }
+func AppTabMainIcon() fyne.Resource     { return IconByName("AppTabMain") }
+func AppTabUnitsIcon() fyne.Resource    { return IconByName("AppTabUnits") }
+func AppTabAboutIcon() fyne.Resource    { return IconByName("AppTabAbout") }
+func AppBackgroundIcon() fyne.Resource  { return IconByName("AppBackground") }
