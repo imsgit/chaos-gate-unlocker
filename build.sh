@@ -19,10 +19,10 @@ build=$(grep -oE 'Build *= *[0-9]+' FyneApp.toml | grep -oE '[0-9]+')
 echo "=== Build number pinned to $build (no auto-bump) ==="
 
 echo "=== Windows build (amd64) ==="
-fyne-cross windows -arch=amd64 -app-build "$build"
+fyne-cross windows -arch=amd64 -app-build "$build" -tags no_emoji
 
 echo "=== Linux build (amd64) ==="
-fyne-cross linux -arch=amd64 -app-build "$build"
+fyne-cross linux -arch=amd64 -app-build "$build" -tags no_emoji
 
 sed -i -E "s/^(\s*Build *= *).*/\1${build}/" FyneApp.toml
 
