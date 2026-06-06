@@ -160,7 +160,7 @@ func (i *Widget) Bind(val interface{}) {
 			i.textStatus.Text = "Unavailable - Critical wound"
 		}
 	case 2:
-		i.textStatus.Color = moderateColor
+		i.textStatus.Color = lightColor
 		if class == features.DreadnoughtClass {
 			i.textStatus.Text += " - Damage"
 			if underRepair {
@@ -179,7 +179,6 @@ func (i *Widget) Bind(val interface{}) {
 			i.textStatus.Text += " - Light damage"
 			if underRepair {
 				i.textStatus.Text = "Unavailable - Under repair"
-				i.textStatus.Color = moderateColor
 			}
 			if noPilot {
 				i.textStatus.Text = "Unavailable - No pilot"
