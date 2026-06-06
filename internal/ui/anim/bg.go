@@ -1,7 +1,6 @@
 package anim
 
 import (
-	"bytes"
 	"context"
 	"image"
 	"image/color"
@@ -54,7 +53,7 @@ type glowSpot struct {
 }
 
 type EyeGlow struct {
-	res  fyne.Resource
+	src  image.Image
 	tint color.RGBA
 	eyes []glowEye
 
@@ -65,9 +64,9 @@ type EyeGlow struct {
 	flick []flickerStep
 }
 
-func NewEyeGlow(bg fyne.Resource) *EyeGlow {
+func NewEyeGlow(src image.Image) *EyeGlow {
 	return &EyeGlow{
-		res:  bg,
+		src:  src,
 		tint: color.RGBA{R: 240, G: 244, B: 255},
 		eyes: []glowEye{
 			{272, 31, 38, 32, 0.22, 0, 100, 150, 0},
@@ -87,8 +86,8 @@ func NewEyeGlow(bg fyne.Resource) *EyeGlow {
 
 func (g *EyeGlow) build() {
 	g.once.Do(func() {
-		src, _, err := image.Decode(bytes.NewReader(g.res.Content()))
-		if err != nil {
+		src := g.src
+		if src == nil {
 			return
 		}
 

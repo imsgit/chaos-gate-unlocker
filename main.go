@@ -231,12 +231,13 @@ func main() {
 		unitsScrollBox.ScrollToTop()
 	}
 
-	back := canvas.NewImageFromImage(ui.Decode(ui.AppBackgroundIcon()))
+	bgImg := ui.Decode(ui.AppBackgroundIcon())
+	back := canvas.NewImageFromImage(bgImg)
 	back.FillMode = canvas.ImageFillContain
 	back.ScaleMode = canvas.ImageScaleFastest
 	back.Translucency = 0.96
 
-	eyeGlow := anim.NewEyeGlow(ui.AppBackgroundIcon())
+	eyeGlow := anim.NewEyeGlow(bgImg)
 	eyeGlowOverlay := eyeGlow.Overlay()
 	eyeGlow.Animate()
 
