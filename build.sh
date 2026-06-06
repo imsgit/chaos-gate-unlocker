@@ -1,41 +1,29 @@
 #!/usr/bin/env bash
 set -euo pipefail
-
 cd "$(dirname "$0")"
 
-required_fyne_cross="1.6.2"
-fc_version=$(fyne-cross version 2>/dev/null | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -1)
-if [ -z "$fc_version" ]; then
-	echo "[!] fyne-cross not found in PATH" >&2
-	exit 1
-fi
-if [ "$(printf '%s\n%s\n' "$required_fyne_cross" "$fc_version" | sort -V | head -1)" != "$required_fyne_cross" ]; then
-	echo "[!] fyne-cross $fc_version is older than required $required_fyne_cross" >&2
-	exit 1
-fi
-echo "=== fyne-cross $fc_version (>= $required_fyne_cross) ==="
+req=1.6.2
+fc=$(fyne-cross version 2>/dev/null | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -1)
+[ -n "$fc" ] || { echo "[!] fyne-cross not found in PATH" >&2; exit 1; }
+[ "$(printf '%s\n%s\n' "$req" "$fc" | sort -V | head -1)" = "$req" ] || { echo "[!] fyne-cross $fc < $req" >&2; exit 1; }
 
 build=$(grep -oE 'Build *= *[0-9]+' FyneApp.toml | grep -oE '[0-9]+')
-echo "=== Build number pinned to $build (no auto-bump) ==="
+echo "=== fyne-cross $fc | build $build (no auto-bump) ==="
 
-fontdir="vendor/fyne.io/fyne/v2/theme/font"
-declare -A fontbak=()
-cleanup() {
-	for src in "${!fontbak[@]}"; do mv -f "${fontbak[$src]}" "$src"; done
-}
-trap cleanup EXIT
+declare -A bak=()
+trap 'for s in "${!bak[@]}"; do mv -f "${bak[$s]}" "$s"; done' EXIT
+swap() { bak["$1"]="$(mktemp)"; cp "$1" "${bak[$1]}"; }
 
-echo "=== Stub unused vendored fonts (italic/bolditalic/mono) ==="
+fontdir=vendor/fyne.io/fyne/v2/theme/font
+echo "=== Stub unused fonts (italic/bolditalic/mono) ==="
 for f in NotoSans-Italic.ttf NotoSans-BoldItalic.ttf DejaVuSansMono-Powerline.ttf; do
-	fontbak["$fontdir/$f"]="$(mktemp)"
-	cp "$fontdir/$f" "${fontbak[$fontdir/$f]}"
+	swap "$fontdir/$f"
 	cp "$fontdir/InterSymbols-Regular.ttf" "$fontdir/$f"
 done
 
-echo "=== Disable system-font fallback scan ==="
-fontprod="vendor/fyne.io/fyne/v2/internal/painter/font_prod.go"
-fontbak["$fontprod"]="$(mktemp)"
-cp "$fontprod" "${fontbak[$fontprod]}"
+echo "=== Disable system-font scan ==="
+fontprod=vendor/fyne.io/fyne/v2/internal/painter/font_prod.go
+swap "$fontprod"
 cat > "$fontprod" <<'GOEOF'
 //go:build !test
 
@@ -52,24 +40,28 @@ func loadSystemFonts(_ *fontscan.FontMap) error {
 }
 GOEOF
 
-echo "=== Windows build (amd64) ==="
-fyne-cross windows -arch=amd64 -app-build "$build" -tags no_emoji
+echo "=== Slim file-open dialog (favorites + top-right buttons) ==="
+filego=vendor/fyne.io/fyne/v2/dialog/file.go
+swap "$filego"
+perl -0777 -i -pe '
+my $a = "\theader := container.NewBorder(\n\t\tnil, nil, nil, optionsbuttons,\n\t\tf.title,\n\t)";
+my $b = "\t_ = optionsbuttons\n\theader := container.NewBorder(\n\t\tnil, nil, nil, nil,\n\t\tf.title,\n\t)";
+my $i = index($_, $a); die "file.go header block not found\n" if $i < 0; substr($_, $i, length($a)) = $b;' "$filego"
+perl -0777 -i -pe '
+my $a = "\tbody := container.NewHSplit(\n\t\tf.favoritesList,\n\t\tcontainer.NewBorder(\n\t\t\tf.breadcrumbScroll, nil, nil, nil,\n\t\t\tf.filesScroll,\n\t\t),\n\t)\n\tbody.SetOffset(0) // Set the minimum offset so that the favoritesList takes only its minimal width";
+my $b = "\tbody := container.NewBorder(\n\t\tf.breadcrumbScroll, nil, nil, nil,\n\t\tf.filesScroll,\n\t)";
+my $i = index($_, $a); die "file.go body block not found\n" if $i < 0; substr($_, $i, length($a)) = $b;' "$filego"
 
-echo "=== Linux build (amd64) ==="
-fyne-cross linux -arch=amd64 -app-build "$build" -tags no_emoji
-
+for os in windows linux; do
+	echo "=== Build $os/amd64 ==="
+	fyne-cross "$os" -arch=amd64 -app-build "$build" -tags no_emoji
+done
 sed -i -E "s/^(\s*Build *= *).*/\1${build}/" FyneApp.toml
 
-echo "=== Strip Linux binary ==="
 strip --strip-all fyne-cross/bin/linux-amd64/chaos-gate-unlocker
-
-echo "=== Checksums ==="
-win_bin="fyne-cross/bin/windows-amd64/ChaosGateUnlocker.exe"
-lin_bin="fyne-cross/bin/linux-amd64/chaos-gate-unlocker"
-sums="fyne-cross/bin/SHA256SUMS"
-sha256sum "$win_bin" "$lin_bin" > "$sums"
-echo "[i] wrote $sums"
+rm -rf fyne-cross/dist
+sha256sum fyne-cross/bin/windows-amd64/ChaosGateUnlocker.exe \
+          fyne-cross/bin/linux-amd64/chaos-gate-unlocker > fyne-cross/bin/SHA256SUMS
 
 echo "=== Done ==="
-file fyne-cross/bin/windows-amd64/* fyne-cross/bin/linux-amd64/*
 ls -la fyne-cross/bin/windows-amd64/ fyne-cross/bin/linux-amd64/
