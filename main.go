@@ -72,6 +72,8 @@ var featureActions = []struct {
 func main() {
 	debug.SetGCPercent(50)
 
+	validateScale()
+
 	a := app.NewWithID("chaos.gate.unlocker")
 	a.Settings().SetTheme(ui.Theme{})
 	w := a.NewWindow("Chaos Gate Unlocker")
@@ -204,6 +206,7 @@ func main() {
 		} else {
 			repairDamageSwitch.Show()
 			if enable {
+				repairDamageSwitch.Enable()
 				repairDamageSwitch.SetState(repairDreadnought, false)
 			} else {
 				repairDamageSwitch.Disable()
@@ -279,9 +282,10 @@ func main() {
 		case aboutTab:
 			var actx context.Context
 			actx, acancel = context.WithCancel(context.Background())
+			cancel := acancel
 			go func() {
 				anim.AnimateAbout(actx, back)
-				acancel()
+				cancel()
 			}()
 		default:
 			if acancel != nil {
@@ -422,7 +426,6 @@ func main() {
 		layoutTabs,
 	)
 
-	validateScale()
 	w.Resize(fyne.NewSize(800, 600))
 	w.SetContent(tooltip.AddWindowToolTipLayer(content, w.Canvas()))
 	w.CenterOnScreen()

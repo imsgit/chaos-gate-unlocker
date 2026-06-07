@@ -133,7 +133,11 @@ func (s *Widget) showPopup() {
 	tv := fyne.CurrentApp().Settings().ThemeVariant()
 	pad := th.Size(theme.SizeNamePadding)
 	border := th.Size(theme.SizeNameInputBorder)
-	const contentPad float32 = 2
+
+	contentPad := float32(2)
+	if scale := cv.Scale(); scale > 0 {
+		contentPad = float32(math.Round(float64(contentPad*scale))) / scale
+	}
 
 	var rowH float32
 	if len(rows) > 0 {

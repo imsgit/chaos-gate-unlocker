@@ -32,8 +32,8 @@ func (a *Aquila) Prewarm() { go a.frames() }
 
 func (a *Aquila) frames() (left, right []image.Image) {
 	a.once.Do(func() {
-		a.left = aquilaFrames(a.leftRes, 1.0, -30, 0, 18)
-		a.right = aquilaFrames(a.rightRes, 0.0, 30, 0, 18)
+		a.left = aquilaFrames(a.leftRes, 1.0, -30, 0, 16)
+		a.right = aquilaFrames(a.rightRes, 0.0, 30, 0, 16)
 	})
 	return a.left, a.right
 }
