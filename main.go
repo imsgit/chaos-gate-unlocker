@@ -32,7 +32,7 @@ import (
 )
 
 const (
-	version = "Ver: 1.0.0.%d | Author: imsgit | 2026-06-06"
+	version = "Ver: 1.0.0.%d | Author: imsgit | 2026-06-10"
 )
 
 var (
@@ -40,11 +40,12 @@ var (
 	filesManager    = files.NewManager()
 
 	removeMarketingWeapons, unlockPreorderItems, unlockAdvancedClasses, unlockPuritySeals, unlockAssassins,
-	reattunePrognosticars, unlockGarranCrowe, authorizeDreadnoughtMissions, repairDreadnought, unlockGladiusFrigate,
+	restorePrognosticars, unlockGarranCrowe, authorizeDreadnoughtMissions, repairDreadnought, unlockGladiusFrigate,
 	completeCurrentResearch, completeCurrentConstruction, unequipMastercraftedWeapons, unequipMastercraftedArmor bool
 
 	currUnit       any
 	healUnits      = map[any]bool{}
+	retrainUnits   = map[any]bool{}
 	talentsUnits   = map[any][][]string{}
 	augmeticsUnits = map[any][][]string{}
 )
@@ -57,7 +58,7 @@ var featureActions = []struct {
 	{&repairDreadnought, featuresManager.RepairDreadnought},
 	{&unlockPreorderItems, featuresManager.UnlockPreorderItems},
 	{&unlockAdvancedClasses, featuresManager.UnlockAdvancedClasses},
-	{&reattunePrognosticars, featuresManager.ReattunePrognosticars},
+	{&restorePrognosticars, featuresManager.RestorePrognosticars},
 	{&unlockGarranCrowe, featuresManager.UnlockGarranCrowe},
 	{&authorizeDreadnoughtMissions, featuresManager.AuthorizeDreadnoughtMissions},
 	{&unlockGladiusFrigate, featuresManager.UnlockGladiusFrigate},
@@ -96,7 +97,7 @@ func main() {
 			}
 		}
 
-		canApplyChanges := len(healUnits) > 0 || augmeticsChanged || talentsChanged
+		canApplyChanges := len(healUnits) > 0 || len(retrainUnits) > 0 || augmeticsChanged || talentsChanged
 		for _, action := range featureActions {
 			if *action.flag {
 				canApplyChanges = true
@@ -112,18 +113,18 @@ func main() {
 
 	filesManager.OnLoadState(featuresManager.ApplyState())
 
-	authorizeDreadnoughtMissionsSwitch := boolSwitch(&authorizeDreadnoughtMissions, "ActDread", "Authorize Dreadnought missions", "Marks all regular missions as Technophage, including Hive missions;\nThe difficulty of the missions will increase, won't affect the frigate's chances of winning;\nDreadnought access is required")
-	reattunePrognosticarsSwitch := boolSwitch(&reattunePrognosticars, "ActPrognosticars", "Reattune prognosticars", "Restores all attuned prognosticars, making them available again")
-	completeCurrentResearchSwitch := boolSwitch(&completeCurrentResearch, "ActComplete", "Complete current research", "Completes current research project;\nAdvance current day to unlock")
-	completeCurrentConstructionSwitch := boolSwitch(&completeCurrentConstruction, "ActComplete", "Complete current construction", "Completes current construction project;\nAdvance current day to unlock")
-	unequipMastercraftedArmorSwitch := boolSwitch(&unequipMastercraftedArmor, "ActUnequip", "Unequip mastercrafted armor", "Unequips all mastercrafted armor, clearing the slots if necessary;\nAlso unlocks currently unavailable armor, won't affect the frigate's chances of winning")
-	unequipMastercraftedWeaponsSwitch := boolSwitch(&unequipMastercraftedWeapons, "ActUnequip", "Unequip mastercrafted weapons", "Unequips all mastercrafted weapons;\nAlso unlocks currently unavailable weapons, won't affect the frigate's chances of winning")
+	authorizeDreadnoughtMissionsSwitch := boolSwitch(&authorizeDreadnoughtMissions, "ActDread", "Authorize Dreadnought missions", "Marks all regular missions as Technophage, including Hive missions;\nThe difficulty of the missions will increase, won't affect frigate missions;\nDreadnought access is required")
+	restorePrognosticarsSwitch := boolSwitch(&restorePrognosticars, "ActPrognosticars", "Restore prognosticars", "Makes all attuned prognosticars available again")
+	completeCurrentResearchSwitch := boolSwitch(&completeCurrentResearch, "ActComplete", "Complete current research", "Completes current research project;\nAdvance time to take effect")
+	completeCurrentConstructionSwitch := boolSwitch(&completeCurrentConstruction, "ActComplete", "Complete current construction", "Completes current construction project;\nAdvance time to take effect")
+	unequipMastercraftedArmorSwitch := boolSwitch(&unequipMastercraftedArmor, "ActUnequip", "Unequip mastercrafted armor", "Unequips all mastercrafted armor and frees the slots;\nAlso unlocks unavailable armor, won't affect frigate missions")
+	unequipMastercraftedWeaponsSwitch := boolSwitch(&unequipMastercraftedWeapons, "ActUnequip", "Unequip mastercrafted weapons", "Unequips all mastercrafted weapons;\nAlso unlocks unavailable weapons, won't affect frigate missions")
 	unlockPreorderItemsSwitch := boolSwitch(&unlockPreorderItems, "ActPreorder", "Unlock pre-order items", "Unlocks the Domina Liber Daemonica tome and Destroyer of Crys'yllix hammer")
-	unlockAdvancedClassesSwitch := boolSwitch(&unlockAdvancedClasses, "Librarian", "Unlock advanced classes", "Unlocks the Librarian, Paladin, Chaplain and Purifier classes;\nAdvance current day to unlock")
-	unlockGarranCroweSwitch := boolSwitch(&unlockGarranCrowe, "GarranCrowe", "Unlock Garran Crowe", "Unlocks castellan Garran Crowe;\nDLC access is required;\nAdvance current day to unlock")
-	unlockAssassinsSwitch := boolSwitch(&unlockAssassins, "ActAssassins", "Unlock assassins", "Unlocks imperial assassins;\nDLC access is required;\nAdvance current day to unlock")
-	unlockGladiusFrigateSwitch := boolSwitch(&unlockGladiusFrigate, "ActFrigate", "Unlock Gladius frigate", "Unlocks the Gladius frigate, the Cleanse mission will still appear as expected;\nDLC access is required;\nAdvance current day to unlock")
-	unlockPuritySealsSwitch := boolSwitch(&unlockPuritySeals, "ActSeals", "Unlock purity seals", "Unlocks purity seals upgrades;\nPoxus seeds access is required;\nAdvance current day to unlock")
+	unlockAdvancedClassesSwitch := boolSwitch(&unlockAdvancedClasses, "Librarian", "Unlock advanced classes", "Unlocks the Librarian, Paladin, Chaplain and Purifier classes;\nAdvance time to take effect")
+	unlockGarranCroweSwitch := boolSwitch(&unlockGarranCrowe, "GarranCrowe", "Unlock Garran Crowe", "Unlocks castellan Garran Crowe;\nDLC access is required;\nAdvance time to take effect")
+	unlockAssassinsSwitch := boolSwitch(&unlockAssassins, "ActAssassins", "Unlock assassins", "Unlocks imperial assassins;\nDLC access is required;\nAdvance time to take effect")
+	unlockGladiusFrigateSwitch := boolSwitch(&unlockGladiusFrigate, "ActFrigate", "Unlock Gladius frigate", "Unlocks the Gladius frigate, the Cleanse mission will still appear as expected;\nDLC access is required;\nAdvance time to take effect")
+	unlockPuritySealsSwitch := boolSwitch(&unlockPuritySeals, "ActSeals", "Unlock purity seals", "Unlocks purity seals upgrades;\nPoxus seeds access is required;\nAdvance time to take effect")
 	removeMarketingWeaponsSwitch := boolSwitch(&removeMarketingWeapons, "ActMarketing", "Remove marketing weapons", "Unequips and removes all weapons classified as Twitch drops")
 
 	var repairDamageSwitch *toggle.Widget
@@ -133,7 +134,7 @@ func main() {
 		if repairDamageSwitch.Visible() {
 			repairDamageSwitch.SetState(on, false)
 		}
-	}, "ActRepair", "Repair Dreadnought", "Repairs the Dreadnought's damage for free;\nDreadnought access is required")
+	}, "ActRepair", "Repair Dreadnought", "Repairs the Dreadnought's damage;\nDreadnought access is required")
 
 	unitsBox := container.NewVBox()
 	unitsScrollBox := container.NewVScroll(unitsBox)
@@ -144,7 +145,7 @@ func main() {
 			healUnits[currUnit] = on
 		}
 		augmeticsBox := container.NewVBox()
-		unitsBox.Objects[3] = augmeticsBox
+		unitsBox.Objects[4] = augmeticsBox
 		for i := 0; ; i++ {
 			initNewAugmetic := len(augmeticsUnits[currUnit][1]) == i
 			if sel := renderAugmetic(i, initNewAugmetic); sel != nil {
@@ -164,11 +165,20 @@ func main() {
 		repairDreadnought = on
 		refreshSaveButton()
 		repairDreadnoughtSwitch.SetState(on, false)
-	}, "ActRepair", "Repair damage", "Repairs the Dreadnought's damage for free")
+	}, "ActRepair", "Repair damage", "Repairs the Dreadnought's damage")
 	repairDamageSwitch.Hide()
 
+	retrainSwitch := toggle.New(func(on bool) {
+		delete(retrainUnits, currUnit)
+		if on {
+			retrainUnits[currUnit] = on
+		}
+		refreshSaveButton()
+	}, "Talent_ZealousScholar", "Retrain abilities", "Refunds all spent ability points")
+	retrainSwitch.Hide()
+
 	unitsBox.Objects = append(unitsBox.Objects,
-		healWoundSwitch, repairDamageSwitch, container.NewVBox(), container.NewVBox())
+		healWoundSwitch, repairDamageSwitch, retrainSwitch, container.NewVBox(), container.NewVBox())
 
 	unitsProvider := binding.NewUntypedList()
 	status := binding.NewString()
@@ -214,23 +224,37 @@ func main() {
 			}
 		}
 
+		if canRetrain, showRetrain := featuresManager.CanRetrainUnit(currUnit); showRetrain {
+			retrainSwitch.Show()
+			if canRetrain {
+				retrainSwitch.Enable()
+				retrainSwitch.SetState(retrainUnits[currUnit], false)
+			} else {
+				retrainSwitch.Disable()
+				retrainSwitch.SetState(true, false)
+			}
+		} else {
+			retrainSwitch.Hide()
+		}
+
 		initTalents := len(talentsUnits[currUnit]) == 0
 		if initTalents {
 			talentsUnits[currUnit] = append(talentsUnits[currUnit], []string{}, []string{})
 		}
-		unitsBox.Objects[2] = fillDropdownBox(renderTalent, initTalents)
+		unitsBox.Objects[3] = fillDropdownBox(renderTalent, initTalents)
 
 		initAugmetics := len(augmeticsUnits[currUnit]) == 0
 		if initAugmetics {
 			augmeticsUnits[currUnit] = append(augmeticsUnits[currUnit], []string{}, []string{})
 		}
-		unitsBox.Objects[3] = fillDropdownBox(renderAugmetic, initAugmetics)
+		unitsBox.Objects[4] = fillDropdownBox(renderAugmetic, initAugmetics)
 	}
 	unitsList.OnUnselected = func(widget.ListItemID) {
 		healWoundSwitch.Hide()
 		repairDamageSwitch.Hide()
-		unitsBox.Objects[2] = container.NewVBox()
+		retrainSwitch.Hide()
 		unitsBox.Objects[3] = container.NewVBox()
+		unitsBox.Objects[4] = container.NewVBox()
 		unitsScrollBox.ScrollToTop()
 	}
 
@@ -249,7 +273,7 @@ func main() {
 			container.NewVBox(
 				authorizeDreadnoughtMissionsSwitch,
 				repairDreadnoughtSwitch,
-				reattunePrognosticarsSwitch,
+				restorePrognosticarsSwitch,
 				completeCurrentResearchSwitch,
 				completeCurrentConstructionSwitch,
 				unequipMastercraftedArmorSwitch,
@@ -347,6 +371,7 @@ func main() {
 			})
 
 			healUnits = map[any]bool{}
+			retrainUnits = map[any]bool{}
 			augmeticsUnits = map[any][][]string{}
 			talentsUnits = map[any][][]string{}
 
@@ -364,7 +389,7 @@ func main() {
 			resetSwitch(unlockAdvancedClassesSwitch, featuresManager.CanUnlockAdvancedClasses)
 			resetSwitch(repairDreadnoughtSwitch, featuresManager.CanRepairDreadnought)
 			resetSwitch(unlockPuritySealsSwitch, featuresManager.CanUnlockPuritySeals)
-			resetSwitch(reattunePrognosticarsSwitch, featuresManager.CanReattunePrognosticars)
+			resetSwitch(restorePrognosticarsSwitch, featuresManager.CanRestorePrognosticars)
 			resetSwitch(unlockGarranCroweSwitch, featuresManager.CanUnlockGarranCrowe)
 			resetSwitch(authorizeDreadnoughtMissionsSwitch, featuresManager.CanAuthorizeDreadnoughtMissions)
 			resetSwitch(unlockGladiusFrigateSwitch, featuresManager.CanUnlockGladiusFrigate)
@@ -555,6 +580,9 @@ func applyChanges() {
 	}
 	for unit := range healUnits {
 		featuresManager.HealUnit(unit)
+	}
+	for unit := range retrainUnits {
+		featuresManager.RetrainUnit(unit)
 	}
 	for unit, augmetics := range augmeticsUnits {
 		featuresManager.ChangeUnitAugmetics(unit, augmetics[1])

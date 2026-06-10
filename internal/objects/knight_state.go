@@ -20,7 +20,7 @@ type KnightState struct {
 		DaysLeft  int    `json:"daysLeft"`
 	} `json:"currentSideMission"`
 	LostMaxHealth       int             `json:"lostMaxHealth"`
-	ClassPerks          json.RawMessage `json:"classPerks"`
+	ClassPerks          []*StringValue  `json:"classPerks"`
 	CurrentXP           int             `json:"currentXP"`
 	CurrentLevelData    StringValue     `json:"currentLevelData"`
 	NextLevelData       json.RawMessage `json:"nextLevelData"`

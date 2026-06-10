@@ -10,7 +10,7 @@ const (
 	PrognosticarTutorial = "Prognosticar_Tutorial"
 )
 
-func (m *Manager) ReattunePrognosticars() {
+func (m *Manager) RestorePrognosticars() {
 	var currency *objects.Currency
 
 	for _, record := range m.state.LinearRecords {
@@ -42,7 +42,7 @@ func (m *Manager) ReattunePrognosticars() {
 	}
 }
 
-func (m *Manager) CanReattunePrognosticars() (bool, bool) {
+func (m *Manager) CanRestorePrognosticars() (bool, bool) {
 	var currency *objects.Currency
 
 	for _, record := range m.state.LinearRecords {
