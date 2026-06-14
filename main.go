@@ -32,7 +32,7 @@ import (
 )
 
 const (
-	version = "Ver: 1.0.0.%d | Author: imsgit | 2026-06-10"
+	version = "Ver: 1.0.0.%d | Author: imsgit | 2026-06-14"
 )
 
 var (
@@ -174,7 +174,7 @@ func main() {
 			retrainUnits[currUnit] = on
 		}
 		refreshSaveButton()
-	}, "Talent_ZealousScholar", "Retrain abilities", "Refunds all spent ability points;\nPoints gained by communing with dead knights aren't refunded")
+	}, "Talent_ZealousScholar", "Retrain abilities", "Refunds spent ability points;\nExtra points gained by communing with fallen knights aren't refunded")
 	retrainSwitch.Hide()
 
 	unitsBox.Objects = append(unitsBox.Objects,

@@ -10,7 +10,7 @@ Easy-to-use tool that lets you edit game saves to improve your gaming experience
 
 This tool is designed to make the Dreadnought available more often by authorizing missions for him and making repairs easier. Another key feature is unlocking advanced classes from the beginning, since they appear too late in the game. The final major concept is to let players use the Gladius frigate from the start, adding a fresh dynamic to the game.
 
-Players are expected to progress through the campaign, explore, collect gear, level up, and master the game at a steady pace, keeping the core experience of discovery and challenge. This tool doesn't allow altering in-game currencies, adding items or granting XP. It saves time by unlocking things earlier while still keeping the overall enjoyment intact.
+Players are expected to progress through the campaign, explore, collect gear, level up, and master the game at a steady pace, keeping the core experience of discovery and challenge. This tool doesn't allow altering in-game currencies, adding items, or granting XP. It saves time by unlocking things earlier while still keeping the overall enjoyment intact.
 
 ## Prerequisites
 
@@ -36,7 +36,7 @@ The Main page is split into two columns. The left column holds Dreadnought and g
 
 **Left column**
 
-- **Authorize Dreadnought missions** — marks all regular missions (including Hive missions) as Technophage so the Dreadnought can join them; mission difficulty rises and frigate missions are unaffected (Dreadnought access required).
+- **Authorize Dreadnought missions** — marks all regular missions (including Hive missions) as Technophage so the Dreadnought can join them; mission difficulty rises, but frigate missions are unaffected (Dreadnought access required).
 - **Repair Dreadnought** — repairs the Dreadnought's damage so it returns to action sooner (Dreadnought access required).
 - **Restore prognosticars** — makes all attuned prognosticars available again.
 - **Complete current research** — finishes the active research project instantly (advance time to take effect).
@@ -47,7 +47,7 @@ The Main page is split into two columns. The left column holds Dreadnought and g
 **Right column — one-time unlocks**
 
 - **Unlock pre-order items** — unlocks the Domina Liber Daemonica tome and Destroyer of Crys'yllix hammer.
-- **Unlock advanced classes** — unlocks the Librarian, Paladin, Chaplain and Purifier classes (advance time to take effect).
+- **Unlock advanced classes** — unlocks the Librarian, Paladin, Chaplain, and Purifier classes (advance time to take effect).
 - **Unlock Garran Crowe** — unlocks castellan Garran Crowe (DLC required; advance time to take effect).
 - **Unlock assassins** — unlocks the imperial assassins (DLC required; advance time to take effect).
 - **Unlock Gladius frigate** — unlocks the Gladius frigate; the Cleanse mission still appears as expected (DLC required; advance time to take effect).
@@ -66,6 +66,6 @@ On the Units page everything is organized in the same order as the units appear 
 
 ## Known issues
 
-You may still see in-game notifications for purity seals, advanced classes and frigate later in the game.
+You may still see in-game notifications for purity seals, advanced classes, and frigate later in the game.
 
-Retrain does not refund ability points that were gained by communing with dead knights — only normally spent points are restored.
+Retrain does not refund extra ability points gained by communing with fallen knights — only normally spent points are restored.
