@@ -62,8 +62,10 @@ On the Units page everything is organized in the same order as the units appear 
 
 - **Augmetics** — when you heal a critical wound, you can add an augmetic or change existing ones. A knight cannot have more augmetics than the resilience they have lost.
 - **Talents** — manage a unit's existing talents. Extra talents can be earned through special events, such as A Solitary Duty or The Tournament.
-- **Retrain** — refunds all spent ability points so you can rebuild a unit's abilities from scratch. The unit keeps its level and any separately learned class perks.
+- **Retrain** — refunds spent ability points so you can rebuild a unit's abilities from scratch. The unit keeps its level and any separately learned class perks.
 
 ## Known issues
 
 You may still see in-game notifications for purity seals, advanced classes and frigate later in the game.
+
+Retrain does not refund ability points that were gained by communing with dead knights — only normally spent points are restored.

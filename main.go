@@ -174,7 +174,7 @@ func main() {
 			retrainUnits[currUnit] = on
 		}
 		refreshSaveButton()
-	}, "Talent_ZealousScholar", "Retrain abilities", "Refunds all spent ability points")
+	}, "Talent_ZealousScholar", "Retrain abilities", "Refunds all spent ability points;\nPoints gained by communing with dead knights aren't refunded")
 	retrainSwitch.Hide()
 
 	unitsBox.Objects = append(unitsBox.Objects,
