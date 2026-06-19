@@ -13,6 +13,7 @@ import (
 
 	"context"
 	"fmt"
+	"net/url"
 	"os"
 	"os/exec"
 	"regexp"
@@ -31,7 +32,8 @@ import (
 )
 
 const (
-	version = "Ver: 1.0.0.%d | Author: imsgit | 2026-06-20"
+	version    = "Ver: 1.0.0.%d | Author: imsgit | 2026-06-20"
+	websiteURL = "https://imsgit.github.io/chaos-gate-unlocker/"
 )
 
 var (
@@ -290,8 +292,6 @@ func main() {
 	aboutTab := container.NewTabItemWithIcon("About", ui.AppTabAboutIcon(),
 		container.NewBorder(nil, nil,
 			widget.NewRichTextFromMarkdown(`
-[> Open the browser version](https://imsgit.github.io/chaos-gate-unlocker/)
-
 [> Visit Nexus Mods for more information](https://www.nexusmods.com/warhammer40kchaosgatedaemonhunters/mods/5)
 
 [> Visit Fyne.io for app details](https://apps.fyne.io/apps/chaos.gate.unlocker.html)`),
@@ -430,12 +430,17 @@ func main() {
 	statusLabel := widget.NewLabelWithData(status)
 	var bottomBar fyne.CanvasObject = statusLabel
 	if browserSupported {
-		browserButton := widget.NewButton("Open in Browser", func() {
+		browserLink := widget.NewHyperlink("> Try web version", nil)
+		browserLink.OnTapped = func() {
 			if err := openInBrowser(); err != nil {
 				dialog.ShowError(err, w)
 			}
-		})
-		bottomBar = container.NewBorder(nil, nil, nil, browserButton, statusLabel)
+		}
+		bottomBar = container.NewBorder(nil, nil, nil, browserLink, statusLabel)
+	} else if runtime.GOOS != "js" {
+		u, _ := url.Parse(websiteURL)
+		websiteLink := widget.NewHyperlink("> Try web version", u)
+		bottomBar = container.NewBorder(nil, nil, nil, websiteLink, statusLabel)
 	}
 
 	content := container.NewBorder(
