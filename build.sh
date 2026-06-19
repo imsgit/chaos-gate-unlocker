@@ -52,6 +52,12 @@ my $a = "\tbody := container.NewHSplit(\n\t\tf.favoritesList,\n\t\tcontainer.New
 my $b = "\tbody := container.NewBorder(\n\t\tf.breadcrumbScroll, nil, nil, nil,\n\t\tf.filesScroll,\n\t)";
 my $i = index($_, $a); die "file.go body block not found\n" if $i < 0; substr($_, $i, length($a)) = $b;' "$filego"
 
+# Embedded browser build — disabled for now; browser version is hosted on Pages.
+# Re-enable by uncommenting these and adding embedwasm to the -tags below.
+# echo "=== Generate embedded wasm bundle ==="
+# fyne package -os wasm
+# gzip -9 -f wasm/ChaosGateUnlocker.wasm
+
 for os in windows linux; do
 	echo "=== Build $os/amd64 ==="
 	fyne-cross "$os" -arch=amd64 -app-build "$build" -tags no_emoji

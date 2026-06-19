@@ -27,12 +27,11 @@ import (
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/data/binding"
 	"fyne.io/fyne/v2/dialog"
-	"fyne.io/fyne/v2/storage"
 	"fyne.io/fyne/v2/widget"
 )
 
 const (
-	version = "Ver: 1.0.0.%d | Author: imsgit | 2026-06-14"
+	version = "Ver: 1.0.0.%d | Author: imsgit | 2026-06-20"
 )
 
 var (
@@ -291,11 +290,11 @@ func main() {
 	aboutTab := container.NewTabItemWithIcon("About", ui.AppTabAboutIcon(),
 		container.NewBorder(nil, nil,
 			widget.NewRichTextFromMarkdown(`
+[> Open the browser version](https://imsgit.github.io/chaos-gate-unlocker/)
+
 [> Visit Nexus Mods for more information](https://www.nexusmods.com/warhammer40kchaosgatedaemonhunters/mods/5)
 
-[> Visit Fyne.io for app details](https://apps.fyne.io/apps/chaos.gate.unlocker.html)
-
-[> Visit Reddit for discussion](https://www.reddit.com/r/ChaosGateGame/comments/1hz3s5g/chaosgateunlocker)`),
+[> Visit Fyne.io for app details](https://apps.fyne.io/apps/chaos.gate.unlocker.html)`),
 			widget.NewRichTextFromMarkdown(fmt.Sprintf(version, a.Metadata().Build))))
 
 	var acancel context.CancelFunc
@@ -359,57 +358,45 @@ func main() {
 		status.Set("")
 	}
 
+	loadData := func(name string, data []byte) {
+		cancel := animateTop(true, func() {
+			layoutTabs.Show()
+			status.Set(filesManager.Status())
+		})
+
+		healUnits = map[any]bool{}
+		retrainUnits = map[any]bool{}
+		augmeticsUnits = map[any][][]string{}
+		talentsUnits = map[any][][]string{}
+
+		resetUI()
+
+		if err := filesManager.LoadBytes(name, data); err != nil {
+			cancel()
+			dialog.ShowError(err, w)
+			return
+		}
+
+		unitsProvider.Set(featuresManager.Units())
+
+		resetSwitch(unlockAdvancedClassesSwitch, featuresManager.CanUnlockAdvancedClasses)
+		resetSwitch(repairDreadnoughtSwitch, featuresManager.CanRepairDreadnought)
+		resetSwitch(unlockPuritySealsSwitch, featuresManager.CanUnlockPuritySeals)
+		resetSwitch(restorePrognosticarsSwitch, featuresManager.CanRestorePrognosticars)
+		resetSwitch(unlockGarranCroweSwitch, featuresManager.CanUnlockGarranCrowe)
+		resetSwitch(authorizeDreadnoughtMissionsSwitch, featuresManager.CanAuthorizeDreadnoughtMissions)
+		resetSwitch(unlockGladiusFrigateSwitch, featuresManager.CanUnlockGladiusFrigate)
+		resetSwitch(completeCurrentResearchSwitch, featuresManager.CanCompleteCurrentResearch)
+		resetSwitch(completeCurrentConstructionSwitch, featuresManager.CanCompleteCurrentConstruction)
+		resetSwitch(unlockAssassinsSwitch, featuresManager.CanUnlockAssassins)
+		resetSwitchOn(unlockPreorderItemsSwitch, featuresManager.CanUnlockPreorderItems())
+		resetSwitchOn(unequipMastercraftedWeaponsSwitch, featuresManager.CanUnequipMastercraftedWeapons())
+		resetSwitchOn(unequipMastercraftedArmorSwitch, featuresManager.CanUnequipMastercraftedArmor())
+		resetSwitchOn(removeMarketingWeaponsSwitch, featuresManager.CanRemoveMarketingWeapons())
+	}
+
 	openButton = tooltip.NewButton("Open", func() {
-		fileDialog := dialog.NewFileOpen(func(rc fyne.URIReadCloser, err error) {
-			if rc == nil {
-				return
-			}
-
-			cancel := animateTop(true, func() {
-				layoutTabs.Show()
-				status.Set(filesManager.Status())
-			})
-
-			healUnits = map[any]bool{}
-			retrainUnits = map[any]bool{}
-			augmeticsUnits = map[any][][]string{}
-			talentsUnits = map[any][][]string{}
-
-			resetUI()
-
-			err = filesManager.Load(rc)
-			if err != nil {
-				cancel()
-				dialog.ShowError(err, w)
-				return
-			}
-
-			unitsProvider.Set(featuresManager.Units())
-
-			resetSwitch(unlockAdvancedClassesSwitch, featuresManager.CanUnlockAdvancedClasses)
-			resetSwitch(repairDreadnoughtSwitch, featuresManager.CanRepairDreadnought)
-			resetSwitch(unlockPuritySealsSwitch, featuresManager.CanUnlockPuritySeals)
-			resetSwitch(restorePrognosticarsSwitch, featuresManager.CanRestorePrognosticars)
-			resetSwitch(unlockGarranCroweSwitch, featuresManager.CanUnlockGarranCrowe)
-			resetSwitch(authorizeDreadnoughtMissionsSwitch, featuresManager.CanAuthorizeDreadnoughtMissions)
-			resetSwitch(unlockGladiusFrigateSwitch, featuresManager.CanUnlockGladiusFrigate)
-			resetSwitch(completeCurrentResearchSwitch, featuresManager.CanCompleteCurrentResearch)
-			resetSwitch(completeCurrentConstructionSwitch, featuresManager.CanCompleteCurrentConstruction)
-			resetSwitch(unlockAssassinsSwitch, featuresManager.CanUnlockAssassins)
-			resetSwitchOn(unlockPreorderItemsSwitch, featuresManager.CanUnlockPreorderItems())
-			resetSwitchOn(unequipMastercraftedWeaponsSwitch, featuresManager.CanUnequipMastercraftedWeapons())
-			resetSwitchOn(unequipMastercraftedArmorSwitch, featuresManager.CanUnequipMastercraftedArmor())
-			resetSwitchOn(removeMarketingWeaponsSwitch, featuresManager.CanRemoveMarketingWeapons())
-		}, w)
-
-		l, _ := storage.ListerForURI(storage.NewFileURI(filesManager.GetCurrentPath()))
-		fileDialog.SetTitleText("Open game save file ../" + filesManager.SaveDir())
-		fileDialog.SetConfirmText("Open")
-		fileDialog.SetDismissText("Cancel")
-		fileDialog.SetLocation(l)
-		fileDialog.Resize(fyne.NewSize(800, 600))
-		fileDialog.SetFilter(storage.NewExtensionFileFilter([]string{".gksave"}))
-		fileDialog.Show()
+		openFile(w, filesManager, loadData)
 	})
 	openButton.SetToolTip("Can't find your save? It's in:\n" + filesManager.DefaultLocationHint())
 
@@ -428,8 +415,7 @@ func main() {
 
 				resetUI()
 
-				err := filesManager.Save()
-				if err != nil {
+				if err := saveFile(filesManager); err != nil {
 					cancel()
 					dialog.ShowError(err, w)
 				}
@@ -441,10 +427,21 @@ func main() {
 	})
 	saveButton.Disable()
 
+	statusLabel := widget.NewLabelWithData(status)
+	var bottomBar fyne.CanvasObject = statusLabel
+	if browserSupported {
+		browserButton := widget.NewButton("Open in Browser", func() {
+			if err := openInBrowser(); err != nil {
+				dialog.ShowError(err, w)
+			}
+		})
+		bottomBar = container.NewBorder(nil, nil, nil, browserButton, statusLabel)
+	}
+
 	content := container.NewBorder(
 		container.NewBorder(nil, nil, leftAquila, rightAquila,
 			container.NewVBox(openButton, saveButton, progressLine)),
-		widget.NewLabelWithData(status),
+		bottomBar,
 		nil, nil,
 		back,
 		eyeGlowOverlay,

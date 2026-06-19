@@ -197,12 +197,16 @@ func dirExists(path string) bool {
 func (m *Manager) Load(reader fyne.URIReadCloser) error {
 	defer reader.Close()
 
-	m.filePath = reader.URI().Path()
-
-	file, err := io.ReadAll(reader)
+	data, err := io.ReadAll(reader)
 	if err != nil {
 		return err
 	}
+
+	return m.LoadBytes(reader.URI().Path(), data)
+}
+
+func (m *Manager) LoadBytes(path string, file []byte) error {
+	m.filePath = path
 
 	chunks := bytes.SplitN(file, sep, 3)
 	if len(chunks) < 3 {
@@ -211,11 +215,11 @@ func (m *Manager) Load(reader fyne.URIReadCloser) error {
 
 	headerBytes, stateBytes, combatStateBytes := chunks[0], chunks[1], chunks[2]
 
-	if err = m.loadHeader(headerBytes); err != nil {
+	if err := m.loadHeader(headerBytes); err != nil {
 		return err
 	}
 
-	if err = m.loadState(stateBytes); err != nil {
+	if err := m.loadState(stateBytes); err != nil {
 		return err
 	}
 
@@ -229,6 +233,8 @@ func (m *Manager) Load(reader fyne.URIReadCloser) error {
 
 	return nil
 }
+
+func (m *Manager) Name() string { return filepath.Base(m.filePath) }
 
 func (m *Manager) loadHeader(headerBytes []byte) error {
 	var header internal.Header
@@ -258,15 +264,15 @@ func (m *Manager) loadState(stateBytes []byte) error {
 	return nil
 }
 
-func (m *Manager) Save() error {
+func (m *Manager) Encode() ([]byte, error) {
 	headerBytes, err := json.Marshal(m.header)
 	if err != nil {
-		return ErrSaveFile
+		return nil, ErrSaveFile
 	}
 
 	stateBytes, err := json.Marshal(m.state)
 	if err != nil {
-		return ErrSaveFile
+		return nil, ErrSaveFile
 	}
 	stateBytes = encodeDecode(stateBytes)
 
@@ -287,8 +293,16 @@ func (m *Manager) Save() error {
 		file = append(file, sep...)
 	}
 
-	err = os.WriteFile(m.filePath, file, 0600)
+	return file, nil
+}
+
+func (m *Manager) Save() error {
+	file, err := m.Encode()
 	if err != nil {
+		return err
+	}
+
+	if err := os.WriteFile(m.filePath, file, 0600); err != nil {
 		return ErrSaveFile
 	}
 

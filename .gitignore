@@ -1,4 +1,6 @@
 /bin
 /fyne-cross
 /vendor
+/wasm/
+/.claude/
 /.idea

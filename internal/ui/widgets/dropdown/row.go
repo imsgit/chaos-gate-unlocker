@@ -145,24 +145,19 @@ func (r *selectRowRenderer) Refresh() {
 	v := fyne.CurrentApp().Settings().ThemeVariant()
 
 	r.text.Text = r.row.text
-	if r.row.disabled {
-		r.text.Color = th.Color(theme.ColorNameDisabled, v)
-	} else {
-		r.text.Color = th.Color(theme.ColorNameForeground, v)
-	}
+	r.text.Color = th.Color(theme.ColorNameForeground, v)
 
 	if r.img != nil {
 		r.img.Translucency = 0
-		if r.row.disabled {
-			_, _, _, a := th.Color(theme.ColorNameDisabled, v).RGBA()
-			r.img.Translucency = 1 - float64(a)/0xFFFF
-		}
 		r.img.Refresh()
 	}
 
-	if r.row.hovered || r.row.highlighted {
+	switch {
+	case r.row.disabled:
+		r.bg.FillColor = th.Color(theme.ColorNameSelection, v)
+	case r.row.hovered || r.row.highlighted:
 		r.bg.FillColor = th.Color(theme.ColorNameHover, v)
-	} else {
+	default:
 		r.bg.FillColor = color.Transparent
 	}
 
