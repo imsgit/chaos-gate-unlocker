@@ -31,8 +31,8 @@ jobs:
 
       - name: Build and compress wasm bundle
         run: |
-          fyne package -os wasm
           build=$(grep -oE 'Build *= *[0-9]+' FyneApp.toml | grep -oE '[0-9]+')
+          fyne package -os wasm --app-build "$build"
           sed -i -E "s#(application-version\">v[0-9.]+)<#\1.$build<#" wasm/index.html
           grep -qE "application-version\">v[0-9.]+\.$build<" wasm/index.html || { echo "::error::splash version patch did not apply — fyne template changed"; exit 1; }
           gzip -9 wasm/ChaosGateUnlocker.wasm

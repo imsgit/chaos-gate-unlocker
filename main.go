@@ -430,7 +430,7 @@ func main() {
 	statusLabel := widget.NewLabelWithData(status)
 	var bottomBar fyne.CanvasObject = statusLabel
 	if browserSupported {
-		browserLink := widget.NewHyperlink("> Try web version", nil)
+		browserLink := widget.NewHyperlink("> Try it online", nil)
 		browserLink.OnTapped = func() {
 			if err := openInBrowser(); err != nil {
 				dialog.ShowError(err, w)
@@ -439,7 +439,7 @@ func main() {
 		bottomBar = container.NewBorder(nil, nil, nil, browserLink, statusLabel)
 	} else if runtime.GOOS != "js" {
 		u, _ := url.Parse(websiteURL)
-		websiteLink := widget.NewHyperlink("> Try web version", u)
+		websiteLink := widget.NewHyperlink("> Try it online", u)
 		bottomBar = container.NewBorder(nil, nil, nil, websiteLink, statusLabel)
 	}
 
