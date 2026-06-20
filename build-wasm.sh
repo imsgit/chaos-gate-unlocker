@@ -4,7 +4,7 @@ cd "$(dirname "$0")"
 
 build=$(grep -oE 'Build *= *[0-9]+' FyneApp.toml | grep -oE '[0-9]+')
 echo "=== fyne package wasm | build $build (no auto-bump) ==="
-fyne package -os wasm --app-build "$build"
+fyne package -os wasm --app-build "$build" --tags no_emoji
 sed -i -E "s/^(\s*Build *= *).*/\1${build}/" FyneApp.toml
 
 sed -i -E "s#(application-version\">v[0-9.]+)<#\1.$build<#" wasm/index.html
@@ -13,8 +13,9 @@ grep -qE "application-version\">v[0-9.]+\.$build<" wasm/index.html || { echo "[!
 sed -i '/application-name/d' wasm/index.html
 ! grep -q application-name wasm/index.html || { echo "[!] app-name strip failed"; exit 1; }
 
-# App has no text inputs; stop the hidden dummyEntry from raising the mobile soft
-# keyboard when a toggle/dropdown (any Focusable) gains focus.
+sed -i 's/max-width: 130px;/max-width: 180px;/; s/max-height: 130px;/max-height: 180px;/' wasm/index.html
+grep -qF 'max-width: 180px;' wasm/index.html || { echo "[!] splash logo resize failed"; exit 1; }
+
 sed -i 's#<input id="dummyEntry"#<input id="dummyEntry" inputmode="none" readonly#' wasm/index.html
 grep -qF 'id="dummyEntry" inputmode="none" readonly' wasm/index.html || { echo "[!] dummyEntry keyboard suppress failed"; exit 1; }
 
