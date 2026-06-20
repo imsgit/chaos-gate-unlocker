@@ -19,12 +19,9 @@ idx=wasm/index.html
 
 sed -i -E "s#(application-version\">v[0-9.]+)<#\1.$build<#" "$idx"
 grep -qE "application-version\">v[0-9.]+\.$build<" "$idx" || { echo "[!] version patch failed"; exit 1; }
-sed -i '/application-name/d' "$idx";                              gone "$idx" application-name
-sed -i 's/max-width: 130px;/max-width: 180px;/; s/max-height: 130px;/max-height: 180px;/' "$idx"
-have "$idx" 'max-width: 180px;'
-
-sed -i 's#<input id="dummyEntry"#<input id="dummyEntry" inputmode="none" readonly#' "$idx"
-have "$idx" 'id="dummyEntry" inputmode="none" readonly'
+del "$idx" '/application-name/d' application-name
+sub "$idx" 's/max-width: 130px;/max-width: 160px;/; s/max-height: 130px;/max-height: 160px;/' 'max-width: 160px;'
+sub "$idx" 's#<input id="dummyEntry"#<input id="dummyEntry" inputmode="none" readonly#' 'id="dummyEntry" inputmode="none" readonly'
 
 echo "=== Strip wasm 'name' custom section ==="
 python3 - wasm/ChaosGateUnlocker.wasm <<'PY'
@@ -54,18 +51,16 @@ print(f"  stripped {dropped} bytes")
 PY
 
 gzip -9 -f wasm/ChaosGateUnlocker.wasm
-sed -i 's#fetch("ChaosGateUnlocker.wasm")#fetch("ChaosGateUnlocker.wasm.gz").then(r=>new Response(r.body.pipeThrough(new DecompressionStream("gzip")),{headers:{"Content-Type":"application/wasm"}}))#' "$idx"
-have "$idx" DecompressionStream
+sub "$idx" 's#fetch("ChaosGateUnlocker.wasm")#fetch("ChaosGateUnlocker.wasm.gz").then(r=>new Response(r.body.pipeThrough(new DecompressionStream("gzip")),{headers:{"Content-Type":"application/wasm"}}))#' DecompressionStream
 
-sed -i '/webgl-debug\.js/d' "$idx"; gone "$idx" webgl-debug
+del "$idx" '/webgl-debug\.js/d' webgl-debug
 rm -f wasm/webgl-debug.js
 
-sed -i 's#<meta charset="utf-8">#<meta charset="utf-8"><script>(function(){var dpr=2;try{var p=window.parent;var s=Math.min(p.innerWidth/800,p.innerHeight/600);dpr=Math.min(s*(p.devicePixelRatio||1),3);}catch(e){}Object.defineProperty(window,"devicePixelRatio",{configurable:true,get:function(){return dpr;}});window.__setDPR=function(v){v=Math.min(Math.max(v,0.5),3);if(Math.abs(v-dpr)<0.01)return;dpr=v;window.dispatchEvent(new Event("resize"));};Object.defineProperty(navigator,"userAgent",{configurable:true,get:function(){return "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";}});})();</script>#' "$idx"
-have "$idx" 'window.__setDPR'; have "$idx" 'Chrome/120.0.0.0'
+sub "$idx" 's#<meta charset="utf-8">#<meta charset="utf-8"><script>(function(){var dpr=2;try{var p=window.parent;var s=Math.min(p.innerWidth/800,p.innerHeight/600);dpr=Math.min(s*(p.devicePixelRatio||1),3);}catch(e){}Object.defineProperty(window,"devicePixelRatio",{configurable:true,get:function(){return dpr;}});window.__setDPR=function(v){v=Math.min(Math.max(v,0.5),3);if(Math.abs(v-dpr)<0.01)return;dpr=v;window.dispatchEvent(new Event("resize"));};Object.defineProperty(navigator,"userAgent",{configurable:true,get:function(){return "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";}});})();</script>#' 'window.__setDPR'
+have "$idx" 'Chrome/120.0.0.0'
 
-sed -i 's|<style>|<style>html,body{background-color:#151515}@media (prefers-color-scheme: light){html,body{background-color:#fff}}|' "$idx"
-have "$idx" 'html,body{background-color:#151515}'
-sed -i 's/#141415/#151515/g' wasm/dark.css; have wasm/dark.css '#151515'
+sub "$idx" 's|<style>|<style>html,body{background-color:#151515}@media (prefers-color-scheme: light){html,body{background-color:#fff}}|' 'html,body{background-color:#151515}'
+sub wasm/dark.css 's/#141415/#151515/g' '#151515'
 
 mv "$idx" wasm/app.html
 cp .github/pages-index.html "$idx"

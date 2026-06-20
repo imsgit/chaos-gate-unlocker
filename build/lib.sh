@@ -8,6 +8,9 @@ restore_swaps() { for s in "${!_bak[@]}"; do mv -f "${_bak[$s]}" "$s"; done; }
 have() { grep -qF "$2" "$1" || { echo "[!] expected '$2' in $1" >&2; exit 1; }; }
 gone() { ! grep -qF "$2" "$1" || { echo "[!] '$2' still present in $1" >&2; exit 1; }; }
 
+sub() { sed -i "$2" "$1"; have "$1" "$3"; }
+del() { sed -i "$2" "$1"; gone "$1" "$3"; }
+
 stub_fonts() {
 	local fontdir=vendor/fyne.io/fyne/v2/theme/font f
 	echo "=== Stub unused fonts (italic/bolditalic/mono) ==="
