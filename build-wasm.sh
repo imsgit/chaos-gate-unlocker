@@ -18,8 +18,9 @@ sed -i '/webgl-debug\.js/d' wasm/index.html
 ! grep -q webgl-debug wasm/index.html || { echo "[!] webgl-debug strip failed"; exit 1; }
 rm -f wasm/webgl-debug.js
 
-sed -i 's#<meta charset="utf-8">#<meta charset="utf-8"><script>(function(){var r=window.devicePixelRatio||1;Object.defineProperty(window,"devicePixelRatio",{configurable:true,get:function(){return r>2?2:r;}});})();</script>#' wasm/index.html
+sed -i 's#<meta charset="utf-8">#<meta charset="utf-8"><script>(function(){var r=window.devicePixelRatio||1;Object.defineProperty(window,"devicePixelRatio",{configurable:true,get:function(){return r>2?2:r;}});Object.defineProperty(navigator,"userAgent",{configurable:true,get:function(){return "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";}});})();</script>#' wasm/index.html
 grep -qF 'return r>2?2:r' wasm/index.html || { echo "[!] DPR cap inject failed"; exit 1; }
+grep -qF 'Chrome/120.0.0.0' wasm/index.html || { echo "[!] desktop UA inject failed"; exit 1; }
 
 sed -i 's|<style>|<style>html,body{background-color:#151515}@media (prefers-color-scheme: light){html,body{background-color:#fff}}|' wasm/index.html
 grep -qF 'html,body{background-color:#151515}' wasm/index.html || { echo "[!] splash bg inject failed"; exit 1; }
