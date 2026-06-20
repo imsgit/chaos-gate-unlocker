@@ -48,8 +48,8 @@ func AnimateAbout(ctx context.Context, im *canvas.Image) {
 type glowEye struct{ cx, cy, rx, ry, reveal, bloom, lo, hi, grad float64 }
 
 type glowSpot struct {
-	off            int
-	pr, pg, pb, pa float64
+	off int
+	p   [4]float64
 }
 
 type EyeGlow struct {
@@ -98,7 +98,11 @@ func (g *EyeGlow) build() {
 		g.cv = &canvas.Image{Image: g.img, FillMode: canvas.ImageFillContain, ScaleMode: canvas.ImageScaleFastest}
 
 		tintR, tintG, tintB := float64(g.tint.R), float64(g.tint.G), float64(g.tint.B)
-		for _, e := range g.eyes {
+
+		type eyeBox struct{ x0, y0, x1, y1, w, h int }
+		boxes := make([]eyeBox, len(g.eyes))
+		maxN := 0
+		for i, e := range g.eyes {
 			margin := 0
 			if e.bloom > 0 {
 				margin = eyeBloomBlur + 2
@@ -108,11 +112,30 @@ func (g *EyeGlow) build() {
 			x1 := min(int(e.cx+e.rx)+1+margin, b.Max.X)
 			y1 := min(int(e.cy+e.ry)+1+margin, b.Max.Y)
 			w, h := x1-x0, y1-y0
+			boxes[i] = eyeBox{x0, y0, x1, y1, w, h}
+			if w > 0 && h > 0 && w*h > maxN {
+				maxN = w * h
+			}
+		}
+		if maxN == 0 {
+			return
+		}
+		lensBuf := make([]float32, maxN)
+		haloBuf := make([]float32, maxN)
+		blurTmp := make([]float32, maxN)
+
+		for i, e := range g.eyes {
+			bx := boxes[i]
+			w, h := bx.w, bx.h
 			if w <= 0 || h <= 0 {
 				continue
 			}
+			x0, y0, x1, y1 := bx.x0, bx.y0, bx.x1, bx.y1
 
-			lens := make([]float64, w*h)
+			lens := lensBuf[:w*h]
+			for j := range lens {
+				lens[j] = 0
+			}
 			for y := y0; y < y1; y++ {
 				for x := x0; x < x1; x++ {
 					dx := (float64(x) - e.cx) / e.rx
@@ -125,22 +148,22 @@ func (g *EyeGlow) build() {
 						continue
 					}
 					lr, lg, lb, _ := src.At(x, y).RGBA()
-					lens[(y-y0)*w+(x-x0)] = win * lensMask(float64(lr>>8), float64(lg>>8), float64(lb>>8), e.lo, e.hi)
+					lens[(y-y0)*w+(x-x0)] = float32(win * lensMask(float64(lr>>8), float64(lg>>8), float64(lb>>8), e.lo, e.hi))
 				}
 			}
 
-			var halo []float64
+			var halo []float32
 			if e.bloom > 0 {
-				halo = blurMask(lens, w, h, eyeBloomBlur)
+				halo = blurMask(lens, haloBuf[:w*h], blurTmp[:w*h], w, h, eyeBloomBlur)
 			}
 
 			for y := y0; y < y1; y++ {
 				for x := x0; x < x1; x++ {
 					idx := (y-y0)*w + (x - x0)
-					aReveal := e.reveal * lens[idx]
+					aReveal := e.reveal * float64(lens[idx])
 					aBloom := 0.0
 					if halo != nil {
-						aBloom = e.bloom * halo[idx]
+						aBloom = e.bloom * float64(halo[idx])
 					}
 					a := aReveal + aBloom
 					if a*255 < 1.5 {
@@ -153,10 +176,12 @@ func (g *EyeGlow) build() {
 					R, G, B := float64(lr>>8), float64(lg>>8), float64(lb>>8)
 					g.spots = append(g.spots, glowSpot{
 						off: g.img.PixOffset(x, y),
-						pr:  R*aReveal + tintR*aBloom,
-						pg:  G*aReveal + tintG*aBloom,
-						pb:  B*aReveal + tintB*aBloom,
-						pa:  a * 255,
+						p: [4]float64{
+							R*aReveal + tintR*aBloom,
+							G*aReveal + tintG*aBloom,
+							B*aReveal + tintB*aBloom,
+							a * 255,
+						},
 					})
 				}
 			}
@@ -187,7 +212,7 @@ func gradWindow(dx, dy, grad float64) float64 {
 	return h * (grad + (1-grad)*math.Pow(1-fy, 1.6))
 }
 
-func blurMask(m []float64, w, h, radius int) []float64 {
+func blurMask(m, out, tmp []float32, w, h, radius int) []float32 {
 	if radius < 1 {
 		return m
 	}
@@ -197,35 +222,30 @@ func blurMask(m []float64, w, h, radius int) []float64 {
 		d := float64(i - radius)
 		k[i] = math.Exp(-d * d / (2 * sigma * sigma))
 	}
-
-	tmp := make([]float64, len(m))
-	for y := 0; y < h; y++ {
-		for x := 0; x < w; x++ {
-			var s, ws float64
-			for j := -radius; j <= radius; j++ {
-				if xx := x + j; xx >= 0 && xx < w {
-					s += m[y*w+xx] * k[j+radius]
-					ws += k[j+radius]
-				}
-			}
-			tmp[y*w+x] = s / ws
-		}
-	}
-
-	out := make([]float64, len(m))
-	for y := 0; y < h; y++ {
-		for x := 0; x < w; x++ {
-			var s, ws float64
-			for j := -radius; j <= radius; j++ {
-				if yy := y + j; yy >= 0 && yy < h {
-					s += tmp[yy*w+x] * k[j+radius]
-					ws += k[j+radius]
-				}
-			}
-			out[y*w+x] = s / ws
-		}
-	}
+	blurAxis(m, tmp, w, h, radius, k, false)
+	blurAxis(tmp, out, w, h, radius, k, true)
 	return out
+}
+
+func blurAxis(src, dst []float32, w, h, radius int, k []float64, vertical bool) {
+	for y := 0; y < h; y++ {
+		for x := 0; x < w; x++ {
+			var s, ws float64
+			for j := -radius; j <= radius; j++ {
+				xx, yy := x, y
+				if vertical {
+					yy = y + j
+				} else {
+					xx = x + j
+				}
+				if xx >= 0 && xx < w && yy >= 0 && yy < h {
+					s += float64(src[yy*w+xx]) * k[j+radius]
+					ws += k[j+radius]
+				}
+			}
+			dst[y*w+x] = float32(s / ws)
+		}
+	}
 }
 
 func lensMask(r, g, b, lo, hi float64) float64 {
@@ -238,21 +258,11 @@ func (g *EyeGlow) apply(t float64) bool {
 	changed := false
 	for i := range g.spots {
 		s := &g.spots[i]
-		if v := clamp8(t * s.pr); pix[s.off] != v {
-			pix[s.off] = v
-			changed = true
-		}
-		if v := clamp8(t * s.pg); pix[s.off+1] != v {
-			pix[s.off+1] = v
-			changed = true
-		}
-		if v := clamp8(t * s.pb); pix[s.off+2] != v {
-			pix[s.off+2] = v
-			changed = true
-		}
-		if v := clamp8(t * s.pa); pix[s.off+3] != v {
-			pix[s.off+3] = v
-			changed = true
+		for j := 0; j < 4; j++ {
+			if v := clamp8(t * s.p[j]); pix[s.off+j] != v {
+				pix[s.off+j] = v
+				changed = true
+			}
 		}
 	}
 	return changed
