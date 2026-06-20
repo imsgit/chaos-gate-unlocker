@@ -233,15 +233,29 @@ func lensMask(r, g, b, lo, hi float64) float64 {
 	return smoothstep((l - lo) / (hi - lo))
 }
 
-func (g *EyeGlow) apply(t float64) {
+func (g *EyeGlow) apply(t float64) bool {
 	pix := g.img.Pix
+	changed := false
 	for i := range g.spots {
 		s := &g.spots[i]
-		pix[s.off] = clamp8(t * s.pr)
-		pix[s.off+1] = clamp8(t * s.pg)
-		pix[s.off+2] = clamp8(t * s.pb)
-		pix[s.off+3] = clamp8(t * s.pa)
+		if v := clamp8(t * s.pr); pix[s.off] != v {
+			pix[s.off] = v
+			changed = true
+		}
+		if v := clamp8(t * s.pg); pix[s.off+1] != v {
+			pix[s.off+1] = v
+			changed = true
+		}
+		if v := clamp8(t * s.pb); pix[s.off+2] != v {
+			pix[s.off+2] = v
+			changed = true
+		}
+		if v := clamp8(t * s.pa); pix[s.off+3] != v {
+			pix[s.off+3] = v
+			changed = true
+		}
 	}
+	return changed
 }
 
 func (g *EyeGlow) Overlay() *canvas.Image {
@@ -271,7 +285,11 @@ func (g *EyeGlow) Animate() {
 func (g *EyeGlow) pulse() context.CancelFunc {
 	flicker := g.buildFlicker()
 	return Frames(eyeGlowSteps, eyeGlowFrame,
-		func() { g.apply(0); g.cv.Refresh() },
+		func() {
+			if g.apply(0) {
+				g.cv.Refresh()
+			}
+		},
 		func(i int) {
 			fr := flicker[i]
 			breath := 1 + 0.13*math.Sin(float64(i)*0.07) + 0.04*math.Sin(float64(i)*0.5)
@@ -279,8 +297,9 @@ func (g *EyeGlow) pulse() context.CancelFunc {
 			if s := fr.spark * eyeGlowFlash; s > t {
 				t = s
 			}
-			g.apply(t)
-			g.cv.Refresh()
+			if g.apply(t) {
+				g.cv.Refresh()
+			}
 		})
 }
 

@@ -401,30 +401,19 @@ func main() {
 	openButton.SetToolTip("Can't find your save? It's in:\n" + filesManager.DefaultLocationHint())
 
 	saveButton = widget.NewButton("Save", func() {
-		confirmDialog := dialog.NewConfirm(
-			"Save confirmation",
-			"\n\n\nThis will override the existing save file. Are you sure?\nPlease make a backup if needed.",
-			func(r bool) {
-				if !r {
-					return
-				}
+		confirmSave(w, func() {
+			cancel := animateTop(false, nil)
 
-				cancel := animateTop(false, nil)
+			applyChanges()
 
-				applyChanges()
+			resetUI()
 
-				resetUI()
-
-				if err := saveFile(filesManager); err != nil {
-					cancel()
-					dialog.ShowError(err, w)
-					return
-				}
-			}, w)
-
-		confirmDialog.SetConfirmText("Save")
-		confirmDialog.SetDismissText("Cancel")
-		confirmDialog.Show()
+			if err := saveFile(filesManager); err != nil {
+				cancel()
+				dialog.ShowError(err, w)
+				return
+			}
+		})
 	})
 	saveButton.Disable()
 

@@ -42,3 +42,17 @@ func openFile(w fyne.Window, fm *files.Manager, onData func(name string, data []
 func saveFile(fm *files.Manager) error {
 	return fm.Save()
 }
+
+func confirmSave(w fyne.Window, do func()) {
+	d := dialog.NewConfirm(
+		"Save confirmation",
+		"\n\n\nThis will override the existing save file. Are you sure?\nPlease make a backup if needed.",
+		func(r bool) {
+			if r {
+				do()
+			}
+		}, w)
+	d.SetConfirmText("Save")
+	d.SetDismissText("Cancel")
+	d.Show()
+}

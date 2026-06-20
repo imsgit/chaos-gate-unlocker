@@ -63,6 +63,8 @@ func saveFile(fm *files.Manager) error {
 	return nil
 }
 
+func confirmSave(_ fyne.Window, do func()) { do() }
+
 func download(name string, data []byte) {
 	buf := js.Global().Get("Uint8Array").New(len(data))
 	js.CopyBytesToJS(buf, data)
