@@ -1,44 +1,25 @@
 #!/usr/bin/env bash
 set -euo pipefail
 cd "$(dirname "$0")"
+source ./lib.sh
 
 req=1.6.2
 fc=$(fyne-cross version 2>/dev/null | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -1)
 [ -n "$fc" ] || { echo "[!] fyne-cross not found in PATH" >&2; exit 1; }
 [ "$(printf '%s\n%s\n' "$req" "$fc" | sort -V | head -1)" = "$req" ] || { echo "[!] fyne-cross $fc < $req" >&2; exit 1; }
 
-build=$(grep -oE 'Build *= *[0-9]+' FyneApp.toml | grep -oE '[0-9]+')
+build=$(read_build)
 echo "=== fyne-cross $fc | build $build (no auto-bump) ==="
 
-declare -A bak=()
-trap 'for s in "${!bak[@]}"; do mv -f "${bak[$s]}" "$s"; done' EXIT
-swap() { bak["$1"]="$(mktemp)"; cp "$1" "${bak[$1]}"; }
+tags=no_emoji
+if [ -n "${EMBED:-}" ]; then
+	echo "=== EMBED=1 → build wasm bundle for offline 'Try it online' ==="
+	bash build-wasm.sh
+	tags=no_emoji,embedwasm
+fi
 
-fontdir=vendor/fyne.io/fyne/v2/theme/font
-echo "=== Stub unused fonts (italic/bolditalic/mono) ==="
-for f in NotoSans-Italic.ttf NotoSans-BoldItalic.ttf DejaVuSansMono-Powerline.ttf; do
-	swap "$fontdir/$f"
-	cp "$fontdir/InterSymbols-Regular.ttf" "$fontdir/$f"
-done
-
-echo "=== Disable system-font scan ==="
-fontprod=vendor/fyne.io/fyne/v2/internal/painter/font_prod.go
-swap "$fontprod"
-cat > "$fontprod" <<'GOEOF'
-//go:build !test
-
-package painter
-
-import (
-	"errors"
-
-	"github.com/go-text/typesetting/fontscan"
-)
-
-func loadSystemFonts(_ *fontscan.FontMap) error {
-	return errors.New("system fonts disabled")
-}
-GOEOF
+trap restore_swaps EXIT
+stub_fonts
 
 echo "=== Slim file-open dialog (favorites + top-right buttons) ==="
 filego=vendor/fyne.io/fyne/v2/dialog/file.go
@@ -52,17 +33,11 @@ my $a = "\tbody := container.NewHSplit(\n\t\tf.favoritesList,\n\t\tcontainer.New
 my $b = "\tbody := container.NewBorder(\n\t\tf.breadcrumbScroll, nil, nil, nil,\n\t\tf.filesScroll,\n\t)";
 my $i = index($_, $a); die "file.go body block not found\n" if $i < 0; substr($_, $i, length($a)) = $b;' "$filego"
 
-# Embedded browser build — disabled for now; browser version is hosted on Pages.
-# Re-enable by uncommenting these and adding embedwasm to the -tags below.
-# echo "=== Generate embedded wasm bundle ==="
-# fyne package -os wasm
-# gzip -9 -f wasm/ChaosGateUnlocker.wasm
-
 for os in windows linux; do
 	echo "=== Build $os/amd64 ==="
-	fyne-cross "$os" -arch=amd64 -app-build "$build" -tags no_emoji
+	fyne-cross "$os" -arch=amd64 -app-build "$build" -tags "$tags"
 done
-sed -i -E "s/^(\s*Build *= *).*/\1${build}/" FyneApp.toml
+write_build "$build"
 
 strip --strip-all fyne-cross/bin/linux-amd64/chaos-gate-unlocker
 rm -rf fyne-cross/dist
