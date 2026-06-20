@@ -9,6 +9,7 @@ import (
 	"sync"
 	"time"
 
+	"chaos-gate-unlocker/internal/ui"
 	"chaos-gate-unlocker/internal/ui/widgets/progress"
 
 	"fyne.io/fyne/v2"
@@ -45,7 +46,7 @@ func aquilaFrames(res fyne.Resource, pivotX, fromDeg, toDeg float64, count int) 
 	if err != nil || count < 2 {
 		return nil
 	}
-	src = scaleDownAquila(src, aquilaBaseW)
+	src = ui.ScaleDown(src, aquilaBaseW)
 
 	b := src.Bounds()
 	px := float64(b.Min.X) + pivotX*float64(b.Dx())
@@ -66,17 +67,6 @@ func aquilaFrames(res fyne.Resource, pivotX, fromDeg, toDeg float64, count int) 
 		frames[i] = dst
 	}
 	return frames
-}
-
-func scaleDownAquila(src image.Image, w int) image.Image {
-	b := src.Bounds()
-	if b.Dx() <= w {
-		return src
-	}
-	h := b.Dy() * w / b.Dx()
-	dst := image.NewRGBA(image.Rect(0, 0, w, h))
-	xdraw.CatmullRom.Scale(dst, dst.Bounds(), src, b, xdraw.Over, nil)
-	return dst
 }
 
 func (a *Aquila) Animate(ctx context.Context, im, im2 *canvas.Image, p *progress.Widget, open bool) {

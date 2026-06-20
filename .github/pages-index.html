@@ -8,24 +8,41 @@
 	<style>
 		html, body {
 			margin: 0;
-			height: 100%;
 			background: #151515;
 		}
 		body {
 			display: flex;
-			align-items: center;
-			justify-content: center;
+			min-height: 100vh;
 		}
-		iframe {
+		#wrap {
+			margin: auto;
+		}
+		#stage {
 			width: 800px;
 			height: 600px;
-			max-width: 100vw;
-			max-height: 100vh;
+			transform-origin: top left;
+		}
+		#stage iframe {
+			width: 800px;
+			height: 600px;
 			border: 0;
+			display: block;
 		}
 	</style>
 </head>
 <body>
-	<iframe src="app.html" title="ChaosGateUnlocker"></iframe>
+	<div id="wrap"><div id="stage"><iframe src="app.html" title="ChaosGateUnlocker"></iframe></div></div>
+	<script>
+		function fit() {
+			var s = Math.min(window.innerWidth / 800, 1);
+			var stage = document.getElementById('stage');
+			var wrap = document.getElementById('wrap');
+			stage.style.transform = 'scale(' + s + ')';
+			wrap.style.width = (800 * s) + 'px';
+			wrap.style.height = (600 * s) + 'px';
+		}
+		window.addEventListener('resize', fit);
+		fit();
+	</script>
 </body>
 </html>
