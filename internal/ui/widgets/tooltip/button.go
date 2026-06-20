@@ -22,6 +22,11 @@ func (b *Button) ExtendBaseWidget(wid fyne.Widget) {
 	b.Button.ExtendBaseWidget(wid)
 }
 
+func (b *Button) Tapped(e *fyne.PointEvent) {
+	b.WidgetExtend.cancel()
+	b.Button.Tapped(e)
+}
+
 func (b *Button) MouseIn(e *desktop.MouseEvent) {
 	b.WidgetExtend.MouseIn(e)
 	b.Button.MouseIn(e)
