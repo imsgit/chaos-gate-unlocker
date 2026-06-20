@@ -32,7 +32,7 @@ import (
 )
 
 const (
-	version    = "Ver: 1.0.0.%d | Author: imsgit | 2026-06-20"
+	version    = "Ver: %s.%d | Author: imsgit | 2026-06-20"
 	websiteURL = "https://imsgit.github.io/chaos-gate-unlocker/"
 )
 
@@ -295,7 +295,7 @@ func main() {
 [> Visit Nexus Mods for more information](https://www.nexusmods.com/warhammer40kchaosgatedaemonhunters/mods/5)
 
 [> Visit Fyne.io for app details](https://apps.fyne.io/apps/chaos.gate.unlocker.html)`),
-			widget.NewRichTextFromMarkdown(fmt.Sprintf(version, a.Metadata().Build))))
+			widget.NewRichTextFromMarkdown(fmt.Sprintf(version, a.Metadata().Version, a.Metadata().Build))))
 
 	var acancel context.CancelFunc
 	layoutTabs := container.NewAppTabs(mainTab, unitsTab, aboutTab)
@@ -377,8 +377,6 @@ func main() {
 			return
 		}
 
-		eyeGlow.Stop()
-
 		unitsProvider.Set(featuresManager.Units())
 
 		resetSwitch(unlockAdvancedClassesSwitch, featuresManager.CanUnlockAdvancedClasses)
@@ -422,8 +420,6 @@ func main() {
 					dialog.ShowError(err, w)
 					return
 				}
-
-				eyeGlow.Animate()
 			}, w)
 
 		confirmDialog.SetConfirmText("Save")

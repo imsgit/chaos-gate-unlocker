@@ -21,8 +21,10 @@ rm -f wasm/webgl-debug.js
 sed -i 's#<meta charset="utf-8">#<meta charset="utf-8"><script>(function(){var r=window.devicePixelRatio||1;Object.defineProperty(window,"devicePixelRatio",{configurable:true,get:function(){return r>2?2:r;}});})();</script>#' wasm/index.html
 grep -qF 'return r>2?2:r' wasm/index.html || { echo "[!] DPR cap inject failed"; exit 1; }
 
-sed -i 's|<style>|<style>html,body{background-color:#141415}@media (prefers-color-scheme: light){html,body{background-color:#fff}}|' wasm/index.html
-grep -qF 'html,body{background-color:#141415}' wasm/index.html || { echo "[!] splash bg inject failed"; exit 1; }
+sed -i 's|<style>|<style>html,body{background-color:#151515}@media (prefers-color-scheme: light){html,body{background-color:#fff}}|' wasm/index.html
+grep -qF 'html,body{background-color:#151515}' wasm/index.html || { echo "[!] splash bg inject failed"; exit 1; }
+sed -i 's/#141415/#151515/g' wasm/dark.css
+grep -qF '#151515' wasm/dark.css || { echo "[!] dark.css bg patch failed"; exit 1; }
 
 mv wasm/index.html wasm/app.html
 cp .github/pages-index.html wasm/index.html
