@@ -30,16 +30,7 @@ jobs:
           echo "$(go env GOPATH)/bin" >> "$GITHUB_PATH"
 
       - name: Build and compress wasm bundle
-        run: |
-          build=$(grep -oE 'Build *= *[0-9]+' FyneApp.toml | grep -oE '[0-9]+')
-          fyne package -os wasm --app-build "$build"
-          sed -i -E "s#(application-version\">v[0-9.]+)<#\1.$build<#" wasm/index.html
-          grep -qE "application-version\">v[0-9.]+\.$build<" wasm/index.html || { echo "::error::splash version patch did not apply — fyne template changed"; exit 1; }
-          gzip -9 wasm/ChaosGateUnlocker.wasm
-          sed -i 's#fetch("ChaosGateUnlocker.wasm")#fetch("ChaosGateUnlocker.wasm.gz").then(r=>new Response(r.body.pipeThrough(new DecompressionStream("gzip")),{headers:{"Content-Type":"application/wasm"}}))#' wasm/index.html
-          grep -q DecompressionStream wasm/index.html || { echo "::error::index.html wasm loader patch did not apply — fyne template changed"; exit 1; }
-          mv wasm/index.html wasm/app.html
-          cp .github/pages-index.html wasm/index.html
+        run: bash build-wasm.sh
 
       - uses: actions/upload-pages-artifact@v3
         with:

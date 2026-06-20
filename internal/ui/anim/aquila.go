@@ -82,24 +82,21 @@ func scaleDownAquila(src image.Image, w int) image.Image {
 func (a *Aquila) Animate(ctx context.Context, im, im2 *canvas.Image, p *progress.Widget, open bool) {
 	leftFrames, rightFrames := a.frames()
 
-	var width, sOffset float32
+	width := float32(0)
+	sOffset := p.Size().Width / 20
 
-	fyne.DoAndWait(func() {
-		sOffset = p.Size().Width / 20
-
-		if open {
-			im.Translucency = 1
-			im2.Translucency = 1
-			if len(leftFrames) > 0 {
-				im.Resource = nil
-				im2.Resource = nil
-				im.Image = leftFrames[0]
-				im2.Image = rightFrames[0]
-			}
+	if open {
+		im.Translucency = 1
+		im2.Translucency = 1
+		if len(leftFrames) > 0 {
+			im.Resource = nil
+			im2.Resource = nil
+			im.Image = leftFrames[0]
+			im2.Image = rightFrames[0]
 		}
+	}
 
-		p.Reset()
-	})
+	fyne.DoAndWait(p.Reset)
 
 	ticker := time.NewTicker(15 * time.Millisecond)
 	defer ticker.Stop()
