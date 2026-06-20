@@ -32,9 +32,19 @@ jobs:
       - name: Build and compress wasm bundle
         run: bash build/build-wasm.sh
 
-      - uses: actions/upload-pages-artifact@v3
+      - name: Archive Pages artifact
+        run: |
+          tar --dereference --hard-dereference \
+            --directory wasm \
+            -cvf "$RUNNER_TEMP/artifact.tar" \
+            --exclude=.git --exclude=.github .
+
+      - uses: actions/upload-artifact@v6
         with:
-          path: wasm
+          name: github-pages
+          path: ${{ runner.temp }}/artifact.tar
+          retention-days: "1"
+          if-no-files-found: error
 
   deploy:
     needs: build
