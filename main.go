@@ -77,6 +77,14 @@ func main() {
 	validateScale()
 
 	a := app.NewWithID("chaos.gate.unlocker")
+
+	md := a.Metadata()
+	if md.Migrations == nil {
+		md.Migrations = map[string]bool{}
+	}
+	md.Migrations["fyneDo"] = true
+	app.SetMetadata(md)
+
 	a.Settings().SetTheme(ui.Theme{})
 	w := a.NewWindow("Chaos Gate Unlocker")
 
