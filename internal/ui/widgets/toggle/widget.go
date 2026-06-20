@@ -41,6 +41,8 @@ func New(onChanged func(on bool), icon, name, toolTip string) *Widget {
 		onChanged: onChanged,
 	}
 
+	s.sw.ScaleMode = canvas.ImageScaleFastest
+
 	s.textName.Text = name
 	s.SetToolTip(toolTip)
 

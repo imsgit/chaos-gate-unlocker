@@ -7,7 +7,11 @@ import (
 	"sync"
 
 	"chaos-gate-unlocker/internal/ui"
+
+	xdraw "golang.org/x/image/draw"
 )
+
+const switchBaseW = 96
 
 var (
 	switchFramesOnce sync.Once
@@ -30,17 +34,33 @@ func getSwitchFrames() []image.Image {
 
 func getStaticFrames() switchStatics {
 	staticFramesOnce.Do(func() {
-		staticImgs = switchStatics{
-			off: ui.DecodeMasked(ui.WidgetSwitchOffIcon()),
-			on:  ui.DecodeMasked(ui.WidgetSwitchOnIcon()),
-		}
+		off, on := switchBase()
+		staticImgs = switchStatics{off: off, on: on}
 	})
 	return staticImgs
 }
 
+func switchBase() (off, on image.Image) {
+	return scaleDown(ui.DecodeMasked(ui.WidgetSwitchOffIcon()), switchBaseW),
+		scaleDown(ui.DecodeMasked(ui.WidgetSwitchOnIcon()), switchBaseW)
+}
+
+func scaleDown(src image.Image, w int) image.Image {
+	if src == nil {
+		return nil
+	}
+	b := src.Bounds()
+	if b.Dx() <= w {
+		return src
+	}
+	h := b.Dy() * w / b.Dx()
+	dst := image.NewRGBA(image.Rect(0, 0, w, h))
+	xdraw.CatmullRom.Scale(dst, dst.Bounds(), src, b, xdraw.Over, nil)
+	return dst
+}
+
 func buildSwitchFrames() {
-	off := ui.DecodeMasked(ui.WidgetSwitchOffIcon())
-	on := ui.DecodeMasked(ui.WidgetSwitchOnIcon())
+	off, on := switchBase()
 	if off == nil || on == nil {
 		return
 	}
@@ -56,7 +76,7 @@ func buildSwitchFrames() {
 	blockOff := maskCircle(off, cxOff, cy, r, false)
 	blockOn := maskCircle(on, cxOn, cy, r, false)
 
-	const n = 14
+	const n = 8
 	frames := make([]image.Image, n)
 	frames[0] = off
 	frames[n-1] = on

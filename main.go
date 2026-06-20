@@ -377,6 +377,8 @@ func main() {
 			return
 		}
 
+		eyeGlow.Stop()
+
 		unitsProvider.Set(featuresManager.Units())
 
 		resetSwitch(unlockAdvancedClassesSwitch, featuresManager.CanUnlockAdvancedClasses)
@@ -418,7 +420,10 @@ func main() {
 				if err := saveFile(filesManager); err != nil {
 					cancel()
 					dialog.ShowError(err, w)
+					return
 				}
+
+				eyeGlow.Animate()
 			}, w)
 
 		confirmDialog.SetConfirmText("Save")

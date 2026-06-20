@@ -15,7 +15,7 @@ import (
 )
 
 const (
-	eyeGlowPeriod = 30 * time.Second
+	eyeGlowPeriod = 20 * time.Second
 	eyeGlowSteps  = 180
 	eyeGlowFrame  = 33 * time.Millisecond
 	eyeGlowRise   = 0.4
@@ -62,6 +62,10 @@ type EyeGlow struct {
 	cv    *canvas.Image
 	spots []glowSpot
 	flick []flickerStep
+
+	mu      sync.Mutex
+	running bool
+	stop    chan struct{}
 }
 
 func NewEyeGlow(src image.Image) *EyeGlow {
@@ -251,18 +255,56 @@ func (g *EyeGlow) Animate() {
 	if g.cv == nil {
 		return
 	}
+	g.mu.Lock()
+	if g.running {
+		g.mu.Unlock()
+		return
+	}
+	g.running = true
+	stop := make(chan struct{})
+	g.stop = stop
+	g.mu.Unlock()
+
 	go func() {
 		ticker := time.NewTicker(eyeGlowPeriod)
 		defer ticker.Stop()
-		for range ticker.C {
-			g.pulse()
+		var cancel context.CancelFunc
+		for {
+			select {
+			case <-stop:
+				if cancel != nil {
+					cancel()
+				}
+				fyne.DoAndWait(func() { g.apply(0); g.cv.Refresh() })
+				return
+			case <-ticker.C:
+				if cancel != nil {
+					cancel()
+				}
+				cancel = g.pulse()
+			}
 		}
 	}()
 }
 
-func (g *EyeGlow) pulse() {
+func (g *EyeGlow) Stop() {
+	if g.cv == nil {
+		return
+	}
+	g.mu.Lock()
+	if !g.running {
+		g.mu.Unlock()
+		return
+	}
+	g.running = false
+	close(g.stop)
+	g.stop = nil
+	g.mu.Unlock()
+}
+
+func (g *EyeGlow) pulse() context.CancelFunc {
 	flicker := g.buildFlicker()
-	Frames(eyeGlowSteps, eyeGlowFrame,
+	return Frames(eyeGlowSteps, eyeGlowFrame,
 		func() { g.apply(0); g.cv.Refresh() },
 		func(i int) {
 			fr := flicker[i]
