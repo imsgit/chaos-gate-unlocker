@@ -26,10 +26,6 @@ have "$idx" 'max-width: 180px;'
 sed -i 's#<input id="dummyEntry"#<input id="dummyEntry" inputmode="none" readonly#' "$idx"
 have "$idx" 'id="dummyEntry" inputmode="none" readonly'
 
-perl -0777 -i -pe 's{<picture>.*?</picture>}{<div class="spinner"></div>}s' "$idx"
-have "$idx" '<div class="spinner"></div>'; gone "$idx" '<picture>'
-rm -f wasm/spinner_dark.gif wasm/spinner_light.gif
-
 echo "=== Strip wasm 'name' custom section ==="
 python3 - wasm/ChaosGateUnlocker.wasm <<'PY'
 import sys
@@ -67,8 +63,8 @@ rm -f wasm/webgl-debug.js
 sed -i 's#<meta charset="utf-8">#<meta charset="utf-8"><script>(function(){var dpr=2;try{var p=window.parent;var s=Math.min(p.innerWidth/800,p.innerHeight/600);dpr=Math.min(s*(p.devicePixelRatio||1),3);}catch(e){}Object.defineProperty(window,"devicePixelRatio",{configurable:true,get:function(){return dpr;}});window.__setDPR=function(v){v=Math.min(Math.max(v,0.5),3);if(Math.abs(v-dpr)<0.01)return;dpr=v;window.dispatchEvent(new Event("resize"));};Object.defineProperty(navigator,"userAgent",{configurable:true,get:function(){return "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";}});})();</script>#' "$idx"
 have "$idx" 'window.__setDPR'; have "$idx" 'Chrome/120.0.0.0'
 
-sed -i 's|<style>|<style>html,body{background-color:#151515}@media (prefers-color-scheme: light){html,body{background-color:#fff}}.spinner{width:48px;height:48px;margin:0 auto;border-radius:50%;border:5px solid rgba(255,255,255,.18);border-top-color:#fff;box-sizing:border-box;animation:cgu-spin .8s linear infinite}@keyframes cgu-spin{to{transform:rotate(360deg)}}@media (prefers-color-scheme: light){.spinner{border-color:rgba(0,0,0,.15);border-top-color:#333}}|' "$idx"
-have "$idx" 'html,body{background-color:#151515}'; have "$idx" '@keyframes cgu-spin'
+sed -i 's|<style>|<style>html,body{background-color:#151515}@media (prefers-color-scheme: light){html,body{background-color:#fff}}|' "$idx"
+have "$idx" 'html,body{background-color:#151515}'
 sed -i 's/#141415/#151515/g' wasm/dark.css; have wasm/dark.css '#151515'
 
 mv "$idx" wasm/app.html
