@@ -218,3 +218,16 @@ func (s *Widget) CreateRenderer() fyne.WidgetRenderer {
 		nameContainer,
 	))
 }
+
+func Reset(sw *Widget, status func() (bool, bool)) {
+	sw.Enable()
+	sw.SetState(false, true)
+	if available, state := status(); !available {
+		sw.Disable()
+		sw.SetState(state, false)
+	}
+}
+
+func ResetOn(sw *Widget, available bool) {
+	Reset(sw, func() (bool, bool) { return available, true })
+}

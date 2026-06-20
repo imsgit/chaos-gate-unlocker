@@ -84,3 +84,5 @@ func download(name string, data []byte) {
 	a.Call("click")
 	a.Call("remove")
 }
+
+func validateScale() {}

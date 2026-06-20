@@ -14,13 +14,9 @@ import (
 	"context"
 	"fmt"
 	"net/url"
-	"os"
-	"os/exec"
-	"regexp"
 	"runtime"
 	"runtime/debug"
 	"slices"
-	"strconv"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/app"
@@ -387,20 +383,20 @@ func main() {
 
 		unitsProvider.Set(featuresManager.Units())
 
-		resetSwitch(unlockAdvancedClassesSwitch, featuresManager.CanUnlockAdvancedClasses)
-		resetSwitch(repairDreadnoughtSwitch, featuresManager.CanRepairDreadnought)
-		resetSwitch(unlockPuritySealsSwitch, featuresManager.CanUnlockPuritySeals)
-		resetSwitch(restorePrognosticarsSwitch, featuresManager.CanRestorePrognosticars)
-		resetSwitch(unlockGarranCroweSwitch, featuresManager.CanUnlockGarranCrowe)
-		resetSwitch(authorizeDreadnoughtMissionsSwitch, featuresManager.CanAuthorizeDreadnoughtMissions)
-		resetSwitch(unlockGladiusFrigateSwitch, featuresManager.CanUnlockGladiusFrigate)
-		resetSwitch(completeCurrentResearchSwitch, featuresManager.CanCompleteCurrentResearch)
-		resetSwitch(completeCurrentConstructionSwitch, featuresManager.CanCompleteCurrentConstruction)
-		resetSwitch(unlockAssassinsSwitch, featuresManager.CanUnlockAssassins)
-		resetSwitchOn(unlockPreorderItemsSwitch, featuresManager.CanUnlockPreorderItems())
-		resetSwitchOn(unequipMastercraftedWeaponsSwitch, featuresManager.CanUnequipMastercraftedWeapons())
-		resetSwitchOn(unequipMastercraftedArmorSwitch, featuresManager.CanUnequipMastercraftedArmor())
-		resetSwitchOn(removeMarketingWeaponsSwitch, featuresManager.CanRemoveMarketingWeapons())
+		toggle.Reset(unlockAdvancedClassesSwitch, featuresManager.CanUnlockAdvancedClasses)
+		toggle.Reset(repairDreadnoughtSwitch, featuresManager.CanRepairDreadnought)
+		toggle.Reset(unlockPuritySealsSwitch, featuresManager.CanUnlockPuritySeals)
+		toggle.Reset(restorePrognosticarsSwitch, featuresManager.CanRestorePrognosticars)
+		toggle.Reset(unlockGarranCroweSwitch, featuresManager.CanUnlockGarranCrowe)
+		toggle.Reset(authorizeDreadnoughtMissionsSwitch, featuresManager.CanAuthorizeDreadnoughtMissions)
+		toggle.Reset(unlockGladiusFrigateSwitch, featuresManager.CanUnlockGladiusFrigate)
+		toggle.Reset(completeCurrentResearchSwitch, featuresManager.CanCompleteCurrentResearch)
+		toggle.Reset(completeCurrentConstructionSwitch, featuresManager.CanCompleteCurrentConstruction)
+		toggle.Reset(unlockAssassinsSwitch, featuresManager.CanUnlockAssassins)
+		toggle.ResetOn(unlockPreorderItemsSwitch, featuresManager.CanUnlockPreorderItems())
+		toggle.ResetOn(unequipMastercraftedWeaponsSwitch, featuresManager.CanUnequipMastercraftedWeapons())
+		toggle.ResetOn(unequipMastercraftedArmorSwitch, featuresManager.CanUnequipMastercraftedArmor())
+		toggle.ResetOn(removeMarketingWeaponsSwitch, featuresManager.CanRemoveMarketingWeapons())
 	}
 
 	openButton = tooltip.NewButton("Open", func() {
@@ -592,40 +588,9 @@ func applyChanges() {
 	}
 }
 
-func validateScale() {
-	if runtime.GOOS == "windows" {
-		return
-	}
-	cmd := exec.Command("xdpyinfo")
-	out, err := cmd.Output()
-	if err != nil {
-		return
-	}
-	re := regexp.MustCompile(`resolution:\s+(\d+)x`)
-	match := re.FindStringSubmatch(string(out))
-	if len(match) == 2 {
-		if dpi, _ := strconv.Atoi(match[1]); dpi > 96 {
-			os.Setenv("FYNE_SCALE", "2.0")
-		}
-	}
-}
-
 func boolSwitch(flag *bool, icon, name, tooltip string) *toggle.Widget {
 	return toggle.New(func(on bool) {
 		*flag = on
 		refreshSaveButton()
 	}, icon, name, tooltip)
-}
-
-func resetSwitch(sw *toggle.Widget, status func() (bool, bool)) {
-	sw.Enable()
-	sw.SetState(false, true)
-	if available, state := status(); !available {
-		sw.Disable()
-		sw.SetState(state, false)
-	}
-}
-
-func resetSwitchOn(sw *toggle.Widget, available bool) {
-	resetSwitch(sw, func() (bool, bool) { return available, true })
 }

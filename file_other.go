@@ -4,6 +4,11 @@ package main
 
 import (
 	"io"
+	"os"
+	"os/exec"
+	"regexp"
+	"runtime"
+	"strconv"
 
 	"chaos-gate-unlocker/internal/files"
 
@@ -55,4 +60,22 @@ func confirmSave(w fyne.Window, do func()) {
 	d.SetConfirmText("Save")
 	d.SetDismissText("Cancel")
 	d.Show()
+}
+
+func validateScale() {
+	if runtime.GOOS == "windows" {
+		return
+	}
+	cmd := exec.Command("xdpyinfo")
+	out, err := cmd.Output()
+	if err != nil {
+		return
+	}
+	re := regexp.MustCompile(`resolution:\s+(\d+)x`)
+	match := re.FindStringSubmatch(string(out))
+	if len(match) == 2 {
+		if dpi, _ := strconv.Atoi(match[1]); dpi > 96 {
+			os.Setenv("FYNE_SCALE", "2.0")
+		}
+	}
 }
