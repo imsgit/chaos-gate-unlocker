@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
-cd "$(dirname "$0")"
-source ./lib.sh
+cd "$(dirname "$0")/.."
+source build/lib.sh
 
 req=1.6.2
 fc=$(fyne-cross version 2>/dev/null | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -1)
@@ -14,7 +14,7 @@ echo "=== fyne-cross $fc | build $build (no auto-bump) ==="
 tags=no_emoji
 if [ -n "${EMBED:-}" ]; then
 	echo "=== EMBED=1 → build wasm bundle for offline 'Try it online' ==="
-	bash build-wasm.sh
+	bash build/build-wasm.sh
 	tags=no_emoji,embedwasm
 fi
 

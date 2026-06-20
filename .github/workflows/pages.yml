@@ -30,7 +30,7 @@ jobs:
           echo "$(go env GOPATH)/bin" >> "$GITHUB_PATH"
 
       - name: Build and compress wasm bundle
-        run: bash build-wasm.sh
+        run: bash build/build-wasm.sh
 
       - uses: actions/upload-pages-artifact@v3
         with:

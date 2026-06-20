@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
-cd "$(dirname "$0")"
-source ./lib.sh
+cd "$(dirname "$0")/.."
+source build/lib.sh
 
 build=$(read_build)
 echo "=== fyne package wasm | build $build (no auto-bump) ==="
