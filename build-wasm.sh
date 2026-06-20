@@ -10,6 +10,14 @@ sed -i -E "s/^(\s*Build *= *).*/\1${build}/" FyneApp.toml
 sed -i -E "s#(application-version\">v[0-9.]+)<#\1.$build<#" wasm/index.html
 grep -qE "application-version\">v[0-9.]+\.$build<" wasm/index.html || { echo "[!] version patch failed"; exit 1; }
 
+sed -i '/application-name/d' wasm/index.html
+! grep -q application-name wasm/index.html || { echo "[!] app-name strip failed"; exit 1; }
+
+# App has no text inputs; stop the hidden dummyEntry from raising the mobile soft
+# keyboard when a toggle/dropdown (any Focusable) gains focus.
+sed -i 's#<input id="dummyEntry"#<input id="dummyEntry" inputmode="none" readonly#' wasm/index.html
+grep -qF 'id="dummyEntry" inputmode="none" readonly' wasm/index.html || { echo "[!] dummyEntry keyboard suppress failed"; exit 1; }
+
 gzip -9 -f wasm/ChaosGateUnlocker.wasm
 sed -i 's#fetch("ChaosGateUnlocker.wasm")#fetch("ChaosGateUnlocker.wasm.gz").then(r=>new Response(r.body.pipeThrough(new DecompressionStream("gzip")),{headers:{"Content-Type":"application/wasm"}}))#' wasm/index.html
 grep -q DecompressionStream wasm/index.html || { echo "[!] stream patch failed"; exit 1; }
@@ -18,8 +26,8 @@ sed -i '/webgl-debug\.js/d' wasm/index.html
 ! grep -q webgl-debug wasm/index.html || { echo "[!] webgl-debug strip failed"; exit 1; }
 rm -f wasm/webgl-debug.js
 
-sed -i 's#<meta charset="utf-8">#<meta charset="utf-8"><script>(function(){var r=window.devicePixelRatio||1;Object.defineProperty(window,"devicePixelRatio",{configurable:true,get:function(){return r>2?2:r;}});Object.defineProperty(navigator,"userAgent",{configurable:true,get:function(){return "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";}});})();</script>#' wasm/index.html
-grep -qF 'return r>2?2:r' wasm/index.html || { echo "[!] DPR cap inject failed"; exit 1; }
+sed -i 's#<meta charset="utf-8">#<meta charset="utf-8"><script>(function(){var dpr=2;try{var p=window.parent;var s=Math.min(p.innerWidth/800,p.innerHeight/600);dpr=Math.min(s*(p.devicePixelRatio||1),3);}catch(e){}Object.defineProperty(window,"devicePixelRatio",{configurable:true,get:function(){return dpr;}});window.__setDPR=function(v){v=Math.min(Math.max(v,0.5),3);if(Math.abs(v-dpr)<0.01)return;dpr=v;window.dispatchEvent(new Event("resize"));};Object.defineProperty(navigator,"userAgent",{configurable:true,get:function(){return "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";}});})();</script>#' wasm/index.html
+grep -qF 'window.__setDPR' wasm/index.html || { echo "[!] dynamic DPR inject failed"; exit 1; }
 grep -qF 'Chrome/120.0.0.0' wasm/index.html || { echo "[!] desktop UA inject failed"; exit 1; }
 
 sed -i 's|<style>|<style>html,body{background-color:#151515}@media (prefers-color-scheme: light){html,body{background-color:#fff}}|' wasm/index.html

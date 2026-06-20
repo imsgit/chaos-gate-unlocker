@@ -40,8 +40,12 @@
 			stage.style.transform = 'scale(' + s + ')';
 			wrap.style.width = (800 * s) + 'px';
 			wrap.style.height = (600 * s) + 'px';
+			var dpr = Math.min(s * (window.devicePixelRatio || 1), 3);
+			var win = stage.querySelector('iframe').contentWindow;
+			if (win && win.__setDPR) win.__setDPR(dpr);
 		}
 		window.addEventListener('resize', fit);
+		document.querySelector('#stage iframe').addEventListener('load', fit);
 		fit();
 	</script>
 </body>
