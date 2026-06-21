@@ -56,11 +56,14 @@ sub "$idx" 's#fetch("ChaosGateUnlocker.wasm")#fetch("ChaosGateUnlocker.wasm.gz")
 del "$idx" '/webgl-debug\.js/d' webgl-debug
 rm -f wasm/webgl-debug.js
 
-sub "$idx" 's#<meta charset="utf-8">#<meta charset="utf-8"><script>(function(){var dpr=2;try{var p=window.parent;var s=Math.min(p.innerWidth/800,p.innerHeight/600);dpr=Math.min(s*(p.devicePixelRatio||1),3);}catch(e){}Object.defineProperty(window,"devicePixelRatio",{configurable:true,get:function(){return dpr;}});window.__setDPR=function(v){v=Math.min(Math.max(v,0.5),3);if(Math.abs(v-dpr)<0.01)return;dpr=v;window.dispatchEvent(new Event("resize"));};Object.defineProperty(navigator,"userAgent",{configurable:true,get:function(){return "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";}});})();</script>#' 'window.__setDPR'
-have "$idx" 'Chrome/120.0.0.0'
+sub "$idx" 's#<meta charset="utf-8">#<meta charset="utf-8"><script>(function(){var dpr=2;try{var p=window.parent;var s=Math.min(p.innerWidth/800,p.innerHeight/600);dpr=Math.min(s*(p.devicePixelRatio||1),3);}catch(e){}Object.defineProperty(window,"devicePixelRatio",{configurable:true,get:function(){return dpr;}});window.__setDPR=function(v){v=Math.min(Math.max(v,0.5),3);if(Math.abs(v-dpr)<0.01)return;dpr=v;window.dispatchEvent(new Event("resize"));};Object.defineProperty(navigator,"userAgent",{configurable:true,get:function(){return "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36";}});})();</script>#' 'window.__setDPR'
+have "$idx" 'Chrome/140.0.0.0'
 
 sub "$idx" 's|<style>|<style>html,body{background-color:#151515}@media (prefers-color-scheme: light){html,body{background-color:#fff}}|' 'html,body{background-color:#151515}'
 sub wasm/dark.css 's/#141415/#151515/g' '#151515'
+
+echo "=== Release WebGL context on unload (Windows/ANGLE GPU-mem reclaim on reload) ==="
+sub "$idx" 's#</body>#<script>window.addEventListener("pagehide",function(){var c=document.querySelector("canvas");if(!c)return;var gl=c.getContext("webgl2")||c.getContext("webgl");if(!gl)return;var ext=gl.getExtension("WEBGL_lose_context");if(ext)ext.loseContext();});</script></body>#' 'WEBGL_lose_context'
 
 mv "$idx" wasm/app.html
 cp .github/pages-index.html "$idx"
