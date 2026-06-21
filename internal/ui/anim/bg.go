@@ -110,9 +110,6 @@ func (g *EyeGlow) build() {
 		lensBuf := make([]float32, maxN)
 		haloBuf := make([]float32, maxN)
 		blurTmp := make([]float32, maxN)
-		rBuf := make([]float32, maxN)
-		gBuf := make([]float32, maxN)
-		bBuf := make([]float32, maxN)
 
 		for i, e := range g.eyes {
 			bx := boxes[i]
@@ -138,10 +135,7 @@ func (g *EyeGlow) build() {
 						continue
 					}
 					lr, lg, lb, _ := src.At(x, y).RGBA()
-					R, G, B := float64(lr>>8), float64(lg>>8), float64(lb>>8)
-					li := (y-y0)*w + (x - x0)
-					rBuf[li], gBuf[li], bBuf[li] = float32(R), float32(G), float32(B)
-					lens[li] = float32(win * lensMask(R, G, B, e.lo, e.hi))
+					lens[(y-y0)*w+(x-x0)] = float32(win * lensMask(float64(lr>>8), float64(lg>>8), float64(lb>>8), e.lo, e.hi))
 				}
 			}
 
@@ -165,7 +159,8 @@ func (g *EyeGlow) build() {
 					if a > 1 {
 						a = 1
 					}
-					R, G, B := float64(rBuf[idx]), float64(gBuf[idx]), float64(bBuf[idx])
+					lr, lg, lb, _ := src.At(x, y).RGBA()
+					R, G, B := float64(lr>>8), float64(lg>>8), float64(lb>>8)
 					g.spots = append(g.spots, glowSpot{
 						off: g.img.PixOffset(x, y),
 						p: [4]float64{
