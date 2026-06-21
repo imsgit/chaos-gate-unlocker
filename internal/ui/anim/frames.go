@@ -2,6 +2,7 @@ package anim
 
 import (
 	"context"
+	"sync/atomic"
 	"time"
 
 	"fyne.io/fyne/v2"
@@ -19,9 +20,6 @@ func runFrames(ctx context.Context, n int, interval time.Duration, onCancel func
 			}
 			return
 		case <-ticker.C:
-			if hidden() {
-				continue
-			}
 			frame := i
 			fyne.DoAndWait(func() { step(frame) })
 		}
@@ -35,22 +33,29 @@ func Frames(n int, interval time.Duration, onDone func(), step func(i int)) cont
 		ticker := time.NewTicker(interval)
 		defer ticker.Stop()
 
-		i := 0
-		do := func() { step(i) }
-		for i = 1; i <= n; i++ {
+		var busy atomic.Bool
+		render := func(i int) {
+			busy.Store(true)
+			fyne.Do(func() {
+				step(i)
+				busy.Store(false)
+			})
+		}
+
+		for i := 1; i <= n; i++ {
 			select {
 			case <-ctx.Done():
 				return
 			case <-ticker.C:
-				if hidden() {
+				if busy.Load() {
 					continue
 				}
-				fyne.DoAndWait(do)
+				render(i)
 			}
 		}
 
 		if ctx.Err() == nil && onDone != nil {
-			fyne.DoAndWait(onDone)
+			fyne.Do(onDone)
 		}
 		cancel()
 	}()
