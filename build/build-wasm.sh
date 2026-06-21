@@ -62,9 +62,6 @@ have "$idx" 'Chrome/140.0.0.0'
 sub "$idx" 's|<style>|<style>html,body{background-color:#151515}@media (prefers-color-scheme: light){html,body{background-color:#fff}}|' 'html,body{background-color:#151515}'
 sub wasm/dark.css 's/#141415/#151515/g' '#151515'
 
-echo "=== Release WebGL context on unload (Windows/ANGLE GPU-mem reclaim on reload) ==="
-sub "$idx" 's#</body>#<script>window.addEventListener("pagehide",function(){var c=document.querySelector("canvas");if(!c)return;var gl=c.getContext("webgl2")||c.getContext("webgl");if(!gl)return;var ext=gl.getExtension("WEBGL_lose_context");if(ext)ext.loseContext();});</script></body>#' 'WEBGL_lose_context'
-
 mv "$idx" wasm/app.html
 cp .github/pages-index.html "$idx"
 

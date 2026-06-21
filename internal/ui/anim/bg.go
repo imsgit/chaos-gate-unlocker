@@ -274,6 +274,8 @@ func (g *EyeGlow) Animate() {
 					cancel()
 				}
 				cancel = g.pulse()
+				time.Sleep(time.Duration(eyeGlowSteps)*eyeGlowFrame + time.Second)
+				reclaim()
 			}
 		}()
 	})
