@@ -284,22 +284,22 @@ type Talent struct {
 	Description string
 }
 
+func rebuildTalents(talents []*objects.StringValue, changedTalents []string) []*objects.StringValue {
+	talents = talents[:0]
+	for _, talent := range changedTalents {
+		if talent != "" {
+			talents = append(talents, &objects.StringValue{Key: talentsByName[talent]})
+		}
+	}
+	return talents
+}
+
 func (m *Manager) ChangeUnitTalents(unit any, changedTalents []string) {
 	switch object := unit.(type) {
 	case *objects.KnightState:
-		object.Talents = object.Talents[:0]
-		for _, talent := range changedTalents {
-			if talent != "" {
-				object.Talents = append(object.Talents, &objects.StringValue{Key: talentsByName[talent]})
-			}
-		}
+		object.Talents = rebuildTalents(object.Talents, changedTalents)
 	case *objects.DreadnoughtState:
-		object.Talents = object.Talents[:0]
-		for _, talent := range changedTalents {
-			if talent != "" {
-				object.Talents = append(object.Talents, &objects.StringValue{Key: talentsByName[talent]})
-			}
-		}
+		object.Talents = rebuildTalents(object.Talents, changedTalents)
 	}
 }
 

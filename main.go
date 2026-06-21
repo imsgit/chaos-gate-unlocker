@@ -86,23 +86,8 @@ func main() {
 
 	var saveButton *widget.Button
 	refreshSaveButton = func() {
-		var augmeticsChanged bool
-		for _, augmetics := range augmeticsUnits {
-			if !slices.Equal(augmetics[0], augmetics[1]) {
-				augmeticsChanged = true
-				break
-			}
-		}
-
-		var talentsChanged bool
-		for _, talents := range talentsUnits {
-			if !slices.Equal(talents[0], talents[1]) {
-				talentsChanged = true
-				break
-			}
-		}
-
-		canApplyChanges := len(healUnits) > 0 || len(retrainUnits) > 0 || augmeticsChanged || talentsChanged
+		canApplyChanges := len(healUnits) > 0 || len(retrainUnits) > 0 ||
+			anyDirty(augmeticsUnits) || anyDirty(talentsUnits)
 		for _, action := range featureActions {
 			if *action.flag {
 				canApplyChanges = true
@@ -422,19 +407,21 @@ func main() {
 	saveButton.Disable()
 
 	statusLabel := widget.NewLabelWithData(status)
-	var bottomBar fyne.CanvasObject = statusLabel
+	var tryLink *widget.Hyperlink
 	if browserSupported {
-		browserLink := widget.NewHyperlink("> Try it online", nil)
-		browserLink.OnTapped = func() {
+		tryLink = widget.NewHyperlink("> Try it online", nil)
+		tryLink.OnTapped = func() {
 			if err := openInBrowser(); err != nil {
 				dialog.ShowError(err, w)
 			}
 		}
-		bottomBar = container.NewBorder(nil, nil, nil, browserLink, statusLabel)
 	} else if runtime.GOOS != "js" {
 		u, _ := url.Parse(websiteURL)
-		websiteLink := widget.NewHyperlink("> Try it online", u)
-		bottomBar = container.NewBorder(nil, nil, nil, websiteLink, statusLabel)
+		tryLink = widget.NewHyperlink("> Try it online", u)
+	}
+	var bottomBar fyne.CanvasObject = statusLabel
+	if tryLink != nil {
+		bottomBar = container.NewBorder(nil, nil, nil, tryLink, statusLabel)
 	}
 
 	content := container.NewBorder(
@@ -552,6 +539,15 @@ func renderAugmetic(idx int, init bool) *dropdown.IconWidget {
 			return dropdownItem(featuresManager.AugmeticByName(name))
 		},
 	})
+}
+
+func anyDirty(units map[any][][]string) bool {
+	for _, v := range units {
+		if !slices.Equal(v[0], v[1]) {
+			return true
+		}
+	}
+	return false
 }
 
 func containsOpt(list []string, val string) bool {

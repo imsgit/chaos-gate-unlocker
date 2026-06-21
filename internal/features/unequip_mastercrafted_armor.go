@@ -32,6 +32,21 @@ var armorWithIncreasedSlots = map[string][]int{
 	"SynskinBodyglove_Callidus_Armour_3": {0, 2},
 }
 
+func clearIncreasedSlots(armorKey string, itemClasses []*objects.StringValue, upgrades map[string][]bool) {
+	armor, ok := armorWithIncreasedSlots[armorKey]
+	if !ok {
+		return
+	}
+	dec := armor[0]
+	if u, ok := upgrades[armorKey]; ok && armor[1] > 0 && armor[1] < len(u) && u[armor[1]] {
+		dec++
+	}
+	for i := len(itemClasses) - 1; i > 0 && dec > 0; i-- {
+		itemClasses[i].Key = ""
+		dec--
+	}
+}
+
 func (m *Manager) UnequipMastercraftedArmor() {
 	upgrades := map[string][]bool{}
 
@@ -51,16 +66,7 @@ func (m *Manager) UnequipMastercraftedArmor() {
 				continue
 			}
 
-			if armor, ok := armorWithIncreasedSlots[object.ArmourRef.Key]; ok {
-				dec := armor[0]
-				if u, ok := upgrades[object.ArmourRef.Key]; ok && armor[1] > 0 && armor[1] < len(u) && u[armor[1]] {
-					dec++
-				}
-				for i := len(object.EquippedItemClasses) - 1; i > 0 && dec > 0; i-- {
-					object.EquippedItemClasses[i].Key = ""
-					dec--
-				}
-			}
+			clearIncreasedSlots(object.ArmourRef.Key, object.EquippedItemClasses, upgrades)
 			object.ArmourRef.Key = stem(object.ArmourRef.Key)
 		case internal.DreadnoughtState:
 			object := record.SerializedObject.(*objects.DreadnoughtState)
@@ -68,16 +74,7 @@ func (m *Manager) UnequipMastercraftedArmor() {
 		case internal.CallidusAssassinState, internal.CulexusAssassinState, internal.EversorAssassinState, internal.VindicareAssassinState:
 			object := record.SerializedObject.(*objects.AssassinState)
 			if strings.HasPrefix(object.ArmourRef.Key, SynskinBodyglovePrefix) {
-				if armor, ok := armorWithIncreasedSlots[object.ArmourRef.Key]; ok {
-					dec := armor[0]
-					if u, ok := upgrades[object.ArmourRef.Key]; ok && armor[1] > 0 && armor[1] < len(u) && u[armor[1]] {
-						dec++
-					}
-					for i := len(object.EquippedItemClasses) - 1; i > 0 && dec > 0; i-- {
-						object.EquippedItemClasses[i].Key = ""
-						dec--
-					}
-				}
+				clearIncreasedSlots(object.ArmourRef.Key, object.EquippedItemClasses, upgrades)
 				object.ArmourRef.Key = SynskinBodyglovePrefix + stem(strings.TrimPrefix(object.ArmourRef.Key, SynskinBodyglovePrefix))
 			} else {
 				object.ArmourRef.Key = stem(object.ArmourRef.Key)

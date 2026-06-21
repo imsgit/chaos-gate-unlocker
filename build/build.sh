@@ -21,18 +21,7 @@ fi
 trap restore_swaps EXIT
 stub_fonts
 slim_charset
-
-echo "=== Slim file-open dialog (favorites + top-right buttons) ==="
-filego=vendor/fyne.io/fyne/v2/dialog/file.go
-swap "$filego"
-perl -0777 -i -pe '
-my $a = "\theader := container.NewBorder(\n\t\tnil, nil, nil, optionsbuttons,\n\t\tf.title,\n\t)";
-my $b = "\t_ = optionsbuttons\n\theader := container.NewBorder(\n\t\tnil, nil, nil, nil,\n\t\tf.title,\n\t)";
-my $i = index($_, $a); die "file.go header block not found\n" if $i < 0; substr($_, $i, length($a)) = $b;' "$filego"
-perl -0777 -i -pe '
-my $a = "\tbody := container.NewHSplit(\n\t\tf.favoritesList,\n\t\tcontainer.NewBorder(\n\t\t\tf.breadcrumbScroll, nil, nil, nil,\n\t\t\tf.filesScroll,\n\t\t),\n\t)\n\tbody.SetOffset(0) // Set the minimum offset so that the favoritesList takes only its minimal width";
-my $b = "\tbody := container.NewBorder(\n\t\tf.breadcrumbScroll, nil, nil, nil,\n\t\tf.filesScroll,\n\t)";
-my $i = index($_, $a); die "file.go body block not found\n" if $i < 0; substr($_, $i, length($a)) = $b;' "$filego"
+slim_filedialog
 
 for os in windows linux; do
 	echo "=== Build $os/amd64 ==="

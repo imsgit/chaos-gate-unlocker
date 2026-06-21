@@ -57,8 +57,7 @@ func (r *LinearRecord) MarshalJSON() ([]byte, error) {
 			return nil, err
 		}
 
-		quoted := strconv.Quote(string(serializedObject))
-		serializedContents = []byte(quoted)
+		serializedContents = []byte(strconv.Quote(string(serializedObject)))
 	}
 
 	return json.Marshal(linearRecord{
@@ -78,20 +77,14 @@ func (r *LinearRecord) UnmarshalJSON(data []byte) error {
 	r.TypeName = t.TypeName
 	r.AssetName = t.AssetName
 
-	if newObject, exists := typeNameToObject[t.TypeName]; exists {
-		unquoted, _ := strconv.Unquote(string(t.SerializedContents))
-		serializedContents := []byte(unquoted)
-
-		r.SerializedObject = newObject()
-		err = json.Unmarshal(serializedContents, r.SerializedObject)
-		if err != nil {
-			return err
-		}
-
+	newObject, exists := typeNameToObject[t.TypeName]
+	if !exists {
+		r.SerializedContents = t.SerializedContents
 		return nil
 	}
 
-	r.SerializedContents = t.SerializedContents
+	unquoted, _ := strconv.Unquote(string(t.SerializedContents))
 
-	return nil
+	r.SerializedObject = newObject()
+	return json.Unmarshal([]byte(unquoted), r.SerializedObject)
 }

@@ -146,10 +146,11 @@ func (i *Widget) Bind(val interface{}) {
 	i.textStatus.Color = ui.MutedForeground
 	i.textStatus.Text = "Battle ready"
 
+	isDread := class == features.DreadnoughtClass
 	switch healthStatus {
 	case 3:
 		i.textStatus.Color = criticalColor
-		if class == features.DreadnoughtClass {
+		if isDread {
 			i.textStatus.Text = "Unavailable - Critical damage"
 			if noPilot {
 				i.textStatus.Text = "Unavailable - No pilot"
@@ -157,24 +158,14 @@ func (i *Widget) Bind(val interface{}) {
 		} else {
 			i.textStatus.Text = "Unavailable - Critical wound"
 		}
-	case 2:
+	case 1, 2:
 		i.textStatus.Color = lightColor
-		if class == features.DreadnoughtClass {
-			i.textStatus.Text += " - Damage"
-			if underRepair {
-				i.textStatus.Text = "Unavailable - Under repair"
-			}
-			if noPilot {
-				i.textStatus.Text = "Unavailable - No pilot"
-				i.textStatus.Color = criticalColor
-			}
-		} else {
-			i.textStatus.Text += " - Wound"
+		damage, wound := " - Damage", " - Wound"
+		if healthStatus == 1 {
+			damage, wound = " - Light damage", " - Light wound"
 		}
-	case 1:
-		i.textStatus.Color = lightColor
-		if class == features.DreadnoughtClass {
-			i.textStatus.Text += " - Light damage"
+		if isDread {
+			i.textStatus.Text += damage
 			if underRepair {
 				i.textStatus.Text = "Unavailable - Under repair"
 			}
@@ -183,7 +174,7 @@ func (i *Widget) Bind(val interface{}) {
 				i.textStatus.Color = criticalColor
 			}
 		} else {
-			i.textStatus.Text += " - Light wound"
+			i.textStatus.Text += wound
 		}
 	}
 
