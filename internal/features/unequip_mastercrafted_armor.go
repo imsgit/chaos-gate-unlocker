@@ -70,7 +70,7 @@ func (m *Manager) UnequipMastercraftedArmor() {
 			if strings.HasPrefix(object.ArmourRef.Key, SynskinBodyglovePrefix) {
 				if armor, ok := armorWithIncreasedSlots[object.ArmourRef.Key]; ok {
 					dec := armor[0]
-					if armor[1] > 0 && upgrades[object.ArmourRef.Key][armor[1]] {
+					if u, ok := upgrades[object.ArmourRef.Key]; ok && armor[1] > 0 && armor[1] < len(u) && u[armor[1]] {
 						dec++
 					}
 					for i := len(object.EquippedItemClasses) - 1; i > 0 && dec > 0; i-- {
