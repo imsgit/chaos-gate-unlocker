@@ -19,6 +19,9 @@ func runFrames(ctx context.Context, n int, interval time.Duration, onCancel func
 			}
 			return
 		case <-ticker.C:
+			if hidden() {
+				continue
+			}
 			frame := i
 			fyne.DoAndWait(func() { step(frame) })
 		}
@@ -39,6 +42,9 @@ func Frames(n int, interval time.Duration, onDone func(), step func(i int)) cont
 			case <-ctx.Done():
 				return
 			case <-ticker.C:
+				if hidden() {
+					continue
+				}
 				fyne.DoAndWait(do)
 			}
 		}
