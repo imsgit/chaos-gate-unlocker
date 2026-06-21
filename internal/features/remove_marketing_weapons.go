@@ -18,12 +18,9 @@ func (m *Manager) RemoveMarketingWeapons() {
 	forEach(m, internal.KnightState, func(o *objects.KnightState) {
 		for _, weapon := range o.EquippedWeapons {
 			if strings.HasPrefix(weapon.Key, MarketingPrefix) {
-				weapon.Key = strings.Split(strings.TrimPrefix(weapon.Key, MarketingPrefix), "_")[0]
-				switch weapon.Key {
-				case "Sword":
-					weapon.Key = "ForceSword"
-				case "Hammer":
-					weapon.Key = "DaemonHammer"
+				weapon.Key = stem(strings.TrimPrefix(weapon.Key, MarketingPrefix))
+				if renamed, ok := weaponRename[weapon.Key]; ok {
+					weapon.Key = renamed
 				}
 			}
 		}

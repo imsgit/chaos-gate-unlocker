@@ -2,8 +2,9 @@ package tooltip
 
 import (
 	"errors"
-	"math"
 	"time"
+
+	"chaos-gate-unlocker/internal/ui"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
@@ -128,10 +129,9 @@ func sizeAndPosition(zeroPos, relPos fyne.Position, t *tip, canvas fyne.Canvas) 
 		relPos.Y += belowMouseDistance
 	}
 
-	if scale := canvas.Scale(); scale > 0 {
-		relPos.X = float32(math.Round(float64((relPos.X+zeroPos.X)*scale)))/scale - zeroPos.X
-		relPos.Y = float32(math.Round(float64((relPos.Y+zeroPos.Y)*scale)))/scale - zeroPos.Y
-	}
+	scale := canvas.Scale()
+	relPos.X = ui.SnapToPixel(relPos.X+zeroPos.X, scale) - zeroPos.X
+	relPos.Y = ui.SnapToPixel(relPos.Y+zeroPos.Y, scale) - zeroPos.Y
 
 	t.Move(relPos)
 }

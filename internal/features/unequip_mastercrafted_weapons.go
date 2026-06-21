@@ -25,20 +25,15 @@ func (m *Manager) UnequipMastercraftedWeapons() {
 
 			for _, weapon := range object.EquippedWeapons {
 				if strings.HasPrefix(weapon.Key, TechmarinePrefix) {
-					weapon.Key = TechmarinePrefix + strings.Split(strings.TrimPrefix(weapon.Key, TechmarinePrefix), "_")[0]
+					weapon.Key = TechmarinePrefix + stem(strings.TrimPrefix(weapon.Key, TechmarinePrefix))
 				} else if strings.HasPrefix(weapon.Key, MarketingPrefix) {
-					weapon.Key = strings.Split(strings.TrimPrefix(weapon.Key, MarketingPrefix), "_")[0]
+					weapon.Key = stem(strings.TrimPrefix(weapon.Key, MarketingPrefix))
 				} else {
-					weapon.Key = strings.Split(weapon.Key, "_")[0]
+					weapon.Key = stem(weapon.Key)
 				}
 
-				switch weapon.Key {
-				case "Sword":
-					weapon.Key = "ForceSword"
-				case "Shield":
-					weapon.Key = "StormShield"
-				case "Hammer":
-					weapon.Key = "DaemonHammer"
+				if renamed, ok := weaponRename[weapon.Key]; ok {
+					weapon.Key = renamed
 				}
 			}
 		case internal.DreadnoughtState:
@@ -48,7 +43,7 @@ func (m *Manager) UnequipMastercraftedWeapons() {
 		case internal.CallidusAssassinState, internal.CulexusAssassinState, internal.EversorAssassinState, internal.VindicareAssassinState:
 			object := record.SerializedObject.(*objects.AssassinState)
 			for _, weapon := range object.EquippedWeapons {
-				weapon.Key = strings.Split(weapon.Key, "_")[0]
+				weapon.Key = stem(weapon.Key)
 			}
 		}
 	}
@@ -65,21 +60,21 @@ func (m *Manager) CanUnequipMastercraftedWeapons() bool {
 			}
 
 			for _, weapon := range object.EquippedWeapons {
-				if strings.Contains(strings.TrimPrefix(strings.TrimPrefix(weapon.Key, MarketingPrefix), TechmarinePrefix), "_") {
+				if mastercrafted(weapon.Key, MarketingPrefix, TechmarinePrefix) {
 					return true
 				}
 			}
 		case internal.DreadnoughtState:
 			object := record.SerializedObject.(*objects.DreadnoughtState)
 			for _, weapon := range object.EquippedWeapons {
-				if strings.Contains(strings.TrimPrefix(weapon.Key, DreadnoughtPrefix), "_") {
+				if mastercrafted(weapon.Key, DreadnoughtPrefix) {
 					return true
 				}
 			}
 		case internal.CallidusAssassinState, internal.CulexusAssassinState, internal.EversorAssassinState, internal.VindicareAssassinState:
 			object := record.SerializedObject.(*objects.AssassinState)
 			for _, weapon := range object.EquippedWeapons {
-				if strings.Contains(weapon.Key, "_") {
+				if mastercrafted(weapon.Key) {
 					return true
 				}
 			}

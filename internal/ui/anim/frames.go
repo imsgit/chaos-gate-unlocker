@@ -7,6 +7,24 @@ import (
 	"fyne.io/fyne/v2"
 )
 
+func runFrames(ctx context.Context, n int, interval time.Duration, onCancel func(), step func(i int)) {
+	ticker := time.NewTicker(interval)
+	defer ticker.Stop()
+
+	for i := 0; i < n; i++ {
+		select {
+		case <-ctx.Done():
+			if onCancel != nil {
+				fyne.DoAndWait(onCancel)
+			}
+			return
+		case <-ticker.C:
+			frame := i
+			fyne.DoAndWait(func() { step(frame) })
+		}
+	}
+}
+
 func Frames(n int, interval time.Duration, onDone func(), step func(i int)) context.CancelFunc {
 	ctx, cancel := context.WithCancel(context.Background())
 

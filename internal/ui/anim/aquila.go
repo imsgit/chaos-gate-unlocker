@@ -33,17 +33,20 @@ func (a *Aquila) Prewarm() { go a.frames() }
 
 func (a *Aquila) frames() (left, right []image.Image) {
 	a.once.Do(func() {
-		a.left = aquilaFrames(a.leftRes, 1.0, -30, 0, 16)
-		a.right = aquilaFrames(a.rightRes, 0.0, 30, 0, 16)
+		a.left = aquilaFrames(a.leftRes, 1.0, -30)
+		a.right = aquilaFrames(a.rightRes, 0.0, 30)
 	})
 	return a.left, a.right
 }
 
-const aquilaBaseW = 200
+const (
+	aquilaBaseW      = 200
+	aquilaFrameCount = 16
+)
 
-func aquilaFrames(res fyne.Resource, pivotX, fromDeg, toDeg float64, count int) []image.Image {
+func aquilaFrames(res fyne.Resource, pivotX, fromDeg float64) []image.Image {
 	src, _, err := image.Decode(bytes.NewReader(res.Content()))
-	if err != nil || count < 2 {
+	if err != nil {
 		return nil
 	}
 	src = ui.ScaleDown(src, aquilaBaseW)
@@ -52,10 +55,10 @@ func aquilaFrames(res fyne.Resource, pivotX, fromDeg, toDeg float64, count int) 
 	px := float64(b.Min.X) + pivotX*float64(b.Dx())
 	py := float64(b.Min.Y) + float64(b.Dy())/2
 
-	frames := make([]image.Image, count)
+	frames := make([]image.Image, aquilaFrameCount)
 	for i := range frames {
-		t := float64(i) / float64(count-1)
-		sin, cos := math.Sincos((fromDeg + (toDeg-fromDeg)*t) * math.Pi / 180)
+		t := float64(i) / float64(aquilaFrameCount-1)
+		sin, cos := math.Sincos(fromDeg * (1 - t) * math.Pi / 180)
 
 		m := f64.Aff3{
 			cos, -sin, px - cos*px + sin*py,
@@ -88,11 +91,7 @@ func (a *Aquila) Animate(ctx context.Context, im, im2 *canvas.Image, p *progress
 
 	fyne.DoAndWait(p.Reset)
 
-	ticker := time.NewTicker(15 * time.Millisecond)
-	defer ticker.Stop()
-
-	i := 0
-	frame := func() {
+	runFrames(ctx, 30, 15*time.Millisecond, p.Reset, func(i int) {
 		if i < 20 {
 			width += sOffset
 			p.Grow(width)
@@ -119,15 +118,5 @@ func (a *Aquila) Animate(ctx context.Context, im, im2 *canvas.Image, p *progress
 			im.Refresh()
 			im2.Refresh()
 		}
-	}
-
-	for ; i < 30; i++ {
-		select {
-		case <-ctx.Done():
-			fyne.DoAndWait(p.Reset)
-			return
-		case <-ticker.C:
-			fyne.DoAndWait(frame)
-		}
-	}
+	})
 }

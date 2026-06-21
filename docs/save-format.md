@@ -121,13 +121,9 @@ active mission is a normal `StarMapMission` (its `mapName` matches the header
    `bloomEruptionNumber`.
 4. **Clear Warp Storms** — `StarMapWarpStormModel`.
 5. **Repair ship facilities** — `ShipStatusState`.
-6. **Instant-finish Archeotech digs** — `ArcheotechExcavationSite`.
 
 ## 8. Gotchas
 
-- **Broken saves exist.** Some files contain raw control bytes (e.g. `0x03`)
-  inside string data — invalid JSON. The loader correctly rejects them with
-  `ErrWrongSaveFileFormat`. Example: `bin/saves/new/0_Slot3.gksave`.
 - **Quoting:** the marshaler uses `strconv.Quote`/`Unquote` for the
   string layer. These are Go-syntax, not JSON-syntax (e.g. JSON `\/` is not
   valid Go), but every valid sample round-trips because the inner payload is

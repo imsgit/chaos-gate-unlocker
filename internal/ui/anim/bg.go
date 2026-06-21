@@ -10,7 +10,6 @@ import (
 	"sync"
 	"time"
 
-	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
 )
 
@@ -25,24 +24,12 @@ const (
 )
 
 func AnimateAbout(ctx context.Context, im *canvas.Image) {
-	ticker := time.NewTicker(15 * time.Millisecond)
-	defer ticker.Stop()
-
-	fade := func() {
-		im.Translucency = clamp(im.Translucency - 0.04)
-		canvas.Refresh(im)
-	}
-
-	for i := 0; i < 30; i++ {
-		select {
-		case <-ctx.Done():
-			return
-		case <-ticker.C:
-			if i > 5 {
-				fyne.DoAndWait(fade)
-			}
+	runFrames(ctx, 30, 15*time.Millisecond, nil, func(i int) {
+		if i > 5 {
+			im.Translucency = clamp(im.Translucency - 0.04)
+			canvas.Refresh(im)
 		}
-	}
+	})
 }
 
 type glowEye struct{ cx, cy, rx, ry, reveal, bloom, lo, hi, grad float64 }
@@ -123,6 +110,9 @@ func (g *EyeGlow) build() {
 		lensBuf := make([]float32, maxN)
 		haloBuf := make([]float32, maxN)
 		blurTmp := make([]float32, maxN)
+		rBuf := make([]float32, maxN)
+		gBuf := make([]float32, maxN)
+		bBuf := make([]float32, maxN)
 
 		for i, e := range g.eyes {
 			bx := boxes[i]
@@ -148,7 +138,10 @@ func (g *EyeGlow) build() {
 						continue
 					}
 					lr, lg, lb, _ := src.At(x, y).RGBA()
-					lens[(y-y0)*w+(x-x0)] = float32(win * lensMask(float64(lr>>8), float64(lg>>8), float64(lb>>8), e.lo, e.hi))
+					R, G, B := float64(lr>>8), float64(lg>>8), float64(lb>>8)
+					li := (y-y0)*w + (x - x0)
+					rBuf[li], gBuf[li], bBuf[li] = float32(R), float32(G), float32(B)
+					lens[li] = float32(win * lensMask(R, G, B, e.lo, e.hi))
 				}
 			}
 
@@ -172,8 +165,7 @@ func (g *EyeGlow) build() {
 					if a > 1 {
 						a = 1
 					}
-					lr, lg, lb, _ := src.At(x, y).RGBA()
-					R, G, B := float64(lr>>8), float64(lg>>8), float64(lb>>8)
+					R, G, B := float64(rBuf[idx]), float64(gBuf[idx]), float64(bBuf[idx])
 					g.spots = append(g.spots, glowSpot{
 						off: g.img.PixOffset(x, y),
 						p: [4]float64{

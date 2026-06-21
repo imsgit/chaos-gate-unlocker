@@ -53,7 +53,7 @@ func (m *Manager) UnequipMastercraftedArmor() {
 
 			if armor, ok := armorWithIncreasedSlots[object.ArmourRef.Key]; ok {
 				dec := armor[0]
-				if armor[1] > 0 && upgrades[object.ArmourRef.Key][armor[1]] {
+				if u, ok := upgrades[object.ArmourRef.Key]; ok && armor[1] > 0 && armor[1] < len(u) && u[armor[1]] {
 					dec++
 				}
 				for i := len(object.EquippedItemClasses) - 1; i > 0 && dec > 0; i-- {
@@ -61,10 +61,10 @@ func (m *Manager) UnequipMastercraftedArmor() {
 					dec--
 				}
 			}
-			object.ArmourRef.Key = strings.Split(object.ArmourRef.Key, "_")[0]
+			object.ArmourRef.Key = stem(object.ArmourRef.Key)
 		case internal.DreadnoughtState:
 			object := record.SerializedObject.(*objects.DreadnoughtState)
-			object.ArmourRef.Key = strings.Split(object.ArmourRef.Key, "_")[0]
+			object.ArmourRef.Key = stem(object.ArmourRef.Key)
 		case internal.CallidusAssassinState, internal.CulexusAssassinState, internal.EversorAssassinState, internal.VindicareAssassinState:
 			object := record.SerializedObject.(*objects.AssassinState)
 			if strings.HasPrefix(object.ArmourRef.Key, SynskinBodyglovePrefix) {
@@ -78,9 +78,9 @@ func (m *Manager) UnequipMastercraftedArmor() {
 						dec--
 					}
 				}
-				object.ArmourRef.Key = SynskinBodyglovePrefix + strings.Split(strings.TrimPrefix(object.ArmourRef.Key, SynskinBodyglovePrefix), "_")[0]
+				object.ArmourRef.Key = SynskinBodyglovePrefix + stem(strings.TrimPrefix(object.ArmourRef.Key, SynskinBodyglovePrefix))
 			} else {
-				object.ArmourRef.Key = strings.Split(object.ArmourRef.Key, "_")[0]
+				object.ArmourRef.Key = stem(object.ArmourRef.Key)
 			}
 		}
 	}
@@ -92,17 +92,17 @@ func (m *Manager) CanUnequipMastercraftedArmor() bool {
 		case internal.KnightState:
 			object := record.SerializedObject.(*objects.KnightState)
 			class := getClass(object.CurrentLevelData.Key)
-			if class != GarranCrowClass && strings.Contains(object.ArmourRef.Key, "_") {
+			if class != GarranCrowClass && mastercrafted(object.ArmourRef.Key) {
 				return true
 			}
 		case internal.DreadnoughtState:
 			object := record.SerializedObject.(*objects.DreadnoughtState)
-			if strings.Contains(object.ArmourRef.Key, "_") {
+			if mastercrafted(object.ArmourRef.Key) {
 				return true
 			}
 		case internal.CallidusAssassinState, internal.CulexusAssassinState, internal.EversorAssassinState, internal.VindicareAssassinState:
 			object := record.SerializedObject.(*objects.AssassinState)
-			if strings.Contains(strings.TrimPrefix(object.ArmourRef.Key, SynskinBodyglovePrefix), "_") {
+			if mastercrafted(object.ArmourRef.Key, SynskinBodyglovePrefix) {
 				return true
 			}
 		}

@@ -127,30 +127,96 @@ func getClass(s string) string {
 	return class
 }
 
+func stem(s string) string {
+	base, _, _ := strings.Cut(s, "_")
+	return base
+}
+
+func mastercrafted(key string, trimPrefixes ...string) bool {
+	for _, p := range trimPrefixes {
+		key = strings.TrimPrefix(key, p)
+	}
+	return strings.Contains(key, "_")
+}
+
+var weaponRename = map[string]string{
+	"Sword":  "ForceSword",
+	"Shield": "StormShield",
+	"Hammer": "DaemonHammer",
+}
+
 func getLvl(s string) int {
 	_, after, _ := strings.Cut(s, "_")
 	lvl, _ := strconv.Atoi(after)
 	return lvl
 }
 
-func (m *Manager) unlockTimelineEvent(eventKey string, calendarType int) {
+type timelineUnlock struct {
+	eventKey       string
+	prereqID       string
+	unlockedID     string
+	requireKoramar bool
+}
+
+func (m *Manager) canUnlockTimelineEvent(u timelineUnlock) (enable, show bool) {
+	var available, advancedTime bool
+	for _, record := range m.state.LinearRecords {
+		switch record.TypeName {
+		case internal.GameUnlocksSaveState:
+			object := record.SerializedObject.(*objects.GameUnlocksSaveState)
+			for i := range object.Unlocks {
+				switch object.Unlocks[i].ID {
+				case u.prereqID:
+					available = true
+				case KoramarMissionDefeated:
+					advancedTime = true
+				case u.unlockedID:
+					return false, true
+				}
+			}
+		case internal.TimelineEventOccasion:
+			object := record.SerializedObject.(*objects.TimelineEventOccasion)
+			if object.EventToPlay.Key == u.eventKey {
+				return object.TriggerTime > 0, object.TriggerTime == 0
+			}
+		}
+	}
+
+	if u.requireKoramar {
+		return available && advancedTime, false
+	}
+	return available, false
+}
+
+func (m *Manager) unlockTimelineEvent(eventKey string, calendarType int, alsoReset ...string) {
+	reset := func(o *objects.TimelineEventOccasion) {
+		o.TriggerTime = 0
+		o.SavedChosenResults.Values = []interface{}{}
+	}
+
 	var eventOccasion *objects.TimelineEventOccasion
 	forEach(m, internal.TimelineEventOccasion, func(o *objects.TimelineEventOccasion) {
 		if o.EventToPlay.Key == eventKey {
 			eventOccasion = o
 		}
 	})
+
+	if eventOccasion != nil {
+		reset(eventOccasion)
+		for _, key := range alsoReset {
+			forEach(m, internal.TimelineEventOccasion, func(o *objects.TimelineEventOccasion) {
+				if o.EventToPlay.Key == key {
+					reset(o)
+				}
+			})
+		}
+		return
+	}
+
 	var saveState *objects.TimeManagerSaveState
 	forEach(m, internal.TimeManagerSaveState, func(o *objects.TimeManagerSaveState) {
 		saveState = o
 	})
-
-	if eventOccasion != nil {
-		eventOccasion.TriggerTime = 0
-		eventOccasion.SavedChosenResults.Values = []interface{}{}
-		return
-	}
-
 	if saveState == nil {
 		return
 	}

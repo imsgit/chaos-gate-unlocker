@@ -1,9 +1,8 @@
 package dropdown
 
 import (
+	"chaos-gate-unlocker/internal/ui"
 	"chaos-gate-unlocker/internal/ui/widgets/tooltip"
-
-	"math"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
@@ -44,9 +43,7 @@ func (s *Widget) MinSize() fyne.Size {
 }
 
 func (s *Widget) MouseIn(e *desktop.MouseEvent) {
-	if !tooltip.OverlayShown(s) {
-		s.WidgetExtend.MouseIn(e)
-	}
+	s.MouseInUnlessOverlay(e)
 	s.Select.MouseIn(e)
 }
 
@@ -134,10 +131,7 @@ func (s *Widget) showPopup() {
 	pad := th.Size(theme.SizeNamePadding)
 	border := th.Size(theme.SizeNameInputBorder)
 
-	contentPad := float32(2)
-	if scale := cv.Scale(); scale > 0 {
-		contentPad = float32(math.Round(float64(contentPad*scale))) / scale
-	}
+	contentPad := ui.SnapToPixel(2, cv.Scale())
 
 	var rowH float32
 	if len(rows) > 0 {
@@ -182,11 +176,11 @@ func (s *Widget) showPopup() {
 		pos.Y = abs.Y + border - popHeight
 	}
 
-	if scale := cv.Scale(); scale > 0 {
-		snap := func(v float32) float32 { return float32(math.Round(float64(v*scale))) / scale }
-		pos.X, pos.Y = snap(pos.X), snap(pos.Y)
-		popWidth, popHeight = snap(popWidth), snap(popHeight)
-	}
+	scale := cv.Scale()
+	pos.X = ui.SnapToPixel(pos.X, scale)
+	pos.Y = ui.SnapToPixel(pos.Y, scale)
+	popWidth = ui.SnapToPixel(popWidth, scale)
+	popHeight = ui.SnapToPixel(popHeight, scale)
 
 	content := newSelectPopup(rows, scroll, selectedIdx, s.hidePopup)
 	padded := container.New(layout.NewCustomPaddedLayout(contentPad, contentPad, contentPad, contentPad), content)

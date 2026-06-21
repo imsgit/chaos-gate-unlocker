@@ -70,9 +70,7 @@ func (i *Widget) MinSize() fyne.Size {
 }
 
 func (i *Widget) MouseIn(e *desktop.MouseEvent) {
-	if !tooltip.OverlayShown(i) {
-		i.WidgetExtend.MouseIn(e)
-	}
+	i.MouseInUnlessOverlay(e)
 	i.hoverBg.FillColor = i.Theme().Color(theme.ColorNameHover, fyne.CurrentApp().Settings().ThemeVariant())
 	i.hoverBg.Refresh()
 }

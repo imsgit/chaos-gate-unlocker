@@ -30,6 +30,12 @@ func (t *WidgetExtend) MouseIn(e *desktop.MouseEvent) {
 	t.setPending()
 }
 
+func (t *WidgetExtend) MouseInUnlessOverlay(e *desktop.MouseEvent) {
+	if !OverlayShown(t.Obj) {
+		t.MouseIn(e)
+	}
+}
+
 func (t *WidgetExtend) MouseMoved(e *desktop.MouseEvent) {
 	t.absoluteMousePos = e.AbsolutePosition
 }
