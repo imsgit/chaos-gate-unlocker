@@ -227,7 +227,3 @@ func Reset(sw *Widget, status func() (bool, bool)) {
 		sw.SetState(state, false)
 	}
 }
-
-func ResetOn(sw *Widget, available bool) {
-	Reset(sw, func() (bool, bool) { return available, true })
-}

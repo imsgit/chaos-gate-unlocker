@@ -27,7 +27,7 @@ var icons = map[string]fyne.Resource{
 	"ActPrognosticars": resourceActPrognosticarsPng,
 	"ActSeals":         resourceActSealsPng,
 	"ActUnequip":       resourceActUnequipPng,
-	"ActMarketing":     resourceActMarketingPng,
+	"ActReaper":        resourceActReaperPng,
 	"ActHeal":          resourceActHealPng,
 	"ActRepair":        resourceActRepairPng,
 	"ActAssassins":     resourceActAssassinsPng,

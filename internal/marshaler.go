@@ -26,6 +26,7 @@ const (
 	TimeManagerSaveState    = "GreyKnights.TimeManagerSaveState"
 	TimelineEventOccasion   = "GreyKnights.TimelineEventOccasion"
 	StarMapMissionSaveState = "GreyKnights.StarMapMissionSaveState"
+	LoseGameOccasion        = "GreyKnights.LoseGameOccasion"
 )
 
 var typeNameToObject = map[string]func() interface{}{
@@ -46,6 +47,7 @@ var typeNameToObject = map[string]func() interface{}{
 	TimelineEventOccasion:   func() interface{} { return &objects.TimelineEventOccasion{} },
 	ArmourySaveState:        func() interface{} { return &objects.ArmorySaveState{} },
 	StarMapMissionSaveState: func() interface{} { return &objects.StarMapMissionSaveState{} },
+	LoseGameOccasion:        func() interface{} { return &objects.LoseGameOccasion{} },
 }
 
 func (r *LinearRecord) MarshalJSON() ([]byte, error) {

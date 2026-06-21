@@ -83,27 +83,27 @@ func (m *Manager) UnequipMastercraftedArmor() {
 	}
 }
 
-func (m *Manager) CanUnequipMastercraftedArmor() bool {
+func (m *Manager) CanUnequipMastercraftedArmor() (bool, bool) {
 	for _, record := range m.state.LinearRecords {
 		switch record.TypeName {
 		case internal.KnightState:
 			object := record.SerializedObject.(*objects.KnightState)
 			class := getClass(object.CurrentLevelData.Key)
 			if class != GarranCrowClass && mastercrafted(object.ArmourRef.Key) {
-				return true
+				return true, true
 			}
 		case internal.DreadnoughtState:
 			object := record.SerializedObject.(*objects.DreadnoughtState)
 			if mastercrafted(object.ArmourRef.Key) {
-				return true
+				return true, true
 			}
 		case internal.CallidusAssassinState, internal.CulexusAssassinState, internal.EversorAssassinState, internal.VindicareAssassinState:
 			object := record.SerializedObject.(*objects.AssassinState)
 			if mastercrafted(object.ArmourRef.Key, SynskinBodyglovePrefix) {
-				return true
+				return true, true
 			}
 		}
 	}
 
-	return false
+	return false, true
 }

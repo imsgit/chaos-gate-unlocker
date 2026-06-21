@@ -49,7 +49,7 @@ func (m *Manager) UnequipMastercraftedWeapons() {
 	}
 }
 
-func (m *Manager) CanUnequipMastercraftedWeapons() bool {
+func (m *Manager) CanUnequipMastercraftedWeapons() (bool, bool) {
 	for _, record := range m.state.LinearRecords {
 		switch record.TypeName {
 		case internal.KnightState:
@@ -61,25 +61,25 @@ func (m *Manager) CanUnequipMastercraftedWeapons() bool {
 
 			for _, weapon := range object.EquippedWeapons {
 				if mastercrafted(weapon.Key, MarketingPrefix, TechmarinePrefix) {
-					return true
+					return true, true
 				}
 			}
 		case internal.DreadnoughtState:
 			object := record.SerializedObject.(*objects.DreadnoughtState)
 			for _, weapon := range object.EquippedWeapons {
 				if mastercrafted(weapon.Key, DreadnoughtPrefix) {
-					return true
+					return true, true
 				}
 			}
 		case internal.CallidusAssassinState, internal.CulexusAssassinState, internal.EversorAssassinState, internal.VindicareAssassinState:
 			object := record.SerializedObject.(*objects.AssassinState)
 			for _, weapon := range object.EquippedWeapons {
 				if mastercrafted(weapon.Key) {
-					return true
+					return true, true
 				}
 			}
 		}
 	}
 
-	return false
+	return false, true
 }

@@ -28,16 +28,16 @@ func (m *Manager) UnlockPreorderItems() {
 	})
 }
 
-func (m *Manager) CanUnlockPreorderItems() bool {
+func (m *Manager) CanUnlockPreorderItems() (bool, bool) {
 	object := first[objects.ArmorySaveState](m, internal.ArmourySaveState)
 	if object == nil {
-		return true
+		return true, true
 	}
 	for _, wargear := range object.UnlockedWargears {
 		if wargear.Data.Key == DominaLiberDaemonica {
-			return false
+			return false, true
 		}
 	}
 
-	return true
+	return true, true
 }

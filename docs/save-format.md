@@ -97,9 +97,9 @@ active mission is a normal `StarMapMission` (its `mapName` matches the header
 
 ## 6. Campaign-flow fields (feature targets)
 
-- **`LoseGameOccasion`** — the campaign doom clock:
-  `occasionKey:"PURGATION_TOO_LONG_C"`, `triggerTime:<day>` (saw 409/487/600).
-  When the day reaches `triggerTime` you auto-lose via the GameOver cutscene.
+- **`LoseGameOccasion`** — a campaign loss condition: `occasionKey:<key>`,
+  `triggerTime:<day>` (saw 368/409/487/554/600). When the day reaches
+  `triggerTime` you auto-lose via the GameOver cutscene.
 - **`StarMapMissionSaveState`** — `bloomEruptionNumber`,
   `daysRemainingToNextBloomEruption`, `weekThatKoramarWasDefeated`,
   `act3StartDay`, `dateThatThreatLevelStartedIncreasing`.
@@ -109,20 +109,7 @@ active mission is a normal `StarMapMission` (its `mapName` matches the header
   `Koramar_Mission_Defeated`, `Poxus_Undefeated`, `Necrosus_Undefeated`,
   `CroweAvailable`, `Assassins_Unlocked`, `Purity_Seals_Unlocked`.
 
-## 7. Candidate features (found in the data)
-
-1. **Postpone the Exterminatus deadline** — raise/remove
-   `LoseGameOccasion.triggerTime`. The realistic "keep playing past the loss"
-   (there is no won-game NG+ flag; winning the final mission just runs credits).
-2. **Retreat to ship from a battle save** — set `header.location` =
-   `COMMON_Baleful_Edict`, drop the combat chunk, leave the mission in
-   `currentMissions`. Edits file structure + header, so needs in-game testing.
-3. **Delay the Bloom eruption** — `daysRemainingToNextBloomEruption` /
-   `bloomEruptionNumber`.
-4. **Clear Warp Storms** — `StarMapWarpStormModel`.
-5. **Repair ship facilities** — `ShipStatusState`.
-
-## 8. Gotchas
+## 7. Gotchas
 
 - **Quoting:** the marshaler uses `strconv.Quote`/`Unquote` for the
   string layer. These are Go-syntax, not JSON-syntax (e.g. JSON `\/` is not
@@ -133,7 +120,7 @@ active mission is a normal `StarMapMission` (its `mapName` matches the header
 - Numbers re-marshal without trailing `.0` (`600.0` → `600`); the game's parser
   is tolerant.
 
-## 9. How to inspect saves
+## 8. How to inspect saves
 
 Decoding needs the unexported `encodeDecode`, so write a `package files` test:
 

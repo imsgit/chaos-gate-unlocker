@@ -28,7 +28,7 @@ import (
 )
 
 const (
-	version    = "Ver: %s.%d | Author: imsgit | 2026-06-20"
+	version    = "Ver: %s.%d | Author: imsgit | 2026-06-22"
 	websiteURL = "https://imsgit.github.io/chaos-gate-unlocker/"
 )
 
@@ -36,9 +36,10 @@ var (
 	featuresManager = features.NewManager()
 	filesManager    = files.NewManager()
 
-	removeMarketingWeapons, unlockPreorderItems, unlockAdvancedClasses, unlockPuritySeals, unlockAssassins,
+	unlockInfiniteCampaign, unlockPreorderItems, unlockAdvancedClasses, unlockPuritySeals, unlockAssassins,
 	restorePrognosticars, unlockGarranCrowe, authorizeDreadnoughtMissions, repairDreadnought, unlockGladiusFrigate,
-	completeCurrentResearch, completeCurrentConstruction, unequipMastercraftedWeapons, unequipMastercraftedArmor bool
+	completeCurrentResearch, completeCurrentConstruction, unequipMastercraftedWeapons,
+	unequipMastercraftedArmor bool
 
 	currUnit       any
 	healUnits      = map[any]bool{}
@@ -63,7 +64,7 @@ var featureActions = []struct {
 	{&completeCurrentResearch, featuresManager.CompleteCurrentResearch},
 	{&unequipMastercraftedWeapons, featuresManager.UnequipMastercraftedWeapons},
 	{&unequipMastercraftedArmor, featuresManager.UnequipMastercraftedArmor},
-	{&removeMarketingWeapons, featuresManager.RemoveMarketingWeapons},
+	{&unlockInfiniteCampaign, featuresManager.UnlockInfiniteCampaign},
 	{&unlockAssassins, featuresManager.UnlockAssassins},
 }
 
@@ -115,7 +116,7 @@ func main() {
 	unlockAssassinsSwitch := boolSwitch(&unlockAssassins, "ActAssassins", "Unlock assassins", "Unlocks imperial assassins;\nDLC access is required;\nAdvance time to take effect")
 	unlockGladiusFrigateSwitch := boolSwitch(&unlockGladiusFrigate, "ActFrigate", "Unlock Gladius frigate", "Unlocks the Gladius frigate, the Cleanse mission will still appear as expected;\nDLC access is required;\nAdvance time to take effect")
 	unlockPuritySealsSwitch := boolSwitch(&unlockPuritySeals, "ActSeals", "Unlock purity seals", "Unlocks purity seals upgrades;\nPoxus seeds access is required;\nAdvance time to take effect")
-	removeMarketingWeaponsSwitch := boolSwitch(&removeMarketingWeapons, "ActMarketing", "Remove marketing weapons", "Unequips and removes all weapons classified as Twitch drops")
+	unlockInfiniteCampaignSwitch := boolSwitch(&unlockInfiniteCampaign, "ActReaper", "Unlock infinite campaign", "Removes the Exterminatus deadline so the purge can continue indefinitely")
 
 	var repairDamageSwitch *toggle.Widget
 	repairDreadnoughtSwitch := toggle.New(func(on bool) {
@@ -275,7 +276,7 @@ func main() {
 				unlockAssassinsSwitch,
 				unlockGladiusFrigateSwitch,
 				unlockPuritySealsSwitch,
-				removeMarketingWeaponsSwitch)))
+				unlockInfiniteCampaignSwitch)))
 	unitsTab := container.NewTabItemWithIcon("Units", ui.AppTabUnitsIcon(),
 		container.NewGridWithColumns(2, unitsList, unitsScrollBox))
 	aboutTab := container.NewTabItemWithIcon("About", ui.AppTabAboutIcon(),
@@ -378,10 +379,10 @@ func main() {
 		toggle.Reset(completeCurrentResearchSwitch, featuresManager.CanCompleteCurrentResearch)
 		toggle.Reset(completeCurrentConstructionSwitch, featuresManager.CanCompleteCurrentConstruction)
 		toggle.Reset(unlockAssassinsSwitch, featuresManager.CanUnlockAssassins)
-		toggle.ResetOn(unlockPreorderItemsSwitch, featuresManager.CanUnlockPreorderItems())
-		toggle.ResetOn(unequipMastercraftedWeaponsSwitch, featuresManager.CanUnequipMastercraftedWeapons())
-		toggle.ResetOn(unequipMastercraftedArmorSwitch, featuresManager.CanUnequipMastercraftedArmor())
-		toggle.ResetOn(removeMarketingWeaponsSwitch, featuresManager.CanRemoveMarketingWeapons())
+		toggle.Reset(unlockPreorderItemsSwitch, featuresManager.CanUnlockPreorderItems)
+		toggle.Reset(unequipMastercraftedWeaponsSwitch, featuresManager.CanUnequipMastercraftedWeapons)
+		toggle.Reset(unequipMastercraftedArmorSwitch, featuresManager.CanUnequipMastercraftedArmor)
+		toggle.Reset(unlockInfiniteCampaignSwitch, featuresManager.CanUnlockInfiniteCampaign)
 	}
 
 	openButton = tooltip.NewButton("Open", func() {

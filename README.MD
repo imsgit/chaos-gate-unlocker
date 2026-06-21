@@ -8,7 +8,7 @@ Easy-to-use tool that lets you edit game saves to improve your gaming experience
 
 ## About
 
-This tool is designed to make the Dreadnought available more often by authorizing missions for him and making repairs easier. Another key feature is unlocking advanced classes from the beginning, since they appear too late in the game. The final major concept is to let players use the Gladius frigate from the start, adding a fresh dynamic to the game.
+This tool is designed to make the Dreadnought available more often by authorizing missions for him and making repairs easier. Another key feature is unlocking advanced classes from the beginning, since they appear too late in the game. It also lets players use the Gladius frigate from the start, adding a fresh dynamic to the game. A further major feature is the infinite campaign, which removes the Exterminatus deadline so the purge can continue indefinitely without rushing the story.
 
 Players are expected to progress through the campaign, explore, collect gear, level up, and master the game at a steady pace, keeping the core experience of discovery and challenge. This tool doesn't allow altering in-game currencies, adding items, or granting XP. It saves time by unlocking things earlier while still keeping the overall enjoyment intact.
 
@@ -32,7 +32,7 @@ This tool is available for Windows and Linux and is distributed free of charge. 
 
 The Main page is split into two columns. The left column holds Dreadnought and gear actions you can apply whenever you like, while the right column holds one-time unlocks.
 
-<img src="https://staticdelivery.nexusmods.com/mods/4502/images/5/5-1781079112-102612344.png" alt="Main page" width="820">
+<img src="https://staticdelivery.nexusmods.com/mods/4502/images/5/5-1782079279-421291116.png" alt="Main page" width="820">
 
 **Left column**
 
@@ -52,13 +52,13 @@ The Main page is split into two columns. The left column holds Dreadnought and g
 - **Unlock assassins** — unlocks the imperial assassins (DLC required; advance time to take effect).
 - **Unlock Gladius frigate** — unlocks the Gladius frigate; the Cleanse mission still appears as expected (DLC required; advance time to take effect).
 - **Unlock purity seals** — unlocks purity seal upgrades (Poxus seeds required; advance time to take effect).
-- **Remove marketing weapons** — unequips and removes all weapons classified as Twitch drops.
+- **Unlock infinite campaign** — removes the Exterminatus deadline so the purge can continue indefinitely.
 
 ## Units page
 
 On the Units page everything is organized in the same order as the units appear in the game. You can view the status and information of each unit and apply per-unit changes.
 
-<img src="https://staticdelivery.nexusmods.com/mods/4502/images/5/5-1781079122-18312124.png" alt="Units page" width="820">
+<img src="https://staticdelivery.nexusmods.com/mods/4502/images/5/5-1782079287-1195680971.png" alt="Units page" width="820">
 
 - **Augmetics** — when you heal a critical wound, you can add an augmetic or change existing ones. A knight cannot have more augmetics than the resilience they have lost.
 - **Talents** — manage a unit's existing talents. Extra talents can be earned through special events, such as A Solitary Duty or The Tournament.
