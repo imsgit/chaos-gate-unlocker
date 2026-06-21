@@ -271,7 +271,9 @@ func main() {
 
 	eyeGlow := anim.NewEyeGlow(bgImg)
 	eyeGlowOverlay := eyeGlow.Overlay()
-	eyeGlow.Animate()
+	if runtime.GOOS != "js" {
+		eyeGlow.Animate()
+	}
 
 	mainTab := container.NewTabItemWithIcon("Main", ui.AppTabMainIcon(),
 		container.NewGridWithColumns(2,
