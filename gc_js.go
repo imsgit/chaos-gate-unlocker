@@ -9,7 +9,7 @@ import (
 
 func init() {
 	go func() {
-		t := time.NewTicker(time.Second)
+		t := time.NewTicker(2 * time.Second)
 		defer t.Stop()
 		for range t.C {
 			runtime.GC()
