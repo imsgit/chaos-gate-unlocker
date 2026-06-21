@@ -9,5 +9,8 @@ func hidden() bool {
 	if !doc.Truthy() {
 		return false
 	}
-	return doc.Get("hidden").Bool()
+	if doc.Get("hidden").Bool() {
+		return true
+	}
+	return !doc.Call("hasFocus").Bool()
 }
