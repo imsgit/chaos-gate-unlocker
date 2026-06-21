@@ -20,6 +20,7 @@ fi
 
 trap restore_swaps EXIT
 stub_fonts
+slim_charset
 
 echo "=== Slim file-open dialog (favorites + top-right buttons) ==="
 filego=vendor/fyne.io/fyne/v2/dialog/file.go

@@ -29,6 +29,9 @@ jobs:
           go install fyne.io/tools/cmd/fyne@latest
           echo "$(go env GOPATH)/bin" >> "$GITHUB_PATH"
 
+      - name: Install fonttools (for font subsetting)
+        run: pipx install fonttools
+
       - name: Build and compress wasm bundle
         run: bash build/build-wasm.sh
 
