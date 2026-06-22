@@ -69,11 +69,11 @@ GOEOF
 
 slim_filedialog() {
 	local filego=vendor/fyne.io/fyne/v2/dialog/file.go
-	echo "=== Slim file-open dialog (favorites + top-right buttons) ==="
+	echo "=== Slim file-open dialog (favorites + top-right buttons, keep Show Hidden Files gear) ==="
 	swap "$filego"
 	perl -0777 -i -pe '
 my $a = "\theader := container.NewBorder(\n\t\tnil, nil, nil, optionsbuttons,\n\t\tf.title,\n\t)";
-my $b = "\t_ = optionsbuttons\n\theader := container.NewBorder(\n\t\tnil, nil, nil, nil,\n\t\tf.title,\n\t)";
+my $b = "\t_ = optionsbuttons\n\theader := container.NewBorder(\n\t\tnil, nil, nil, container.NewHBox(optionsButton),\n\t\tf.title,\n\t)";
 my $i = index($_, $a); die "file.go header block not found\n" if $i < 0; substr($_, $i, length($a)) = $b;' "$filego"
 	perl -0777 -i -pe '
 my $a = "\tbody := container.NewHSplit(\n\t\tf.favoritesList,\n\t\tcontainer.NewBorder(\n\t\t\tf.breadcrumbScroll, nil, nil, nil,\n\t\t\tf.filesScroll,\n\t\t),\n\t)\n\tbody.SetOffset(0) // Set the minimum offset so that the favoritesList takes only its minimal width";
