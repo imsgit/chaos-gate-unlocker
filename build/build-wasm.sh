@@ -61,7 +61,7 @@ rm -f wasm/webgl-debug.js
 sub "$idx" 's#<meta charset="utf-8">#<meta charset="utf-8"><script>(function(){var dpr=2;try{var p=window.parent;var s=Math.min(p.innerWidth/800,p.innerHeight/600);dpr=Math.min(s*(p.devicePixelRatio||1),3);}catch(e){}Object.defineProperty(window,"devicePixelRatio",{configurable:true,get:function(){return dpr;}});window.__setDPR=function(v){v=Math.min(Math.max(v,0.5),3);if(Math.abs(v-dpr)<0.01)return;dpr=v;window.dispatchEvent(new Event("resize"));};Object.defineProperty(navigator,"userAgent",{configurable:true,get:function(){return "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36";}});})();</script>#' 'window.__setDPR'
 have "$idx" 'Chrome/140.0.0.0'
 
-sub "$idx" 's|<style>|<style>html,body{background-color:#151515}@media (prefers-color-scheme: light){html,body{background-color:#fff}}|' 'html,body{background-color:#151515}'
+sub "$idx" 's|<style>|<style>html,body{background-color:#151515}@media (prefers-color-scheme: light){html,body{background-color:#fff}}@media (prefers-color-scheme: dark){.spinner{mix-blend-mode:lighten}}|' 'mix-blend-mode:lighten'
 sub wasm/dark.css 's/#141415/#151515/g' '#151515'
 
 mv "$idx" wasm/app.html
