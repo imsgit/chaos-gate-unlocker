@@ -310,15 +310,15 @@ func main() {
 	}
 	layoutTabs.Hide()
 
-	leftAquila := canvas.NewImageFromResource(ui.AppLeftAquilaIcon())
-	leftAquila.ScaleMode = canvas.ImageScaleFastest
-	leftAquila.SetMinSize(fyne.NewSize(100, 0))
-	leftAquila.Translucency = 1
-
-	rightAquila := canvas.NewImageFromResource(ui.AppRightAquilaIcon())
-	rightAquila.ScaleMode = canvas.ImageScaleFastest
-	rightAquila.SetMinSize(fyne.NewSize(100, 0))
-	rightAquila.Translucency = 1
+	newAquilaImage := func(res fyne.Resource) *canvas.Image {
+		img := canvas.NewImageFromResource(res)
+		img.ScaleMode = canvas.ImageScaleFastest
+		img.SetMinSize(fyne.NewSize(100, 0))
+		img.Translucency = 1
+		return img
+	}
+	leftAquila := newAquilaImage(ui.AppLeftAquilaIcon())
+	rightAquila := newAquilaImage(ui.AppRightAquilaIcon())
 
 	aquila := anim.NewAquila(ui.AppLeftAquilaIcon(), ui.AppRightAquilaIcon())
 	aquila.Prewarm()
@@ -553,15 +553,7 @@ func anyDirty(units map[any][][]string) bool {
 }
 
 func containsOpt(list []string, val string) bool {
-	if features.IsSkipOption(val) {
-		return true
-	}
-	for _, v := range list {
-		if v == val {
-			return true
-		}
-	}
-	return false
+	return features.IsSkipOption(val) || slices.Contains(list, val)
 }
 
 var refreshSaveButton func()
