@@ -22,6 +22,7 @@ trap restore_swaps EXIT
 stub_fonts
 slim_charset
 slim_filedialog
+slim_markdown
 
 for os in windows linux; do
 	echo "=== Build $os/amd64 ==="

@@ -67,6 +67,36 @@ func NewReaderLabel(label string, input io.Reader) (io.Reader, error) {
 GOEOF
 }
 
+slim_markdown() {
+	local mf=vendor/fyne.io/fyne/v2/widget/markdown.go
+	echo "=== Stub markdown parser (drops goldmark ~2.9MB + html5entities ~525KB) ==="
+	swap "$mf"
+	cat > "$mf" <<'GOEOF'
+package widget
+
+func NewRichTextFromMarkdown(content string) *RichText {
+	return NewRichText(parseMarkdown(content)...)
+}
+
+func (t *RichText) ParseMarkdown(content string) {
+	t.Segments = parseMarkdown(content)
+	t.Refresh()
+}
+
+func (t *RichText) AppendMarkdown(content string) {
+	t.Segments = append(t.Segments, parseMarkdown(content)...)
+	t.Refresh()
+}
+
+func parseMarkdown(content string) []RichTextSegment {
+	if content == "" {
+		return nil
+	}
+	return []RichTextSegment{&TextSegment{Style: RichTextStyleParagraph, Text: content}}
+}
+GOEOF
+}
+
 slim_filedialog() {
 	local filego=vendor/fyne.io/fyne/v2/dialog/file.go
 	echo "=== Slim file-open dialog (favorites + top-right buttons, keep Show Hidden Files gear) ==="

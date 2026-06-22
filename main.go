@@ -279,13 +279,14 @@ func main() {
 				unlockInfiniteCampaignSwitch)))
 	unitsTab := container.NewTabItemWithIcon("Units", ui.AppTabUnitsIcon(),
 		container.NewGridWithColumns(2, unitsList, unitsScrollBox))
+	nexusURL, _ := url.Parse("https://www.nexusmods.com/warhammer40kchaosgatedaemonhunters/mods/5")
+	fyneURL, _ := url.Parse("https://apps.fyne.io/apps/chaos.gate.unlocker.html")
 	aboutTab := container.NewTabItemWithIcon("About", ui.AppTabAboutIcon(),
 		container.NewBorder(nil, nil,
-			widget.NewRichTextFromMarkdown(`
-[> Visit Nexus Mods for more information](https://www.nexusmods.com/warhammer40kchaosgatedaemonhunters/mods/5)
-
-[> Visit Fyne.io for app details](https://apps.fyne.io/apps/chaos.gate.unlocker.html)`),
-			widget.NewRichTextFromMarkdown(fmt.Sprintf(version, a.Metadata().Version, a.Metadata().Build))))
+			container.NewVBox(
+				widget.NewHyperlink("> Visit Nexus Mods for more information", nexusURL),
+				widget.NewHyperlink("> Visit Fyne.io for app details", fyneURL)),
+			widget.NewLabel(fmt.Sprintf(version, a.Metadata().Version, a.Metadata().Build))))
 
 	var acancel context.CancelFunc
 	layoutTabs := container.NewAppTabs(mainTab, unitsTab, aboutTab)
