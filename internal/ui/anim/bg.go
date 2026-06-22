@@ -280,6 +280,10 @@ func (g *EyeGlow) Animate() {
 			for range ticker.C {
 				if cancel != nil {
 					cancel()
+					cancel = nil
+				}
+				if hidden() {
+					continue
 				}
 				cancel = g.pulse()
 				time.Sleep(time.Duration(eyeGlowSteps)*eyeGlowFrame + time.Second)
