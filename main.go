@@ -116,7 +116,7 @@ func main() {
 	unlockAssassinsSwitch := boolSwitch(&unlockAssassins, "ActAssassins", "Unlock assassins", "Unlocks imperial assassins;\nDLC access is required;\nAdvance time to take effect")
 	unlockGladiusFrigateSwitch := boolSwitch(&unlockGladiusFrigate, "ActFrigate", "Unlock Gladius frigate", "Unlocks the Gladius frigate, the Cleanse mission will still appear as expected;\nDLC access is required;\nAdvance time to take effect")
 	unlockPuritySealsSwitch := boolSwitch(&unlockPuritySeals, "ActSeals", "Unlock purity seals", "Unlocks purity seals upgrades;\nPoxus seeds access is required;\nAdvance time to take effect")
-	unlockInfiniteCampaignSwitch := boolSwitch(&unlockInfiniteCampaign, "ActReaper", "Unlock infinite campaign", "Removes the Exterminatus deadline so the purge can continue indefinitely")
+	unlockInfiniteCampaignSwitch := boolSwitch(&unlockInfiniteCampaign, "ActReaper", "Unlock infinite campaign", "Removes the Exterminatus deadline so the purge can continue indefinitely;\nEndgame access is required")
 
 	var repairDamageSwitch *toggle.Widget
 	repairDreadnoughtSwitch := toggle.New(func(on bool) {

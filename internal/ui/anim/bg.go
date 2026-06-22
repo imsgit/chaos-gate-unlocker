@@ -10,6 +10,7 @@ import (
 	"sync"
 	"time"
 
+	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
 )
 
@@ -265,6 +266,13 @@ func (g *EyeGlow) Animate() {
 		return
 	}
 	g.animOnce.Do(func() {
+		onShown(func() {
+			fyne.Do(func() {
+				if g.cv != nil {
+					g.cv.Refresh()
+				}
+			})
+		})
 		go func() {
 			ticker := time.NewTicker(eyeGlowPeriod)
 			defer ticker.Stop()
@@ -285,7 +293,7 @@ func (g *EyeGlow) pulse() context.CancelFunc {
 	flicker := g.buildFlicker()
 	return Frames(eyeGlowSteps, eyeGlowFrame,
 		func() {
-			if g.apply(0) {
+			if g.apply(0) && !hidden() {
 				g.cv.Refresh()
 			}
 		},
@@ -296,7 +304,7 @@ func (g *EyeGlow) pulse() context.CancelFunc {
 			if s := fr.spark * eyeGlowFlash; s > t {
 				t = s
 			}
-			if g.apply(t) {
+			if g.apply(t) && !hidden() {
 				g.cv.Refresh()
 			}
 		})
