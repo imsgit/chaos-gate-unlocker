@@ -64,6 +64,10 @@ have "$idx" 'Chrome/140.0.0.0'
 sub "$idx" 's|<style>|<style>html,body{background-color:#151515}@media (prefers-color-scheme: light){html,body{background-color:#fff}}@media (prefers-color-scheme: dark){.spinner{mix-blend-mode:lighten}}|' 'mix-blend-mode:lighten'
 sub wasm/dark.css 's/#141415/#151515/g' '#151515'
 
+sub "$idx" 's#</head>#<style>.action{display:block;min-height:1.3em}</style></head>#' 'min-height:1.3em'
+awk '/application-version/{v=$0; next} /<\/table>/&&v{print v; v=""} {print}' "$idx" > "$idx.tmp" && mv "$idx.tmp" "$idx"
+have "$idx" 'application-version'
+
 mv "$idx" wasm/app.html
 cp .github/pages-index.html "$idx"
 
