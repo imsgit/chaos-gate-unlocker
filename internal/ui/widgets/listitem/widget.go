@@ -75,10 +75,6 @@ func (i *Widget) MouseIn(e *desktop.MouseEvent) {
 	i.hoverBg.Refresh()
 }
 
-func (i *Widget) MouseMoved(e *desktop.MouseEvent) {
-	i.WidgetExtend.MouseMoved(e)
-}
-
 func (i *Widget) MouseOut() {
 	i.WidgetExtend.MouseOut()
 	i.hoverBg.FillColor = color.Transparent
@@ -137,7 +133,6 @@ func (i *Widget) Bind(val interface{}) {
 
 	i.iconClass.Resource = nil
 	i.iconClass.Image = ui.DecodeMasked(ui.IconByName(class))
-	i.iconClass.Refresh()
 	i.classBox.Refresh()
 	i.SetToolTip(splitOnCapital(class))
 

@@ -15,10 +15,10 @@ A save is three `\r\n`-separated chunks:
 |-------|----------|
 | `chunks[0]` | **Header** — plain UTF-8 JSON (not obfuscated). See `internal.Header`. |
 | `chunks[1]` | **State** — obfuscated JSON. First byte is always `194` (`0xC2`). |
-| `chunks[2]` | **Combat state** — present (non-empty) only for in-combat saves. |
+| `chunks[2]` | **Combat state** — same `194`-obfuscation as `chunks[1]`; decodes to a `CombatSaveState` JSON (live enemy roster, spawners, etc.). Present only for in-combat saves, where it is the bulk of the file (≈130 KB–2.8 MB). |
 
-The trailing `\r\n` produces an empty 4th chunk on split; the loader reads only
-the first three (`internal/files/manager.go: Load`).
+The trailing `\r\n` produces an empty 4th chunk on split; the loader keeps only
+the first three (`bytes.SplitN(file, sep, 3)` in `internal/files/manager.go`).
 
 > ⚠️ The split assumes the combat chunk never itself contains `\r\n`. If it can,
 > `bytes.Split` would truncate `chunks[2]`. Not observed in any sample, but
@@ -58,10 +58,19 @@ both decodes and re-encodes (`internal/files/encoder.go`). After decoding,
 `serializedContents` is a JSON **string** containing the object's JSON. The
 marshaler (`internal/marshaler.go`) decodes it on load and re-encodes on save.
 
-Only the ~17 type names in `typeNameToObject` are parsed into Go structs
-(`internal/objects/`); all other records are kept as raw bytes and round-trip
-untouched. **Within modeled structs, fields the tool doesn't use are typed
-`json.RawMessage`, so they are preserved verbatim**
+Only the **18** type names registered in `typeNameToObject` are parsed into Go
+structs (`internal/objects/`) — 15 distinct structs, since the four assassin
+variants (`Callidus`/`Culexus`/`Eversor`/`Vindicare`) all map to `AssassinState`.
+Every other record — including `GrandmasterSaveState`, `EnemyState`, the
+`StarMap*` bulk and the narrative `*Occasion`/`*Consequence` rules — is kept as
+raw bytes and round-trips untouched. **Within modeled structs, fields the tool
+doesn't use are typed `json.RawMessage`, so they are preserved verbatim.**
+
+Modeled types: `CurrencySaveState`, `GameUnlocksSaveState`, `KnightsSaveState`,
+`KnightState`, `ArmourySaveState`, `ConstructionProject`, `ResearchProject`,
+`DreadnoughtState`, `{Callidus,Culexus,Eversor,Vindicare}AssassinState`,
+`StarMapMission`, `StarMapNodeModel`, `StarMapMissionSaveState`,
+`TimeManagerSaveState`, `TimelineEventOccasion`, `LoseGameOccasion`.
 
 ## 4. Record-type catalog
 
@@ -88,7 +97,7 @@ Units / combat: `KnightState`, `DreadnoughtState`, `*AssassinState`,
 |--|-----------|-------------|
 | `header.location` | `"COMMON_Baleful_Edict"` | battle map, e.g. `"CorruptedVessel_Export"` |
 | `header.saveName` | `"On Ship - N"` | `"In Combat - N"` |
-| combat chunk | empty | **present** |
+| combat chunk | empty | **present** (`194`-obfuscated `CombatSaveState`) |
 | strategic state | full | **also full** |
 
 **Key insight:** a battle save still contains the *entire* strategic state. The
@@ -103,8 +112,6 @@ active mission is a normal `StarMapMission` (its `mapName` matches the header
 - **`StarMapMissionSaveState`** — `bloomEruptionNumber`,
   `daysRemainingToNextBloomEruption`, `weekThatKoramarWasDefeated`,
   `act3StartDay`, `dateThatThreatLevelStartedIncreasing`.
-- **`GrandmasterSaveState`** — `daysToNextReport`, `reportNumber`,
-  `reportNumberInCurrentAct`.
 - **`GameUnlocksSaveState.unlocks[].id`** — story/progress flags, e.g.
   `Koramar_Mission_Defeated`, `Poxus_Undefeated`, `Necrosus_Undefeated`,
   `CroweAvailable`, `Assassins_Unlocked`, `Purity_Seals_Unlocked`.
@@ -126,8 +133,9 @@ Decoding needs the unexported `encodeDecode`, so write a `package files` test:
 
 ```go
 data, _ := os.ReadFile(path)
-chunks := bytes.Split(data, []byte("\r\n"))
-decoded := encodeDecode(chunks[1])   // chunks[1][0] == 194
+chunks := bytes.SplitN(data, []byte("\r\n"), 3)
+decoded := encodeDecode(chunks[1])          // chunks[1][0] == 194 (state)
 // decoded is normal JSON; unmarshal into internal.State, or parse loosely and
 // strconv.Unquote each record's serializedContents to read the object JSON.
+// The combat chunk decodes the same way — encodeDecode(chunks[2]) — when present.
 ```

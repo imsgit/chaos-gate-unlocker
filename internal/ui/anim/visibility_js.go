@@ -3,15 +3,13 @@
 package anim
 
 import (
-	"sync"
 	"sync/atomic"
 	"syscall/js"
 )
 
 var (
 	pageHidden atomic.Bool
-	visMu      sync.Mutex
-	onVisible  []func()
+	onVisible  func()
 )
 
 func init() {
@@ -25,13 +23,8 @@ func init() {
 	doc.Call("addEventListener", "visibilitychange", js.FuncOf(func(js.Value, []js.Value) any {
 		h := read()
 		pageHidden.Store(h)
-		if !h {
-			visMu.Lock()
-			fns := append([]func(){}, onVisible...)
-			visMu.Unlock()
-			for _, f := range fns {
-				f()
-			}
+		if !h && onVisible != nil {
+			onVisible()
 		}
 		return nil
 	}))
@@ -39,8 +32,4 @@ func init() {
 
 func hidden() bool { return pageHidden.Load() }
 
-func onShown(f func()) {
-	visMu.Lock()
-	onVisible = append(onVisible, f)
-	visMu.Unlock()
-}
+func onShown(f func()) { onVisible = f }

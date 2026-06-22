@@ -361,9 +361,9 @@ func (g *EyeGlow) buildFlicker() []flickerStep {
 					i++
 				}
 			} else {
-				g := 0.05 + rand.Float64()*0.2
+				gate := 0.05 + rand.Float64()*0.2
 				for s := 0; s < dur && i < hi; s++ {
-					fl[i].gate = g
+					fl[i].gate = gate
 					i++
 				}
 			}

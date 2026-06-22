@@ -148,7 +148,6 @@ func (r *selectRowRenderer) Refresh() {
 	r.text.Color = th.Color(theme.ColorNameForeground, v)
 
 	if r.img != nil {
-		r.img.Translucency = 0
 		r.img.Refresh()
 	}
 

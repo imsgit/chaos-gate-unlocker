@@ -34,9 +34,11 @@ func (p *Widget) MinSize() fyne.Size {
 }
 
 func (p *Widget) Grow(width float32) {
+	if !p.active {
+		p.bar.FillColor = p.Theme().Color(theme.ColorNameShadow, 0)
+	}
 	p.width = width
 	p.active = true
-	p.bar.FillColor = p.Theme().Color(theme.ColorNameShadow, 0)
 	p.Refresh()
 }
 

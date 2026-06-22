@@ -26,7 +26,7 @@ type KnightState struct {
 	NextLevelData       json.RawMessage `json:"nextLevelData"`
 	ArmourRef           StringValue     `json:"armourRef"`
 	Talents             []*StringValue  `json:"talents"`
-	CreationTimestamp   int             `json:"creationTimestamp"`
+	CreationTimestamp   int64           `json:"creationTimestamp"`
 	TempEquipmentRefs   json.RawMessage `json:"tempEquipmentRefs"`
 	EquippedItemClasses []*StringValue  `json:"equippedItemClasses"`
 	HealthState         struct {
