@@ -103,15 +103,15 @@ func (s *Widget) showPopup() {
 	selectedIdx := -1
 	for i := range s.Options {
 		text := s.Options[i]
-		disabled := text == s.Selected
-		if disabled {
+		selected := text == s.Selected
+		if selected {
 			selectedIdx = i
 		}
 		var icon fyne.Resource
 		if s.IconForOption != nil {
 			icon = s.IconForOption(text)
 		}
-		row := newSelectRow(text, icon, disabled, cv.Scale(), func() {
+		row := newSelectRow(text, icon, selected, cv.Scale(), func() {
 			s.hidePopup()
 			s.SetSelected(text)
 		})

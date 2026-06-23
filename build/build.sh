@@ -23,6 +23,7 @@ stub_fonts
 slim_charset
 slim_filedialog
 slim_markdown
+slim_test_asserts
 
 for os in windows linux; do
 	echo "=== Build $os/amd64 ==="

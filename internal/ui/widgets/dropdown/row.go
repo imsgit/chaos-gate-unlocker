@@ -22,7 +22,7 @@ type selectRow struct {
 
 	text     string
 	icon     fyne.Resource
-	disabled bool
+	selected bool
 	scale    float32
 	onTapped func()
 
@@ -38,8 +38,8 @@ func (r *selectRow) setHighlighted(h bool) {
 	r.Refresh()
 }
 
-func newSelectRow(text string, icon fyne.Resource, disabled bool, scale float32, onTapped func()) *selectRow {
-	r := &selectRow{text: text, icon: icon, disabled: disabled, scale: scale, onTapped: onTapped}
+func newSelectRow(text string, icon fyne.Resource, selected bool, scale float32, onTapped func()) *selectRow {
+	r := &selectRow{text: text, icon: icon, selected: selected, scale: scale, onTapped: onTapped}
 	r.ExtendBaseWidget(r)
 	return r
 }
@@ -50,7 +50,7 @@ func (r *selectRow) ExtendBaseWidget(wid fyne.Widget) {
 }
 
 func (r *selectRow) Tapped(*fyne.PointEvent) {
-	if r.disabled || r.onTapped == nil {
+	if r.onTapped == nil {
 		return
 	}
 	r.onTapped()
@@ -58,7 +58,7 @@ func (r *selectRow) Tapped(*fyne.PointEvent) {
 
 func (r *selectRow) MouseIn(e *desktop.MouseEvent) {
 	r.WidgetExtend.MouseIn(e)
-	if !r.disabled && !r.hovered {
+	if !r.selected && !r.hovered {
 		r.hovered = true
 		r.Refresh()
 	}
@@ -152,7 +152,7 @@ func (r *selectRowRenderer) Refresh() {
 	}
 
 	switch {
-	case r.row.disabled:
+	case r.row.selected:
 		r.bg.FillColor = th.Color(theme.ColorNameSelection, v)
 	case r.row.hovered || r.row.highlighted:
 		r.bg.FillColor = th.Color(theme.ColorNameHover, v)

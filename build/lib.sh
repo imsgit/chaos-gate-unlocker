@@ -99,13 +99,33 @@ func parseMarkdown(content string) []RichTextSegment {
 GOEOF
 }
 
+slim_test_asserts() {
+	echo "=== Stub fyne test-assert helpers (drops testify+go-spew+difflib+yaml; ~349KB stripped exe) ==="
+	local f
+	for f in \
+		vendor/fyne.io/fyne/v2/test/test_helper.go \
+		vendor/fyne.io/fyne/v2/test/notification_helper.go \
+		vendor/fyne.io/fyne/v2/test/theme_helper.go \
+		vendor/fyne.io/fyne/v2/internal/test/util_helper.go; do
+		have "$f" "stretchr/testify"
+		write_swap "$f" <<<'package test'
+		gone "$f" "stretchr/testify"
+	done
+}
+
 slim_filedialog() {
 	local filego=vendor/fyne.io/fyne/v2/dialog/file.go
-	echo "=== Slim file-open dialog (favorites + top-right buttons, keep Show Hidden Files gear) ==="
+	echo "=== Slim file-open dialog (drop favorites, keep gear + add Copy-path button) ==="
 	swap "$filego"
+
+	replace_block "$filego" \
+		$'\toptionsbuttons := container.NewHBox(' \
+		$'\tcopyButton := widget.NewButtonWithIcon("", theme.ContentCopyIcon(), func() {\n\t\tif f.dir != nil {\n\t\t\tfyne.CurrentApp().Clipboard().SetContent(f.dir.Path())\n\t\t}\n\t})\n\n\toptionsbuttons := container.NewHBox('
+	have "$filego" "copyButton := widget.NewButtonWithIcon"
+
 	replace_block "$filego" \
 		$'\theader := container.NewBorder(\n\t\tnil, nil, nil, optionsbuttons,\n\t\tf.title,\n\t)' \
-		$'\t_ = optionsbuttons\n\theader := container.NewBorder(\n\t\tnil, nil, nil, container.NewHBox(optionsButton),\n\t\tf.title,\n\t)'
+		$'\t_ = optionsbuttons\n\theader := container.NewBorder(\n\t\tnil, nil, nil, container.NewHBox(copyButton, optionsButton),\n\t\tf.title,\n\t)'
 	replace_block "$filego" \
 		$'\tbody := container.NewHSplit(\n\t\tf.favoritesList,\n\t\tcontainer.NewBorder(\n\t\t\tf.breadcrumbScroll, nil, nil, nil,\n\t\t\tf.filesScroll,\n\t\t),\n\t)\n\tbody.SetOffset(0)' \
 		$'\tbody := container.NewBorder(\n\t\tf.breadcrumbScroll, nil, nil, nil,\n\t\tf.filesScroll,\n\t)'

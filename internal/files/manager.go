@@ -71,7 +71,7 @@ func (m *Manager) DefaultLocationHint() string {
 		base := filepath.Join(home, ".steam", "steam")
 		return filepath.Join(base, "steamapps", "compatdata", appID, protonUser, saveDir)
 	default:
-		return saveDir
+		return "../" + saveDir
 	}
 }
 
