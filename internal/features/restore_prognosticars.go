@@ -43,10 +43,22 @@ func (m *Manager) RestorePrognosticars() {
 }
 
 func (m *Manager) CanRestorePrognosticars() (bool, bool) {
-	var currency *objects.Currency
+	var (
+		currency  *objects.Currency
+		available bool
+		hasProg   bool
+	)
 
 	for _, record := range m.state.LinearRecords {
 		switch record.TypeName {
+		case internal.GameUnlocksSaveState:
+			object := record.SerializedObject.(*objects.GameUnlocksSaveState)
+			for i := range object.Unlocks {
+				if object.Unlocks[i].ID == PrognosticarTutorial {
+					available = true
+					break
+				}
+			}
 		case internal.CurrencySaveState:
 			object := record.SerializedObject.(*objects.CurrencySaveState)
 			for i := range object.SavedCurrencies {
@@ -57,9 +69,17 @@ func (m *Manager) CanRestorePrognosticars() (bool, bool) {
 		case internal.StarMapNodeModel:
 			object := record.SerializedObject.(*objects.StarMapNodeModel)
 			if object.HasPrognosticar.Value {
-				return true, false
+				hasProg = true
 			}
 		}
+	}
+
+	if hasProg {
+		return true, false
+	}
+
+	if !available {
+		return false, false
 	}
 
 	return false, currency != nil && currency.Amount > 0
