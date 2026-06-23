@@ -1,6 +1,6 @@
 # Chaos Gate Unlocker
 
-![Screenshot from 2025-04-03](https://staticdelivery.nexusmods.com/mods/4502/images/5/5-1739619171-398274387.png)
+![Logo](https://staticdelivery.nexusmods.com/mods/4502/images/5/5-1739619171-398274387.png)
 
 Easy-to-use tool that lets you edit game saves to improve your gaming experience.
 
@@ -32,7 +32,7 @@ This tool is available for Windows and Linux and is distributed free of charge. 
 
 The Main page is split into two columns. The left column holds Dreadnought and gear actions you can apply whenever you like, while the right column holds one-time unlocks.
 
-<img src="https://staticdelivery.nexusmods.com/mods/4502/images/5/5-1782079279-421291116.png" alt="Main page" width="820">
+<img src="https://staticdelivery.nexusmods.com/mods/4502/images/5/5-1782211681-1110821735.png" alt="Main page" width="820">
 
 **Left column**
 
@@ -58,7 +58,7 @@ The Main page is split into two columns. The left column holds Dreadnought and g
 
 On the Units page everything is organized in the same order as the units appear in the game. You can view the status and information of each unit and apply per-unit changes.
 
-<img src="https://staticdelivery.nexusmods.com/mods/4502/images/5/5-1782079287-1195680971.png" alt="Units page" width="820">
+<img src="https://staticdelivery.nexusmods.com/mods/4502/images/5/5-1782211876-724887743.png" alt="Units page" width="820">
 
 - **Augmetics** — when you heal a critical wound, you can add an augmetic or change existing ones. A knight cannot have more augmetics than the resilience they have lost.
 - **Talents** — manage a unit's existing talents. Extra talents can be earned through special events, such as A Solitary Duty or The Tournament.
