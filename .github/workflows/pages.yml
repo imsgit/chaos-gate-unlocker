@@ -32,6 +32,9 @@ jobs:
       - name: Install fonttools (for font subsetting)
         run: pipx install fonttools
 
+      - name: Install binaryen (for wasm-opt -Oz)
+        run: sudo apt-get update && sudo apt-get install -y binaryen
+
       - name: Build and compress wasm bundle
         run: bash build/build-wasm.sh
 

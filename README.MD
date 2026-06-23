@@ -52,7 +52,7 @@ The Main page is split into two columns. The left column holds Dreadnought and g
 - **Unlock assassins** — unlocks the imperial assassins (DLC required; advance time to take effect).
 - **Unlock Gladius frigate** — unlocks the Gladius frigate; the Cleanse mission still appears as expected (DLC required; advance time to take effect).
 - **Unlock purity seals** — unlocks purity seal upgrades (Poxus seeds required; advance time to take effect).
-- **Unlock infinite campaign** — removes the Exterminatus deadline so the purge can continue indefinitely. (endgame access required)
+- **Unlock infinite campaign** — removes the Exterminatus deadline so the purge can continue indefinitely (endgame access required).
 
 ## Units page
 
