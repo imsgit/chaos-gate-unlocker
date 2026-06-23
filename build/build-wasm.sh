@@ -25,17 +25,6 @@ del "$idx" '/application-name/d' application-name
 sub "$idx" 's/max-width: 130px;/max-width: 160px;/; s/max-height: 130px;/max-height: 160px;/' 'max-width: 160px;'
 sub "$idx" 's#<input id="dummyEntry"#<input id="dummyEntry" inputmode="none" readonly#' 'id="dummyEntry" inputmode="none" readonly'
 
-echo "=== Optimize wasm (wasm-opt -Oz) ==="
-if command -v wasm-opt >/dev/null; then
-	before=$(stat -c%s wasm/ChaosGateUnlocker.wasm)
-	wasm-opt -Oz -all wasm/ChaosGateUnlocker.wasm -o wasm/ChaosGateUnlocker.wasm.opt
-	mv wasm/ChaosGateUnlocker.wasm.opt wasm/ChaosGateUnlocker.wasm
-	after=$(stat -c%s wasm/ChaosGateUnlocker.wasm)
-	echo "  ${before} -> ${after} bytes"
-else
-	echo "[!] wasm-opt not found — skipping (install: apt-get install binaryen)"
-fi
-
 echo "=== Strip wasm 'name' custom section ==="
 python3 - wasm/ChaosGateUnlocker.wasm <<'PY'
 import sys
