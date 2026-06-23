@@ -22,7 +22,8 @@ type Widget struct {
 	ToolTipForOption func(option string) string
 	IconForOption    func(option string) fyne.Resource
 
-	popup *popOverlay
+	popup     *popOverlay
+	openAbove bool
 }
 
 func New() *Widget {
@@ -41,6 +42,56 @@ func (s *Widget) MinSize() fyne.Size {
 	s.ExtendBaseWidget(s)
 	return fyne.NewSize(0, 36)
 }
+
+func (s *Widget) CreateRenderer() fyne.WidgetRenderer {
+	s.ExtendBaseWidget(s)
+	base := s.Select.CreateRenderer()
+	r := &arrowRenderer{base: base, w: s}
+	for _, o := range base.Objects() {
+		if ic, ok := o.(*widget.Icon); ok {
+			r.arrow = ic
+			break
+		}
+	}
+	return r
+}
+
+type arrowRenderer struct {
+	base  fyne.WidgetRenderer
+	arrow *widget.Icon
+	w     *Widget
+}
+
+func (r *arrowRenderer) Layout(size fyne.Size) {
+	r.base.Layout(size)
+	r.applyArrow()
+}
+
+func (r *arrowRenderer) Refresh() {
+	r.base.Refresh()
+	r.applyArrow()
+}
+
+func (r *arrowRenderer) applyArrow() {
+	if r.arrow == nil {
+		return
+	}
+	name := theme.IconNameArrowDropDown
+	if r.w.openAbove {
+		name = theme.IconNameArrowDropUp
+	}
+	icon := r.w.Theme().Icon(name)
+	if r.w.Disabled() {
+		icon = theme.NewDisabledResource(icon)
+	}
+	r.arrow.Resource = icon
+	r.arrow.Move(r.arrow.Position().AddXY(4, 0))
+	r.arrow.Refresh()
+}
+
+func (r *arrowRenderer) MinSize() fyne.Size           { return r.base.MinSize() }
+func (r *arrowRenderer) Objects() []fyne.CanvasObject { return r.base.Objects() }
+func (r *arrowRenderer) Destroy()                     { r.base.Destroy() }
 
 func (s *Widget) MouseIn(e *desktop.MouseEvent) {
 	s.MouseInUnlessOverlay(e)
@@ -145,6 +196,10 @@ func (s *Widget) showPopup() {
 	spaceAbove := abs.Y + border - pad - 2*contentPad
 
 	openAbove := boxMin.Height > spaceBelow && spaceAbove > spaceBelow
+	if s.openAbove != openAbove {
+		s.openAbove = openAbove
+		s.Refresh()
+	}
 	avail := spaceBelow
 	if openAbove {
 		avail = spaceAbove
@@ -206,4 +261,8 @@ func (s *Widget) hidePopup() {
 	}
 	s.popup.Hide()
 	s.popup = nil
+	if s.openAbove {
+		s.openAbove = false
+		s.Refresh()
+	}
 }
