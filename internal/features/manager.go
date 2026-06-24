@@ -60,10 +60,6 @@ func classStatusLvlName(obj interface{}) (class, status, lvl int, name string) {
 		}
 		return 2, status, getLvl(object.CurrentLevelData.Key), object.GivenName
 	case *objects.AssassinState:
-		status = object.HealthState.Status
-		if object.CurrentSideMission.MissionID != "" {
-			status = 5
-		}
 		return 1, 0, getLvl(object.CurrentLevelData.Key), object.GivenName
 	case *objects.DreadnoughtState:
 		return 0, 0, getLvl(object.CurrentLevelData.Key), object.GivenName

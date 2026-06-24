@@ -6,7 +6,6 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"io"
 	"io/fs"
 	"os"
 	"path/filepath"
@@ -192,17 +191,6 @@ func searchDir(root, searchPath string) string {
 func dirExists(path string) bool {
 	info, err := os.Stat(path)
 	return err == nil && info.IsDir()
-}
-
-func (m *Manager) Load(reader fyne.URIReadCloser) error {
-	defer reader.Close()
-
-	data, err := io.ReadAll(reader)
-	if err != nil {
-		return err
-	}
-
-	return m.LoadBytes(reader.URI().Path(), data)
 }
 
 func (m *Manager) LoadBytes(path string, file []byte) error {

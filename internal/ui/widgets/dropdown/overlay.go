@@ -66,9 +66,7 @@ func (p *popOverlay) Tapped(e *fyne.PointEvent) {
 }
 
 func (p *popOverlay) TappedSecondary(e *fyne.PointEvent) {
-	if !p.isInsideContent(e.Position) {
-		p.onDismiss()
-	}
+	p.Tapped(e)
 }
 
 func (p *popOverlay) CreateRenderer() fyne.WidgetRenderer {
