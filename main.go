@@ -28,7 +28,7 @@ import (
 )
 
 const (
-	version    = "Ver: %s.%d | Author: imsgit | 2026-06-22"
+	version    = "Ver: %s.%d | Author: imsgit | 2026-06-26"
 	websiteURL = "https://imsgit.github.io/chaos-gate-unlocker/"
 )
 

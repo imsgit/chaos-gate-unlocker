@@ -24,6 +24,7 @@ slim_charset
 slim_filedialog
 slim_markdown
 slim_test_asserts
+enable_drag_scroll
 
 for os in windows linux; do
 	echo "=== Build $os/amd64 ==="
