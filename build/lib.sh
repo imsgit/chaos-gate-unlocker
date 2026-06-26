@@ -4,12 +4,7 @@ write_build() { sed -i -E "s/^(\s*Build *= *).*/\1${1}/" FyneApp.toml; }
 declare -A _bak=()
 swap() { _bak["$1"]="$(mktemp)"; cp "$1" "${_bak[$1]}"; }
 write_swap() { swap "$1"; cat > "$1"; }
-declare -a _added=()
-add_file() { _added+=("$1"); }
-restore_swaps() {
-	for s in "${!_bak[@]}"; do mv -f "${_bak[$s]}" "$s"; done
-	local f; for f in "${_added[@]:-}"; do [ -n "$f" ] && rm -f "$f"; done
-}
+restore_swaps() { for s in "${!_bak[@]}"; do mv -f "${_bak[$s]}" "$s"; done; }
 
 have() { grep -qF "$2" "$1" || { echo "[!] expected '$2' in $1" >&2; exit 1; }; }
 gone() { ! grep -qF "$2" "$1" || { echo "[!] '$2' still present in $1" >&2; exit 1; }; }
@@ -58,30 +53,6 @@ import (
 func loadSystemFonts(_ *fontscan.FontMap) error {
 	return errors.New("system fonts disabled")
 }
-GOEOF
-}
-
-enable_drag_scroll() {
-	local wdir=vendor/fyne.io/fyne/v2/internal/widget
-	local f="$wdir/scroller_desktop_drag.go"
-	echo "=== Enable drag-to-scroll on desktop (finger/touchscreen drag, e.g. Steam Deck) ==="
-	[ -f "$wdir/scroller_mobile.go" ] || { echo "[!] scroller_mobile.go missing — Fyne internals moved" >&2; exit 1; }
-	[ -f "$f" ] && { echo "[!] $f already exists" >&2; exit 1; }
-	add_file "$f"
-	cat > "$f" <<'GOEOF'
-//go:build !ci && !no_glfw && !android && !ios && !mobile
-
-package widget
-
-import "fyne.io/fyne/v2"
-
-func (s *Scroll) Dragged(e *fyne.DragEvent) {
-	if s.updateOffset(e.Dragged.DX, e.Dragged.DY) {
-		s.refreshWithoutOffsetUpdate()
-	}
-}
-
-func (s *Scroll) DragEnd() {}
 GOEOF
 }
 

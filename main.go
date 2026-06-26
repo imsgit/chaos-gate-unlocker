@@ -5,6 +5,7 @@ import (
 	"chaos-gate-unlocker/internal/files"
 	"chaos-gate-unlocker/internal/ui"
 	"chaos-gate-unlocker/internal/ui/anim"
+	"chaos-gate-unlocker/internal/ui/widgets/dragscroll"
 	"chaos-gate-unlocker/internal/ui/widgets/dropdown"
 	"chaos-gate-unlocker/internal/ui/widgets/listitem"
 	"chaos-gate-unlocker/internal/ui/widgets/progress"
@@ -278,7 +279,7 @@ func main() {
 				unlockPuritySealsSwitch,
 				unlockInfiniteCampaignSwitch)))
 	unitsTab := container.NewTabItemWithIcon("Units", ui.AppTabUnitsIcon(),
-		container.NewGridWithColumns(2, unitsList, unitsScrollBox))
+		container.NewGridWithColumns(2, dragscroll.List(unitsList), dragscroll.Scroll(unitsScrollBox)))
 	nexusURL, _ := url.Parse("https://www.nexusmods.com/warhammer40kchaosgatedaemonhunters/mods/5")
 	fyneURL, _ := url.Parse("https://apps.fyne.io/apps/chaos.gate.unlocker.html")
 	aboutTab := container.NewTabItemWithIcon("About", ui.AppTabAboutIcon(),

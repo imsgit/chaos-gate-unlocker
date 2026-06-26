@@ -30,6 +30,14 @@ func (p *selectPopup) FocusGained()   {}
 func (p *selectPopup) FocusLost()     {}
 func (p *selectPopup) TypedRune(rune) {}
 
+func (p *selectPopup) Dragged(e *fyne.DragEvent) {
+	if p.scroll != nil {
+		p.scroll.ScrollToOffset(fyne.NewPos(p.scroll.Offset.X, p.scroll.Offset.Y-e.Dragged.DY))
+	}
+}
+
+func (p *selectPopup) DragEnd() {}
+
 func (p *selectPopup) TypedKey(e *fyne.KeyEvent) {
 	switch e.Name {
 	case fyne.KeyDown:
