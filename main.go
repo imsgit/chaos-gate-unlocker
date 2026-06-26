@@ -409,9 +409,12 @@ func main() {
 	saveButton.Disable()
 
 	statusLabel := widget.NewLabelWithData(status)
-	siteURL, _ := url.Parse(websiteURL)
-	tryLink := widget.NewHyperlink("> Try it online", siteURL)
-	bottomBar := container.NewBorder(nil, nil, nil, tryLink, statusLabel)
+	var bottomBar fyne.CanvasObject = statusLabel
+	if showTryOnline() {
+		siteURL, _ := url.Parse(websiteURL)
+		tryLink := widget.NewHyperlink("> Try it online", siteURL)
+		bottomBar = container.NewBorder(nil, nil, nil, tryLink, statusLabel)
+	}
 
 	content := container.NewBorder(
 		container.NewBorder(nil, nil, leftAquila, rightAquila,

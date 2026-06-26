@@ -48,6 +48,8 @@ func saveFile(fm *files.Manager) error {
 	return fm.Save()
 }
 
+func showTryOnline() bool { return true }
+
 func confirmSave(w fyne.Window, do func()) {
 	d := dialog.NewConfirm(
 		"Save confirmation",
