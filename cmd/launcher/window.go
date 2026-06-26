@@ -4,11 +4,11 @@ package main
 
 import webview "github.com/webview/webview_go"
 
-func openWindow(title, target string) {
+func openWindow(title, html string) {
 	w := webview.New(false)
 	defer w.Destroy()
 	w.SetTitle(title)
 	w.SetSize(800, 600, webview.HintNone)
-	w.Navigate(target)
+	w.SetHtml(html)
 	w.Run()
 }

@@ -17,6 +17,7 @@ import (
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/dialog"
+	"fyne.io/fyne/v2/widget"
 )
 
 var (
@@ -30,6 +31,8 @@ func bridgeToken() string {
 	return q.Get("t")
 }
 
+func showTryOnline() bool { return bridgeToken() != "" }
+
 func bridgeBase() string {
 	return js.Global().Get("location").Get("origin").String()
 }
@@ -37,7 +40,7 @@ func bridgeBase() string {
 func openFile(w fyne.Window, fm *files.Manager, onData func(name string, data []byte)) {
 	bridgeWin = w
 	if tok := bridgeToken(); tok != "" {
-		go bridgeOpen(w, tok, onData)
+		go bridgePick(w, tok, onData)
 		return
 	}
 
@@ -100,11 +103,10 @@ func bridgeGet(u string) ([]byte, error) {
 	return body, nil
 }
 
-func bridgeOpen(w fyne.Window, tok string, onData func(name string, data []byte)) {
+func bridgePick(w fyne.Window, tok string, onData func(name string, data []byte)) {
 	fail := func(err error) { fyne.Do(func() { dialog.ShowError(err, w) }) }
-	base := bridgeBase()
 
-	body, err := bridgeGet(base + "/api/list?t=" + url.QueryEscape(tok))
+	body, err := bridgeGet(bridgeBase() + "/api/list?t=" + url.QueryEscape(tok))
 	if err != nil {
 		fail(err)
 		return
@@ -121,15 +123,38 @@ func bridgeOpen(w fyne.Window, tok string, onData func(name string, data []byte)
 		return
 	}
 
-	name := list[0].Name
-	data, err := bridgeGet(base + "/api/file?t=" + url.QueryEscape(tok) + "&name=" + url.QueryEscape(name))
-	if err != nil {
-		fail(err)
-		return
+	names := make([]string, len(list))
+	for i, e := range list {
+		names[i] = e.Name
+	}
+	fyne.Do(func() { showBridgePicker(w, tok, names, onData) })
+}
+
+func showBridgePicker(w fyne.Window, tok string, names []string, onData func(name string, data []byte)) {
+	listw := widget.NewList(
+		func() int { return len(names) },
+		func() fyne.CanvasObject { return widget.NewLabel("") },
+		func(i widget.ListItemID, o fyne.CanvasObject) { o.(*widget.Label).SetText(names[i]) },
+	)
+
+	d := dialog.NewCustom("Open game save file", "Cancel", listw, w)
+	d.Resize(fyne.NewSize(420, 420))
+
+	listw.OnSelected = func(i widget.ListItemID) {
+		name := names[i]
+		d.Hide()
+		go func() {
+			data, err := bridgeGet(bridgeBase() + "/api/file?t=" + url.QueryEscape(tok) + "&name=" + url.QueryEscape(name))
+			if err != nil {
+				fyne.Do(func() { dialog.ShowError(err, w) })
+				return
+			}
+			bridgeFile = name
+			fyne.Do(func() { onData(name, data) })
+		}()
 	}
 
-	bridgeFile = name
-	fyne.Do(func() { onData(name, data) })
+	d.Show()
 }
 
 func saveFile(fm *files.Manager) error {
