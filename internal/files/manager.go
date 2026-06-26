@@ -2,17 +2,14 @@ package files
 
 import (
 	"chaos-gate-unlocker/internal"
+	"chaos-gate-unlocker/internal/savedir"
 
 	"bytes"
 	"errors"
 	"fmt"
-	"io/fs"
 	"os"
 	"path/filepath"
-	"regexp"
-	"runtime"
 	"strconv"
-	"strings"
 
 	"fyne.io/fyne/v2"
 	"github.com/goccy/go-json"
@@ -25,14 +22,7 @@ var (
 	ErrSaveFile            = errors.New("\n\n\nError. Cannot save file.\n\n")
 )
 
-const (
-	minVersion = 1170
-
-	appID      = "1611910"
-	saveDir    = "AppData/LocalLow/Complex Games Inc_/GreyKnights/SaveGames/Campaign"
-	protonDir  = "/1611910/pfx"
-	protonUser = "pfx/drive_c/users/steamuser"
-)
+const minVersion = 1170
 
 type Manager struct {
 	filePath         string
@@ -50,147 +40,12 @@ func (m *Manager) OnLoadState(fn func(*internal.State)) {
 	m.onLoadState = append(m.onLoadState, fn)
 }
 
-func (m *Manager) SaveDir() string {
-	return saveDir
-}
+func (m *Manager) SaveDir() string { return savedir.SaveDir() }
 
-func (m *Manager) DefaultLocationHint() string {
-	home, _ := os.UserHomeDir()
-
-	switch runtime.GOOS {
-	case "windows":
-		if home == "" {
-			return `%USERPROFILE%\` + filepath.FromSlash(saveDir)
-		}
-		return filepath.Join(home, filepath.FromSlash(saveDir))
-	case "linux":
-		if dir := steamSaveDir(home); dir != "" {
-			return dir
-		}
-		base := filepath.Join(home, ".steam", "steam")
-		return filepath.Join(base, "steamapps", "compatdata", appID, protonUser, saveDir)
-	default:
-		return "../" + saveDir
-	}
-}
+func (m *Manager) DefaultLocationHint() string { return savedir.DefaultLocationHint() }
 
 func (m *Manager) GetCurrentPath() string {
-	currentPath := fyne.CurrentApp().Preferences().String("path")
-	dir := filepath.Dir(currentPath)
-	if currentPath != "" && dirExists(dir) {
-		return dir
-	}
-
-	dir, _ = os.UserHomeDir()
-
-	switch runtime.GOOS {
-	case "linux":
-		if found := steamSaveDir(dir); found != "" {
-			return found
-		}
-
-		dirSteam := searchDir(filepath.Join(dir, ".steam"), protonDir)
-		if dirSteam != "" {
-			dir = dirSteam
-		} else {
-			dir = searchDir(dir, protonDir)
-		}
-
-		if dir == "" {
-			for _, path := range []string{"/run/media", "/media", "/mnt"} {
-				dir = searchDir(path, protonDir)
-				if dir != "" {
-					break
-				}
-			}
-		}
-
-		if dir != "" {
-			dir = searchDir(dir, saveDir)
-		}
-	case "windows":
-		dir = filepath.Join(dir, saveDir)
-	}
-
-	if !dirExists(dir) {
-		dir, _ = os.Getwd()
-	}
-
-	return dir
-}
-
-func steamSaveDir(home string) string {
-	for _, lib := range steamLibraries(home) {
-		dir := filepath.Join(lib, "steamapps", "compatdata", appID, protonUser, saveDir)
-		if dirExists(dir) {
-			return dir
-		}
-	}
-	return ""
-}
-
-func steamLibraries(home string) []string {
-	bases := []string{
-		filepath.Join(home, ".steam", "steam"),
-		filepath.Join(home, ".steam", "root"),
-		filepath.Join(home, ".local", "share", "Steam"),
-		filepath.Join(home, ".var", "app", "com.valvesoftware.Steam", ".local", "share", "Steam"),
-	}
-
-	seen := map[string]bool{}
-	var libs []string
-	add := func(path string) {
-		if resolved, err := filepath.EvalSymlinks(path); err == nil {
-			path = resolved
-		}
-		if path != "" && !seen[path] && dirExists(path) {
-			seen[path] = true
-			libs = append(libs, path)
-		}
-	}
-
-	for _, base := range bases {
-		add(base)
-		for _, lib := range parseLibraryFolders(filepath.Join(base, "steamapps", "libraryfolders.vdf")) {
-			add(lib)
-		}
-	}
-	return libs
-}
-
-var libraryPathRe = regexp.MustCompile(`"path"\s+"([^"]+)"`)
-
-func parseLibraryFolders(vdfPath string) []string {
-	data, err := os.ReadFile(vdfPath)
-	if err != nil {
-		return nil
-	}
-
-	var paths []string
-	for _, match := range libraryPathRe.FindAllStringSubmatch(string(data), -1) {
-		paths = append(paths, strings.ReplaceAll(match[1], `\\`, `/`))
-	}
-	return paths
-}
-
-func searchDir(root, searchPath string) string {
-	var result string
-
-	filepath.WalkDir(root, func(path string, d fs.DirEntry, err error) error {
-		if err != nil || !d.IsDir() || path == root || !strings.HasSuffix(path, searchPath) {
-			return nil
-		}
-
-		result = path
-		return filepath.SkipAll
-	})
-
-	return result
-}
-
-func dirExists(path string) bool {
-	info, err := os.Stat(path)
-	return err == nil && info.IsDir()
+	return savedir.Discover(fyne.CurrentApp().Preferences().String("path"))
 }
 
 func (m *Manager) LoadBytes(path string, file []byte) error {

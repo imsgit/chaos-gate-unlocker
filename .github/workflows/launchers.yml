@@ -1,0 +1,23 @@
+name: launcher-windows
+
+on:
+  workflow_dispatch:
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    env:
+      WIN_CC: gcc
+      CXX: g++
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.25.x'
+          cache: false
+      - shell: bash
+        run: bash build/build_launcher.sh windows
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ChaosGateUnlockerLauncher-windows
+          path: fyne-cross/bin/windows-amd64/ChaosGateUnlockerLauncher.exe

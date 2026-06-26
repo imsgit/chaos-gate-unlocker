@@ -1,5 +1,6 @@
 read_build() { grep -oE 'Build *= *[0-9]+' FyneApp.toml | grep -oE '[0-9]+'; }
 write_build() { sed -i -E "s/^(\s*Build *= *).*/\1${1}/" FyneApp.toml; }
+read_version() { grep -oE 'Version *= *"[^"]+"' FyneApp.toml | grep -oE '[0-9]+(\.[0-9]+)*'; }
 
 declare -A _bak=()
 swap() { _bak["$1"]="$(mktemp)"; cp "$1" "${_bak[$1]}"; }

@@ -15,7 +15,6 @@ import (
 	"context"
 	"fmt"
 	"net/url"
-	"runtime"
 	"runtime/debug"
 	"slices"
 
@@ -410,22 +409,9 @@ func main() {
 	saveButton.Disable()
 
 	statusLabel := widget.NewLabelWithData(status)
-	var tryLink *widget.Hyperlink
-	if browserSupported {
-		tryLink = widget.NewHyperlink("> Try it online", nil)
-		tryLink.OnTapped = func() {
-			if err := openInBrowser(); err != nil {
-				dialog.ShowError(err, w)
-			}
-		}
-	} else if runtime.GOOS != "js" {
-		u, _ := url.Parse(websiteURL)
-		tryLink = widget.NewHyperlink("> Try it online", u)
-	}
-	var bottomBar fyne.CanvasObject = statusLabel
-	if tryLink != nil {
-		bottomBar = container.NewBorder(nil, nil, nil, tryLink, statusLabel)
-	}
+	siteURL, _ := url.Parse(websiteURL)
+	tryLink := widget.NewHyperlink("> Try it online", siteURL)
+	bottomBar := container.NewBorder(nil, nil, nil, tryLink, statusLabel)
 
 	content := container.NewBorder(
 		container.NewBorder(nil, nil, leftAquila, rightAquila,

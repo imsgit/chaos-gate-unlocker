@@ -12,11 +12,6 @@ build=$(read_build)
 echo "=== fyne-cross $fc | build $build (no auto-bump) ==="
 
 tags=no_emoji
-if [ -n "${EMBED:-}" ]; then
-	echo "=== EMBED=1 → build wasm bundle for offline 'Try it online' ==="
-	bash build/build-wasm.sh
-	tags=no_emoji,embedwasm
-fi
 
 trap restore_swaps EXIT
 stub_fonts
