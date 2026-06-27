@@ -17,7 +17,7 @@ typedef struct {
 	HRESULT(STDMETHODCALLTYPE *QueryInterface)(cg_controller *, const GUID *, void **);
 	ULONG(STDMETHODCALLTYPE *AddRef)(cg_controller *);
 	ULONG(STDMETHODCALLTYPE *Release)(cg_controller *);
-	void *pad[23];
+	void *pad[24];
 	HRESULT(STDMETHODCALLTYPE *put_DefaultBackgroundColor)(cg_controller *, cg_color);
 } cg_controller_vtbl;
 struct cg_controller {

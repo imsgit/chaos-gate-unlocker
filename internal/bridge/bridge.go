@@ -6,7 +6,9 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"os/exec"
 	"path/filepath"
+	"runtime"
 	"sort"
 	"strings"
 
@@ -27,6 +29,7 @@ func New(token string, dir func() string) *Handler {
 func (h *Handler) Register(mux *http.ServeMux) {
 	mux.HandleFunc("/api/list", h.list)
 	mux.HandleFunc("/api/file", h.file)
+	mux.HandleFunc("/api/open", h.open)
 }
 
 func (h *Handler) authed(r *http.Request) bool {
@@ -79,6 +82,31 @@ func (h *Handler) list(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(out)
+}
+
+func (h *Handler) open(w http.ResponseWriter, r *http.Request) {
+	if !h.authed(r) {
+		http.Error(w, "forbidden", http.StatusForbidden)
+		return
+	}
+	if err := openDir(h.dir()); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
+}
+
+func openDir(dir string) error {
+	var cmd *exec.Cmd
+	switch runtime.GOOS {
+	case "windows":
+		cmd = exec.Command("explorer", dir)
+	case "darwin":
+		cmd = exec.Command("open", dir)
+	default:
+		cmd = exec.Command("xdg-open", dir)
+	}
+	return cmd.Start()
 }
 
 func (h *Handler) file(w http.ResponseWriter, r *http.Request) {

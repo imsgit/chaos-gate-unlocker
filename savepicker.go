@@ -30,17 +30,25 @@ func slotLabel(s string) string {
 	return s
 }
 
-// oneTwoLayout splits the width 1:2 (narrow slots, wide saves) with a padding gap.
-type oneTwoLayout struct{}
+type oneTwoLayout struct {
+	btns func() fyne.CanvasObject
+}
 
 func (oneTwoLayout) MinSize(o []fyne.CanvasObject) fyne.Size {
 	a, b := o[0].MinSize(), o[1].MinSize()
 	return fyne.NewSize(a.Width+b.Width+theme.Padding(), fyne.Max(a.Height, b.Height))
 }
 
-func (oneTwoLayout) Layout(o []fyne.CanvasObject, s fyne.Size) {
+func (l oneTwoLayout) Layout(o []fyne.CanvasObject, s fyne.Size) {
 	pad := theme.Padding()
-	lw := (s.Width - pad) / 3
+	lw := (s.Width - pad) / 4
+	if l.btns != nil {
+		if b := l.btns(); b != nil {
+			if w := s.Width/2 - b.MinSize().Width/2 - pad; w > pad {
+				lw = w
+			}
+		}
+	}
 	o[0].Resize(fyne.NewSize(lw, s.Height))
 	o[0].Move(fyne.NewPos(0, 0))
 	o[1].Resize(fyne.NewSize(s.Width-pad-lw, s.Height))
@@ -101,7 +109,11 @@ func showSavePicker(w fyne.Window, names []string, info func(name string) savein
 	)
 	slotsList.HideSeparators = true
 
-	body := container.New(oneTwoLayout{}, dragscroll.List(slotsList), dragscroll.List(savesList))
+	var btnRow *fyne.Container
+	body := container.New(
+		oneTwoLayout{btns: func() fyne.CanvasObject { return btnRow }},
+		dragscroll.List(slotsList), dragscroll.List(savesList),
+	)
 
 	d := dialog.NewCustomWithoutButtons("Open game save file", body, w)
 	buttons := make([]fyne.CanvasObject, 0, 2)
@@ -111,7 +123,8 @@ func showSavePicker(w fyne.Window, names []string, info func(name string) savein
 		browse.Importance = widget.HighImportance
 		buttons = append(buttons, browse)
 	}
-	d.SetButtons(buttons)
+	btnRow = container.NewGridWithRows(1, buttons...)
+	d.SetButtons([]fyne.CanvasObject{btnRow})
 	d.Resize(fyne.NewSize(520, 440))
 
 	slotsList.OnSelected = func(i widget.ListItemID) {

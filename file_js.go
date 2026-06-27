@@ -145,7 +145,9 @@ func showBridgePicker(w fyne.Window, tok string, names []string, infoMap map[str
 			bridgeFile = name
 			fyne.Do(func() { onData(name, data) })
 		}()
-	}, nil)
+	}, func() {
+		go bridgeGet(bridgeBase() + "/api/open?t=" + url.QueryEscape(tok))
+	})
 }
 
 func saveFile(fm *files.Manager) error {
