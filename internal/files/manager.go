@@ -3,6 +3,8 @@ package files
 import (
 	"chaos-gate-unlocker/internal"
 	"chaos-gate-unlocker/internal/savedir"
+	"chaos-gate-unlocker/internal/saveinfo"
+	"strings"
 
 	"bytes"
 	"errors"
@@ -41,8 +43,6 @@ func (m *Manager) OnLoadState(fn func(*internal.State)) {
 }
 
 func (m *Manager) SaveDir() string { return savedir.SaveDir() }
-
-func (m *Manager) DefaultLocationHint() string { return savedir.DefaultLocationHint() }
 
 func (m *Manager) GetCurrentPath() string {
 	return savedir.Discover(fyne.CurrentApp().Preferences().String("path"))
@@ -153,25 +153,11 @@ func (m *Manager) Save() error {
 }
 
 func (m *Manager) Status() string {
-	var difficulty string
-	switch m.header.Difficulty {
-	case 3:
-		difficulty = "Legendary"
-	case 2:
-		difficulty = "Ruthless"
-	case 1:
-		difficulty = "Standard"
-	case 0:
-		difficulty = "Merciful"
-	}
-	if m.header.IronMan {
-		difficulty += " Ironman"
-	}
-
+	ts := m.header.SavedTimeStamp
 	timestamp := fmt.Sprintf("%d-%02d-%02d %02d:%02d:%02d",
-		m.header.SavedTimeStamp.Years, m.header.SavedTimeStamp.Months, m.header.SavedTimeStamp.Days,
-		m.header.SavedTimeStamp.Hours, m.header.SavedTimeStamp.Minutes, m.header.SavedTimeStamp.Seconds)
+		ts.Years, ts.Months, ts.Days, ts.Hours, ts.Minutes, ts.Seconds)
 
-	return fmt.Sprintf("%s   ·   %s   ·   Days: %d   ·   Difficulty: %s   ·   %s",
-		filepath.Base(m.filePath), m.header.SaveName, m.header.GameDays, difficulty, timestamp)
+	return fmt.Sprintf("%s   ·   %s   ·   Day %d   ·   %s   ·   %s",
+		filepath.Base(m.filePath), strings.ToUpper(m.header.SaveName), m.header.GameDays,
+		saveinfo.DifficultyName(m.header.Difficulty, m.header.IronMan), timestamp)
 }

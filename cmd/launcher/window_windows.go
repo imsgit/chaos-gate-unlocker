@@ -41,16 +41,43 @@ static void cg_paint_dark(void *wv) {
 	}
 }
 
-static void cg_strip_icon(void *hwnd) {
+static void cg_hide(void *hwnd) {
+	if (hwnd) {
+		ShowWindow((HWND)hwnd, SW_HIDE);
+	}
+}
+
+static void cg_show(void *hwnd) {
+	if (hwnd) {
+		ShowWindow((HWND)hwnd, SW_SHOW);
+		SetForegroundWindow((HWND)hwnd);
+		SetFocus((HWND)hwnd);
+	}
+}
+
+static void cg_set_app_icon(void *hwnd) {
 	if (!hwnd) {
 		return;
 	}
 	HWND h = (HWND)hwnd;
-	SendMessageW(h, WM_SETICON, ICON_SMALL, 0);
-	SendMessageW(h, WM_SETICON, ICON_BIG, 0);
-	SetWindowLongPtrW(h, GWL_EXSTYLE, GetWindowLongPtrW(h, GWL_EXSTYLE) | WS_EX_DLGMODALFRAME);
-	SetWindowPos(h, NULL, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_FRAMECHANGED);
+	HINSTANCE inst = GetModuleHandleW(NULL);
+	HICON big = (HICON)LoadImageW(inst, L"APP", IMAGE_ICON,
+		GetSystemMetrics(SM_CXICON), GetSystemMetrics(SM_CYICON), LR_DEFAULTCOLOR);
+	HICON small = (HICON)LoadImageW(inst, L"APP", IMAGE_ICON,
+		GetSystemMetrics(SM_CXSMICON), GetSystemMetrics(SM_CYSMICON), LR_DEFAULTCOLOR);
+	if (big) {
+		SendMessageW(h, WM_SETICON, ICON_BIG, (LPARAM)big);
+	}
+	if (small) {
+		SendMessageW(h, WM_SETICON, ICON_SMALL, (LPARAM)small);
+	}
+}
 
+static void cg_center(void *hwnd) {
+	if (!hwnd) {
+		return;
+	}
+	HWND h = (HWND)hwnd;
 	RECT rc;
 	if (GetWindowRect(h, &rc)) {
 		int ww = rc.right - rc.left, wh = rc.bottom - rc.top;
@@ -71,13 +98,18 @@ import (
 func openWindow(title, html string) {
 	w := webview.New(false)
 	defer w.Destroy()
+
+	C.cg_hide(w.Window())
+
 	w.SetTitle(title)
 	w.SetSize(800, 600, webview.HintNone)
 
 	handle := *(*unsafe.Pointer)(unsafe.Pointer(reflect.ValueOf(w).Pointer()))
 	C.cg_paint_dark(handle)
-	C.cg_strip_icon(w.Window())
+	C.cg_set_app_icon(w.Window())
+	C.cg_center(w.Window())
 
 	w.SetHtml(html)
+	C.cg_show(w.Window())
 	w.Run()
 }

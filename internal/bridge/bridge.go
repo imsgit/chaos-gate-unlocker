@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"io"
 	"net/http"
+	"net/url"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -30,6 +31,7 @@ func (h *Handler) Register(mux *http.ServeMux) {
 	mux.HandleFunc("/api/list", h.list)
 	mux.HandleFunc("/api/file", h.file)
 	mux.HandleFunc("/api/open", h.open)
+	mux.HandleFunc("/api/openurl", h.openURL)
 }
 
 func (h *Handler) authed(r *http.Request) bool {
@@ -105,6 +107,37 @@ func openDir(dir string) error {
 		cmd = exec.Command("open", dir)
 	default:
 		cmd = exec.Command("xdg-open", dir)
+	}
+	hideConsole(cmd)
+	return cmd.Start()
+}
+
+func (h *Handler) openURL(w http.ResponseWriter, r *http.Request) {
+	if !h.authed(r) {
+		http.Error(w, "forbidden", http.StatusForbidden)
+		return
+	}
+	u, err := url.Parse(r.URL.Query().Get("url"))
+	if err != nil || (u.Scheme != "http" && u.Scheme != "https") {
+		http.Error(w, "bad url", http.StatusBadRequest)
+		return
+	}
+	if err := openInBrowser(u.String()); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
+}
+
+func openInBrowser(rawURL string) error {
+	var cmd *exec.Cmd
+	switch runtime.GOOS {
+	case "windows":
+		cmd = exec.Command("rundll32", "url.dll,FileProtocolHandler", rawURL)
+	case "darwin":
+		cmd = exec.Command("open", rawURL)
+	default:
+		cmd = exec.Command("xdg-open", rawURL)
 	}
 	hideConsole(cmd)
 	return cmd.Start()

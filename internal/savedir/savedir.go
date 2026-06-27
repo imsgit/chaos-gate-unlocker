@@ -18,26 +18,6 @@ const (
 
 func SaveDir() string { return dir }
 
-func DefaultLocationHint() string {
-	home, _ := os.UserHomeDir()
-
-	switch runtime.GOOS {
-	case "windows":
-		if home == "" {
-			return `%USERPROFILE%\` + filepath.FromSlash(dir)
-		}
-		return filepath.Join(home, filepath.FromSlash(dir))
-	case "linux":
-		if d := steamSaveDir(home); d != "" {
-			return d
-		}
-		base := filepath.Join(home, ".steam", "steam")
-		return filepath.Join(base, "steamapps", "compatdata", appID, protonUser, dir)
-	default:
-		return "../" + dir
-	}
-}
-
 func Discover(currentPath string) string {
 	d := filepath.Dir(currentPath)
 	if currentPath != "" && dirExists(d) {

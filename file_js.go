@@ -33,6 +33,14 @@ func bridgeToken() string {
 
 func showTryOnline() bool { return bridgeToken() != "" }
 
+func openWebsite(u *url.URL) {
+	if tok := bridgeToken(); tok != "" {
+		go bridgeGet(bridgeBase() + "/api/openurl?t=" + url.QueryEscape(tok) + "&url=" + url.QueryEscape(u.String()))
+		return
+	}
+	_ = fyne.CurrentApp().OpenURL(u)
+}
+
 func bridgeBase() string {
 	return js.Global().Get("location").Get("origin").String()
 }

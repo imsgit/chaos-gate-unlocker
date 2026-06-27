@@ -28,7 +28,7 @@ import (
 )
 
 const (
-	version    = "Ver: %s.%d   ·   Author: imsgit   ·   2026-06-26"
+	version    = "%s.%d"
 	websiteURL = "https://imsgit.github.io/chaos-gate-unlocker/"
 )
 
@@ -324,7 +324,7 @@ func main() {
 	aquila.Prewarm()
 
 	progressLine := progress.New()
-	var openButton *tooltip.Button
+	var openButton *widget.Button
 	animateTop := func(open bool, onDone func()) context.CancelFunc {
 		ctx, cancel := context.WithCancel(context.Background())
 		go func() {
@@ -386,10 +386,9 @@ func main() {
 		toggle.Reset(unlockInfiniteCampaignSwitch, featuresManager.CanUnlockInfiniteCampaign)
 	}
 
-	openButton = tooltip.NewButton("Open", func() {
+	openButton = widget.NewButton("Open", func() {
 		openFile(w, filesManager, loadData)
 	})
-	openButton.SetToolTip("Can't find your save? It's in:\n" + filesManager.DefaultLocationHint())
 
 	saveButton = widget.NewButton("Save", func() {
 		confirmSave(w, func() {
@@ -413,6 +412,7 @@ func main() {
 	if showTryOnline() {
 		siteURL, _ := url.Parse(websiteURL)
 		tryLink := widget.NewHyperlink("> Try it online", siteURL)
+		tryLink.OnTapped = func() { openWebsite(siteURL) }
 		bottomBar = container.NewBorder(nil, nil, nil, tryLink, statusLabel)
 	}
 
