@@ -41,8 +41,6 @@ func (m *Manager) OnLoadState(fn func(*internal.State)) {
 	m.onLoadState = append(m.onLoadState, fn)
 }
 
-func (m *Manager) SaveDir() string { return save.Dir() }
-
 func (m *Manager) GetCurrentPath() string {
 	return save.Discover(fyne.CurrentApp().Preferences().String("path"))
 }
@@ -152,13 +150,10 @@ func (m *Manager) Save() error {
 }
 
 func (m *Manager) Status() string {
-	ts := m.header.SavedTimeStamp
-	timestamp := fmt.Sprintf("%d-%02d-%02d %02d:%02d:%02d",
-		ts.Years, ts.Months, ts.Days, ts.Hours, ts.Minutes, ts.Seconds)
-
-	return fmt.Sprintf("%s   ·   %s   ·   Day %d   ·   %s   ·   %s",
-		slotLabel(m.filePath), strings.ToUpper(m.header.SaveName), m.header.GameDays,
-		save.DifficultyName(m.header.Difficulty, m.header.IronMan), timestamp)
+	h := m.header
+	return fmt.Sprintf("%s   ·   %s   ·   %s",
+		slotLabel(m.filePath), strings.ToUpper(h.SaveName),
+		save.Detail(h.GameDays, h.Difficulty, h.IronMan, save.Stamp(h.SavedTimeStamp)))
 }
 
 func slotLabel(path string) string {

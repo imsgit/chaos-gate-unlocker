@@ -11,12 +11,13 @@ import (
 	"path/filepath"
 	"runtime"
 	"sort"
+	"strconv"
 	"strings"
 
 	"chaos-gate-unlocker/internal/save"
 )
 
-const maxSaveBytes = 64 << 20
+const maxSaveBytes = 16 << 20
 
 type Handler struct {
 	token string
@@ -161,6 +162,7 @@ func (h *Handler) file(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		w.Header().Set("Content-Type", "application/octet-stream")
+		w.Header().Set("Content-Length", strconv.Itoa(len(data)))
 		w.Write(data)
 	case http.MethodPost:
 		data, err := io.ReadAll(http.MaxBytesReader(w, r.Body, maxSaveBytes))

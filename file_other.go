@@ -19,7 +19,7 @@ import (
 	"fyne.io/fyne/v2/dialog"
 )
 
-func openFile(w fyne.Window, fm *files.Manager, onData func(name string, data []byte)) {
+func openFile(w fyne.Window, fm *files.Manager, beginLoad func(), onData func(name string, data []byte, err error)) {
 	dir := fm.GetCurrentPath()
 
 	entries, err := os.ReadDir(dir)
@@ -50,13 +50,10 @@ func openFile(w fyne.Window, fm *files.Manager, onData func(name string, data []
 	}
 
 	showSavePicker(w, names, info, func(name string) {
+		beginLoad()
 		path := filepath.Join(dir, name)
 		data, err := os.ReadFile(path)
-		if err != nil {
-			dialog.ShowError(err, w)
-			return
-		}
-		onData(path, data)
+		onData(path, data, err)
 	}, func() {
 		openSaveDir(dir)
 	})

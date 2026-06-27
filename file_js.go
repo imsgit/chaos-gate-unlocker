@@ -45,10 +45,10 @@ func bridgeBase() string {
 	return js.Global().Get("location").Get("origin").String()
 }
 
-func openFile(w fyne.Window, fm *files.Manager, onData func(name string, data []byte)) {
+func openFile(w fyne.Window, fm *files.Manager, beginLoad func(), onData func(name string, data []byte, err error)) {
 	bridgeWin = w
 	if tok := bridgeToken(); tok != "" {
-		go bridgePick(w, tok, onData)
+		go bridgePick(w, tok, beginLoad, onData)
 		return
 	}
 
@@ -71,6 +71,8 @@ func openFile(w fyne.Window, fm *files.Manager, onData func(name string, data []
 		name := file.Get("name").String()
 		reader := js.Global().Get("FileReader").New()
 
+		fyne.Do(beginLoad)
+
 		var onLoad js.Func
 		onLoad = js.FuncOf(func(_ js.Value, _ []js.Value) any {
 			buf := js.Global().Get("Uint8Array").New(reader.Get("result"))
@@ -81,7 +83,7 @@ func openFile(w fyne.Window, fm *files.Manager, onData func(name string, data []
 			onChange.Release()
 			onLoad.Release()
 
-			fyne.Do(func() { onData(name, data) })
+			fyne.Do(func() { onData(name, data, nil) })
 			return nil
 		})
 
@@ -101,7 +103,13 @@ func bridgeGet(u string) ([]byte, error) {
 		return nil, err
 	}
 	defer resp.Body.Close()
-	body, err := io.ReadAll(resp.Body)
+	var body []byte
+	if resp.ContentLength > 0 {
+		body = make([]byte, resp.ContentLength)
+		_, err = io.ReadFull(resp.Body, body)
+	} else {
+		body, err = io.ReadAll(resp.Body)
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -111,7 +119,7 @@ func bridgeGet(u string) ([]byte, error) {
 	return body, nil
 }
 
-func bridgePick(w fyne.Window, tok string, onData func(name string, data []byte)) {
+func bridgePick(w fyne.Window, tok string, beginLoad func(), onData func(name string, data []byte, err error)) {
 	fail := func(err error) { fyne.Do(func() { dialog.ShowError(err, w) }) }
 
 	body, err := bridgeGet(bridgeBase() + "/api/list?t=" + url.QueryEscape(tok))
@@ -139,19 +147,18 @@ func bridgePick(w fyne.Window, tok string, onData func(name string, data []byte)
 		names[i] = e.Name
 		infoMap[e.Name] = save.Info{Title: e.Title, Detail: e.Detail}
 	}
-	fyne.Do(func() { showBridgePicker(w, tok, names, infoMap, onData) })
+	fyne.Do(func() { showBridgePicker(w, tok, names, infoMap, beginLoad, onData) })
 }
 
-func showBridgePicker(w fyne.Window, tok string, names []string, infoMap map[string]save.Info, onData func(name string, data []byte)) {
+func showBridgePicker(w fyne.Window, tok string, names []string, infoMap map[string]save.Info, beginLoad func(), onData func(name string, data []byte, err error)) {
 	showSavePicker(w, names, func(name string) save.Info { return infoMap[name] }, func(name string) {
+		beginLoad()
 		go func() {
 			data, err := bridgeGet(bridgeBase() + "/api/file?t=" + url.QueryEscape(tok) + "&name=" + url.QueryEscape(name))
-			if err != nil {
-				fyne.Do(func() { dialog.ShowError(err, w) })
-				return
+			if err == nil {
+				bridgeFile = name
 			}
-			bridgeFile = name
-			fyne.Do(func() { onData(name, data) })
+			fyne.Do(func() { onData(name, data, err) })
 		}()
 	}, func() {
 		go bridgeGet(bridgeBase() + "/api/open?t=" + url.QueryEscape(tok))

@@ -349,11 +349,9 @@ func main() {
 		status.Set("")
 	}
 
-	loadData := func(name string, data []byte) {
-		cancel := animateTop(true, func() {
-			layoutTabs.Show()
-			status.Set(filesManager.Status())
-		})
+	var loadCancel context.CancelFunc
+	beginLoad := func() {
+		loadCancel = animateTop(true, layoutTabs.Show)
 
 		healUnits = map[any]bool{}
 		retrainUnits = map[any]bool{}
@@ -361,9 +359,17 @@ func main() {
 		talentsUnits = map[any][][]string{}
 
 		resetUI()
+	}
 
-		if err := filesManager.LoadBytes(name, data); err != nil {
-			cancel()
+	loadData := func(name string, data []byte, loadErr error) {
+		err := loadErr
+		if err == nil {
+			err = filesManager.LoadBytes(name, data)
+		}
+		if err != nil {
+			if loadCancel != nil {
+				loadCancel()
+			}
 			dialog.ShowError(err, w)
 			return
 		}
@@ -384,10 +390,12 @@ func main() {
 		toggle.Reset(unequipMastercraftedWeaponsSwitch, featuresManager.CanUnequipMastercraftedWeapons)
 		toggle.Reset(unequipMastercraftedArmorSwitch, featuresManager.CanUnequipMastercraftedArmor)
 		toggle.Reset(unlockInfiniteCampaignSwitch, featuresManager.CanUnlockInfiniteCampaign)
+
+		status.Set(filesManager.Status())
 	}
 
 	openButton = widget.NewButton("Open", func() {
-		openFile(w, filesManager, loadData)
+		openFile(w, filesManager, beginLoad, loadData)
 	})
 
 	saveButton = widget.NewButton("Save", func() {

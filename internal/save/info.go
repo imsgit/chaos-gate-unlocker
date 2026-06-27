@@ -25,19 +25,31 @@ type Info struct {
 	Detail string `json:"detail"`
 }
 
+type Stamp struct {
+	Days    int `json:"days"`
+	Months  int `json:"months"`
+	Years   int `json:"years"`
+	Hours   int `json:"hours"`
+	Minutes int `json:"minutes"`
+	Seconds int `json:"seconds"`
+}
+
+func (s Stamp) String() string {
+	return fmt.Sprintf("%04d-%02d-%02d %02d:%02d:%02d",
+		s.Years, s.Months, s.Days, s.Hours, s.Minutes, s.Seconds)
+}
+
+func Detail(gameDays, difficulty int, ironMan bool, ts Stamp) string {
+	return fmt.Sprintf("Day %d   ·   %s   ·   %s",
+		gameDays, DifficultyName(difficulty, ironMan), ts)
+}
+
 type header struct {
 	SaveName       string `json:"saveName"`
 	GameDays       int    `json:"gameDays"`
 	Difficulty     int    `json:"difficulty"`
 	IronMan        bool   `json:"ironMan"`
-	SavedTimeStamp struct {
-		Days    int `json:"days"`
-		Months  int `json:"months"`
-		Years   int `json:"years"`
-		Hours   int `json:"hours"`
-		Minutes int `json:"minutes"`
-		Seconds int `json:"seconds"`
-	} `json:"savedTimeStamp"`
+	SavedTimeStamp Stamp  `json:"savedTimeStamp"`
 }
 
 func Parse(data []byte) Info {
@@ -49,12 +61,9 @@ func Parse(data []byte) Info {
 	var h header
 	_ = json.Unmarshal(first, &h)
 
-	ts := h.SavedTimeStamp
 	return Info{
-		Title: h.SaveName,
-		Detail: fmt.Sprintf("Day %d   ·   %s   ·   %04d-%02d-%02d %02d:%02d:%02d",
-			h.GameDays, DifficultyName(h.Difficulty, h.IronMan),
-			ts.Years, ts.Months, ts.Days, ts.Hours, ts.Minutes, ts.Seconds),
+		Title:  h.SaveName,
+		Detail: Detail(h.GameDays, h.Difficulty, h.IronMan, h.SavedTimeStamp),
 	}
 }
 

@@ -16,8 +16,6 @@ const (
 	protonUser = "pfx/drive_c/users/steamuser"
 )
 
-func Dir() string { return dir }
-
 func Discover(currentPath string) string {
 	d := filepath.Dir(currentPath)
 	if currentPath != "" && dirExists(d) {
