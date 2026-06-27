@@ -108,7 +108,6 @@ func openDir(dir string) error {
 	default:
 		cmd = exec.Command("xdg-open", dir)
 	}
-	hideConsole(cmd)
 	return cmd.Start()
 }
 
@@ -139,7 +138,6 @@ func openInBrowser(rawURL string) error {
 	default:
 		cmd = exec.Command("xdg-open", rawURL)
 	}
-	hideConsole(cmd)
 	return cmd.Start()
 }
 

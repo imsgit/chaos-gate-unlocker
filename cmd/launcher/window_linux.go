@@ -1,5 +1,3 @@
-//go:build !nowebview
-
 package main
 
 /*

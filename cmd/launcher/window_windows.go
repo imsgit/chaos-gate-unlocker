@@ -1,5 +1,3 @@
-//go:build !nowebview
-
 package main
 
 /*
@@ -41,12 +39,6 @@ static void cg_paint_dark(void *wv) {
 	}
 }
 
-static void cg_hide(void *hwnd) {
-	if (hwnd) {
-		ShowWindow((HWND)hwnd, SW_HIDE);
-	}
-}
-
 static void cg_show(void *hwnd) {
 	if (!hwnd) {
 		return;
@@ -58,9 +50,7 @@ static void cg_show(void *hwnd) {
 	DWORD fgThread = GetWindowThreadProcessId(fg, NULL);
 	DWORD curThread = GetCurrentThreadId();
 	BOOL attached = (fg && fgThread != curThread && AttachThreadInput(curThread, fgThread, TRUE));
-	BringWindowToTop(h);
 	SetForegroundWindow(h);
-	SetFocus(h);
 	if (attached) {
 		AttachThreadInput(curThread, fgThread, FALSE);
 	}
@@ -110,8 +100,6 @@ import (
 func openWindow(title, html string) {
 	w := webview.New(false)
 	defer w.Destroy()
-
-	C.cg_hide(w.Window())
 
 	w.SetTitle(title)
 	w.SetSize(800, 600, webview.HintNone)

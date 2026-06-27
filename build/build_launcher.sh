@@ -5,6 +5,9 @@ source build/lib.sh
 
 ver=$(read_version)
 
+trap restore_swaps EXIT
+hide_webview_window
+
 build_linux() {
 	local out=fyne-cross/bin/linux-amd64/chaos-gate-unlocker-launcher
 	echo "=== launcher v$ver → $out (linux/amd64) ==="

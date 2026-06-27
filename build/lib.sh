@@ -72,6 +72,22 @@ func loadSystemFonts(_ *fontscan.FontMap) error {
 GOEOF
 }
 
+hide_webview_window() {
+	local wv=vendor/github.com/webview/webview_go/libs/webview/include/webview.h
+	echo "=== Keep owned webview window hidden during New() (kills Windows white flash) ==="
+	swap "$wv"
+	replace_block "$wv" \
+		'    if (m_owns_window) {
+      ShowWindow(m_window, SW_SHOW);
+      UpdateWindow(m_window);
+      SetFocus(m_window);
+    }' \
+		'    if (m_owns_window) {
+      SetFocus(m_window);
+    }'
+	gone "$wv" "ShowWindow(m_window, SW_SHOW)"
+}
+
 slim_charset() {
 	local cf=vendor/golang.org/x/net/html/charset/charset.go
 	echo "=== Slim SVG charset reader (UTF-8 only; drops x/text CJK tables) ==="
