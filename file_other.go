@@ -13,7 +13,7 @@ import (
 
 	"chaos-gate-unlocker/internal/display"
 	"chaos-gate-unlocker/internal/files"
-	"chaos-gate-unlocker/internal/saveinfo"
+	"chaos-gate-unlocker/internal/save"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/dialog"
@@ -39,12 +39,12 @@ func openFile(w fyne.Window, fm *files.Manager, onData func(name string, data []
 		return
 	}
 
-	infoCache := map[string]saveinfo.Info{}
-	info := func(name string) saveinfo.Info {
+	infoCache := map[string]save.Info{}
+	info := func(name string) save.Info {
 		if v, ok := infoCache[name]; ok {
 			return v
 		}
-		v := saveinfo.ParseFile(filepath.Join(dir, name))
+		v := save.ParseFile(filepath.Join(dir, name))
 		infoCache[name] = v
 		return v
 	}

@@ -10,7 +10,7 @@ import (
 	"net/http"
 
 	"chaos-gate-unlocker/internal/bridge"
-	"chaos-gate-unlocker/internal/savedir"
+	"chaos-gate-unlocker/internal/save"
 )
 
 var version = "dev"
@@ -30,7 +30,7 @@ func main() {
 
 	dir := *dirFlag
 	if dir == "" {
-		dir = savedir.Discover("")
+		dir = save.Discover("")
 	}
 
 	token := newToken()

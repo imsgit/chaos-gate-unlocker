@@ -5,11 +5,6 @@ source build/lib.sh
 
 ver=$(read_version)
 
-created_vendor=
-[ -d vendor ] || { echo "=== go mod vendor (for webview.h swap) ==="; go mod vendor; created_vendor=1; }
-trap 'restore_swaps; [ -n "$created_vendor" ] && rm -rf vendor' EXIT
-hide_webview_window
-
 build_linux() {
 	local out=fyne-cross/bin/linux-amd64/chaos-gate-unlocker-launcher
 	echo "=== launcher v$ver → $out (linux/amd64) ==="

@@ -13,7 +13,7 @@ import (
 	"sort"
 	"strings"
 
-	"chaos-gate-unlocker/internal/saveinfo"
+	"chaos-gate-unlocker/internal/save"
 )
 
 const maxSaveBytes = 64 << 20
@@ -74,7 +74,7 @@ func (h *Handler) list(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			continue
 		}
-		si := saveinfo.ParseFile(filepath.Join(h.dir(), e.Name()))
+		si := save.ParseFile(filepath.Join(h.dir(), e.Name()))
 		out = append(out, entry{
 			Name: e.Name(), ModTime: info.ModTime().Unix(),
 			Title: si.Title, Detail: si.Detail,

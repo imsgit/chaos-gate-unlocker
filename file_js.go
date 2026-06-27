@@ -14,7 +14,7 @@ import (
 	"syscall/js"
 
 	"chaos-gate-unlocker/internal/files"
-	"chaos-gate-unlocker/internal/saveinfo"
+	"chaos-gate-unlocker/internal/save"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/dialog"
@@ -134,16 +134,16 @@ func bridgePick(w fyne.Window, tok string, onData func(name string, data []byte)
 	}
 
 	names := make([]string, len(list))
-	infoMap := make(map[string]saveinfo.Info, len(list))
+	infoMap := make(map[string]save.Info, len(list))
 	for i, e := range list {
 		names[i] = e.Name
-		infoMap[e.Name] = saveinfo.Info{Title: e.Title, Detail: e.Detail}
+		infoMap[e.Name] = save.Info{Title: e.Title, Detail: e.Detail}
 	}
 	fyne.Do(func() { showBridgePicker(w, tok, names, infoMap, onData) })
 }
 
-func showBridgePicker(w fyne.Window, tok string, names []string, infoMap map[string]saveinfo.Info, onData func(name string, data []byte)) {
-	showSavePicker(w, names, func(name string) saveinfo.Info { return infoMap[name] }, func(name string) {
+func showBridgePicker(w fyne.Window, tok string, names []string, infoMap map[string]save.Info, onData func(name string, data []byte)) {
+	showSavePicker(w, names, func(name string) save.Info { return infoMap[name] }, func(name string) {
 		go func() {
 			data, err := bridgeGet(bridgeBase() + "/api/file?t=" + url.QueryEscape(tok) + "&name=" + url.QueryEscape(name))
 			if err != nil {

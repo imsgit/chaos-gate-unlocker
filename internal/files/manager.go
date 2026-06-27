@@ -2,8 +2,7 @@ package files
 
 import (
 	"chaos-gate-unlocker/internal"
-	"chaos-gate-unlocker/internal/savedir"
-	"chaos-gate-unlocker/internal/saveinfo"
+	"chaos-gate-unlocker/internal/save"
 	"strings"
 
 	"bytes"
@@ -42,10 +41,10 @@ func (m *Manager) OnLoadState(fn func(*internal.State)) {
 	m.onLoadState = append(m.onLoadState, fn)
 }
 
-func (m *Manager) SaveDir() string { return savedir.SaveDir() }
+func (m *Manager) SaveDir() string { return save.Dir() }
 
 func (m *Manager) GetCurrentPath() string {
-	return savedir.Discover(fyne.CurrentApp().Preferences().String("path"))
+	return save.Discover(fyne.CurrentApp().Preferences().String("path"))
 }
 
 func (m *Manager) LoadBytes(path string, file []byte) error {
@@ -159,7 +158,7 @@ func (m *Manager) Status() string {
 
 	return fmt.Sprintf("%s   ·   %s   ·   Day %d   ·   %s   ·   %s",
 		slotLabel(m.filePath), strings.ToUpper(m.header.SaveName), m.header.GameDays,
-		saveinfo.DifficultyName(m.header.Difficulty, m.header.IronMan), timestamp)
+		save.DifficultyName(m.header.Difficulty, m.header.IronMan), timestamp)
 }
 
 func slotLabel(path string) string {

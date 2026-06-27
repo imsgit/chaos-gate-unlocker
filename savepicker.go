@@ -5,7 +5,7 @@ import (
 	"strconv"
 	"strings"
 
-	"chaos-gate-unlocker/internal/saveinfo"
+	"chaos-gate-unlocker/internal/save"
 	"chaos-gate-unlocker/internal/ui/widgets/dragscroll"
 	"chaos-gate-unlocker/internal/ui/widgets/savelistitem"
 
@@ -55,7 +55,7 @@ func (l oneTwoLayout) Layout(o []fyne.CanvasObject, s fyne.Size) {
 	o[1].Move(fyne.NewPos(lw+pad, 0))
 }
 
-func showSavePicker(w fyne.Window, names []string, info func(name string) saveinfo.Info, onPick func(name string), onOpenDir func()) {
+func showSavePicker(w fyne.Window, names []string, info func(name string) save.Info, onPick func(name string), onOpenDir func()) {
 	slots := make([]string, 0)
 	bySlot := map[string][]string{}
 	for _, n := range names {
