@@ -30,7 +30,7 @@ jobs:
           mkdir -p fyne-cross/bin/windows-amd64
           go build -trimpath -ldflags "-s -w -H windowsgui -X main.version=$ver" \
             -o fyne-cross/bin/windows-amd64/ChaosGateUnlockerLauncher.exe ./cmd/launcher
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v6
         with:
           name: ChaosGateUnlockerLauncher
           path: fyne-cross/bin/windows-amd64/ChaosGateUnlockerLauncher.exe
@@ -55,7 +55,7 @@ jobs:
           mkdir -p fyne-cross/bin/linux-amd64
           go build -trimpath -ldflags "-s -w -X main.version=$ver" \
             -o fyne-cross/bin/linux-amd64/chaos-gate-unlocker-launcher ./cmd/launcher
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v6
         with:
           name: chaos-gate-unlocker-launcher
           path: fyne-cross/bin/linux-amd64/chaos-gate-unlocker-launcher

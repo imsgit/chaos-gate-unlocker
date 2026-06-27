@@ -19,6 +19,21 @@ replace_block() { OLD="$2" NEW="$3" perl -0777 -i -pe '
 
 FONT_SUBSET_RANGES="U+0000-00FF,U+0100-017F,U+0400-04FF,U+2010-2027,U+2030-205E,U+20A0-20BF,U+2116,U+2122,U+2026"
 
+round_dialogs() {
+	echo "=== Round dialog/popup corners (match listitem selection radius) ==="
+	local base=vendor/fyne.io/fyne/v2/dialog/base.go
+	swap "$base"
+	sub "$base" \
+		's|rect := canvas.NewRectangle(theme.Color(theme.ColorNameOverlayBackground))|&\n\trect.CornerRadius = theme.Size(theme.SizeNameInputRadius)|' \
+		"rect.CornerRadius"
+
+	local popup=vendor/fyne.io/fyne/v2/widget/popup.go
+	swap "$popup"
+	sub "$popup" \
+		's|background := canvas.NewRectangle(th.Color(theme.ColorNameOverlayBackground, v))|&\n\tbackground.CornerRadius = th.Size(theme.SizeNameInputRadius)|' \
+		"background.CornerRadius"
+}
+
 stub_fonts() {
 	local fontdir=vendor/fyne.io/fyne/v2/theme/font f
 	echo "=== Stub unused fonts (italic/bolditalic/mono) ==="
@@ -98,19 +113,4 @@ func parseMarkdown(content string) []RichTextSegment {
 	return []RichTextSegment{&TextSegment{Style: RichTextStyleParagraph, Text: content}}
 }
 GOEOF
-}
-
-round_dialogs() {
-	echo "=== Round dialog/popup corners (match listitem selection radius) ==="
-	local base=vendor/fyne.io/fyne/v2/dialog/base.go
-	swap "$base"
-	sub "$base" \
-		's|rect := canvas.NewRectangle(theme.Color(theme.ColorNameOverlayBackground))|&\n\trect.CornerRadius = theme.Size(theme.SizeNameInputRadius)|' \
-		"rect.CornerRadius"
-
-	local popup=vendor/fyne.io/fyne/v2/widget/popup.go
-	swap "$popup"
-	sub "$popup" \
-		's|background := canvas.NewRectangle(th.Color(theme.ColorNameOverlayBackground, v))|&\n\tbackground.CornerRadius = th.Size(theme.SizeNameInputRadius)|' \
-		"background.CornerRadius"
 }

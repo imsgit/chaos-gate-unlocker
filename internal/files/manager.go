@@ -172,6 +172,6 @@ func (m *Manager) Status() string {
 		m.header.SavedTimeStamp.Years, m.header.SavedTimeStamp.Months, m.header.SavedTimeStamp.Days,
 		m.header.SavedTimeStamp.Hours, m.header.SavedTimeStamp.Minutes, m.header.SavedTimeStamp.Seconds)
 
-	return fmt.Sprintf("%s | %s | Days: %d | Difficulty: %s | %s",
+	return fmt.Sprintf("%s   ·   %s   ·   Days: %d   ·   Difficulty: %s   ·   %s",
 		filepath.Base(m.filePath), m.header.SaveName, m.header.GameDays, difficulty, timestamp)
 }

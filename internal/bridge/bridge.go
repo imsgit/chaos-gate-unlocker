@@ -106,6 +106,7 @@ func openDir(dir string) error {
 	default:
 		cmd = exec.Command("xdg-open", dir)
 	}
+	hideConsole(cmd)
 	return cmd.Start()
 }
 

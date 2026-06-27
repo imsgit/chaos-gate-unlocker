@@ -149,10 +149,11 @@ func showSavePicker(w fyne.Window, names []string, info func(name string) savein
 
 func showSaveConfirm(w fyne.Window, do func()) {
 	msg := widget.NewLabelWithStyle(
-		"\n\n\nThis will override the existing save file. Are you sure?\nPlease make a backup if needed.",
+		"\n\n\nThis will override the existing save file. Are you sure?\nPlease make a backup if needed.\n\n\n",
 		fyne.TextAlignCenter, fyne.TextStyle{})
 
 	d := dialog.NewCustomWithoutButtons("Save confirmation", msg, w)
+	d.SetIcon(theme.QuestionIcon())
 	save := widget.NewButtonWithIcon("Save", theme.ConfirmIcon(), func() {
 		d.Hide()
 		do()
