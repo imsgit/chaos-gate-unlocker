@@ -105,12 +105,12 @@ round_dialogs() {
 	local base=vendor/fyne.io/fyne/v2/dialog/base.go
 	swap "$base"
 	sub "$base" \
-		's|rect := canvas.NewRectangle(theme.Color(theme.ColorNameOverlayBackground))|&\n\trect.CornerRadius = theme.Size(theme.SizeNameSelectionRadius)|' \
+		's|rect := canvas.NewRectangle(theme.Color(theme.ColorNameOverlayBackground))|&\n\trect.CornerRadius = theme.Size(theme.SizeNameInputRadius)|' \
 		"rect.CornerRadius"
 
 	local popup=vendor/fyne.io/fyne/v2/widget/popup.go
 	swap "$popup"
 	sub "$popup" \
-		's|background := canvas.NewRectangle(th.Color(theme.ColorNameOverlayBackground, v))|&\n\tbackground.CornerRadius = th.Size(theme.SizeNameSelectionRadius)|' \
+		's|background := canvas.NewRectangle(th.Color(theme.ColorNameOverlayBackground, v))|&\n\tbackground.CornerRadius = th.Size(theme.SizeNameInputRadius)|' \
 		"background.CornerRadius"
 }

@@ -14,6 +14,7 @@ import (
 	"syscall/js"
 
 	"chaos-gate-unlocker/internal/files"
+	"chaos-gate-unlocker/internal/saveinfo"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/dialog"
@@ -111,7 +112,9 @@ func bridgePick(w fyne.Window, tok string, onData func(name string, data []byte)
 		return
 	}
 	var list []struct {
-		Name string `json:"name"`
+		Name   string `json:"name"`
+		Title  string `json:"title"`
+		Detail string `json:"detail"`
 	}
 	if err := json.Unmarshal(body, &list); err != nil {
 		fail(err)
@@ -123,14 +126,16 @@ func bridgePick(w fyne.Window, tok string, onData func(name string, data []byte)
 	}
 
 	names := make([]string, len(list))
+	infoMap := make(map[string]saveinfo.Info, len(list))
 	for i, e := range list {
 		names[i] = e.Name
+		infoMap[e.Name] = saveinfo.Info{Title: e.Title, Detail: e.Detail}
 	}
-	fyne.Do(func() { showBridgePicker(w, tok, names, onData) })
+	fyne.Do(func() { showBridgePicker(w, tok, names, infoMap, onData) })
 }
 
-func showBridgePicker(w fyne.Window, tok string, names []string, onData func(name string, data []byte)) {
-	showSavePicker(w, names, func(name string) {
+func showBridgePicker(w fyne.Window, tok string, names []string, infoMap map[string]saveinfo.Info, onData func(name string, data []byte)) {
+	showSavePicker(w, names, func(name string) saveinfo.Info { return infoMap[name] }, func(name string) {
 		go func() {
 			data, err := bridgeGet(bridgeBase() + "/api/file?t=" + url.QueryEscape(tok) + "&name=" + url.QueryEscape(name))
 			if err != nil {
@@ -188,18 +193,7 @@ func confirmSave(w fyne.Window, do func()) {
 		do()
 		return
 	}
-
-	d := dialog.NewConfirm(
-		"Save confirmation",
-		"\n\n\nThis will override the existing save file. Are you sure?\nPlease make a backup if needed.",
-		func(r bool) {
-			if r {
-				do()
-			}
-		}, w)
-	d.SetConfirmText("Save")
-	d.SetDismissText("Cancel")
-	d.Show()
+	showSaveConfirm(w, do)
 }
 
 func download(name string, data []byte) {

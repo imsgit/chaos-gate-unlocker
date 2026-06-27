@@ -2,8 +2,10 @@ package main
 
 import (
 	"sort"
+	"strconv"
 	"strings"
 
+	"chaos-gate-unlocker/internal/saveinfo"
 	"chaos-gate-unlocker/internal/ui/widgets/dragscroll"
 	"chaos-gate-unlocker/internal/ui/widgets/savelistitem"
 
@@ -21,7 +23,31 @@ func slotOf(name string) string {
 	return ""
 }
 
-func showSavePicker(w fyne.Window, names []string, onPick func(name string), onOpenDir func()) {
+func slotLabel(s string) string {
+	if n, err := strconv.Atoi(s); err == nil {
+		return "Slot " + strconv.Itoa(n+1)
+	}
+	return s
+}
+
+// oneTwoLayout splits the width 1:2 (narrow slots, wide saves) with a padding gap.
+type oneTwoLayout struct{}
+
+func (oneTwoLayout) MinSize(o []fyne.CanvasObject) fyne.Size {
+	a, b := o[0].MinSize(), o[1].MinSize()
+	return fyne.NewSize(a.Width+b.Width+theme.Padding(), fyne.Max(a.Height, b.Height))
+}
+
+func (oneTwoLayout) Layout(o []fyne.CanvasObject, s fyne.Size) {
+	pad := theme.Padding()
+	lw := (s.Width - pad) / 3
+	o[0].Resize(fyne.NewSize(lw, s.Height))
+	o[0].Move(fyne.NewPos(0, 0))
+	o[1].Resize(fyne.NewSize(s.Width-pad-lw, s.Height))
+	o[1].Move(fyne.NewPos(lw+pad, 0))
+}
+
+func showSavePicker(w fyne.Window, names []string, info func(name string) saveinfo.Info, onPick func(name string), onOpenDir func()) {
 	slots := make([]string, 0)
 	bySlot := map[string][]string{}
 	for _, n := range names {
@@ -43,11 +69,22 @@ func showSavePicker(w fyne.Window, names []string, onPick func(name string), onO
 		savelistitem.New,
 		func(i widget.ListItemID, o fyne.CanvasObject) {
 			if item, ok := o.(*savelistitem.Widget); ok {
-				name := current[i]
-				if j := strings.IndexByte(name, '_'); j >= 0 {
-					name = name[j+1:]
+				file := current[i]
+				disp := file
+				if j := strings.IndexByte(disp, '_'); j >= 0 {
+					disp = disp[j+1:]
 				}
-				item.Bind(name)
+				if strings.HasPrefix(disp, "Slot") {
+					disp = "Save" + disp[len("Slot"):]
+				}
+				disp = strings.TrimSuffix(disp, ".gksave")
+
+				in := info(file)
+				title := in.Title
+				if title == "" {
+					title = disp
+				}
+				item.Bind(title, in.Detail)
 			}
 		},
 	)
@@ -58,20 +95,22 @@ func showSavePicker(w fyne.Window, names []string, onPick func(name string), onO
 		savelistitem.New,
 		func(i widget.ListItemID, o fyne.CanvasObject) {
 			if item, ok := o.(*savelistitem.Widget); ok {
-				item.Bind("Slot " + slots[i])
+				item.Bind(slotLabel(slots[i]), "")
 			}
 		},
 	)
 	slotsList.HideSeparators = true
 
-	body := container.NewGridWithColumns(2, dragscroll.List(slotsList), dragscroll.List(savesList))
+	body := container.New(oneTwoLayout{}, dragscroll.List(slotsList), dragscroll.List(savesList))
 
 	d := dialog.NewCustomWithoutButtons("Open game save file", body, w)
 	buttons := make([]fyne.CanvasObject, 0, 2)
-	if onOpenDir != nil {
-		buttons = append(buttons, widget.NewButtonWithIcon("Open folder", theme.FolderOpenIcon(), onOpenDir))
-	}
 	buttons = append(buttons, widget.NewButtonWithIcon("Cancel", theme.CancelIcon(), d.Hide))
+	if onOpenDir != nil {
+		browse := widget.NewButtonWithIcon("Browse", theme.FolderOpenIcon(), onOpenDir)
+		browse.Importance = widget.HighImportance
+		buttons = append(buttons, browse)
+	}
 	d.SetButtons(buttons)
 	d.Resize(fyne.NewSize(520, 440))
 
@@ -91,6 +130,23 @@ func showSavePicker(w fyne.Window, names []string, onPick func(name string), onO
 	if len(slots) > 0 {
 		slotsList.Select(0)
 	}
+
+	d.Show()
+}
+
+func showSaveConfirm(w fyne.Window, do func()) {
+	msg := widget.NewLabelWithStyle(
+		"\n\n\nThis will override the existing save file. Are you sure?\nPlease make a backup if needed.",
+		fyne.TextAlignCenter, fyne.TextStyle{})
+
+	d := dialog.NewCustomWithoutButtons("Save confirmation", msg, w)
+	save := widget.NewButtonWithIcon("Save", theme.ConfirmIcon(), func() {
+		d.Hide()
+		do()
+	})
+	save.Importance = widget.HighImportance
+	cancel := widget.NewButtonWithIcon("Cancel", theme.CancelIcon(), d.Hide)
+	d.SetButtons([]fyne.CanvasObject{cancel, save})
 
 	d.Show()
 }

@@ -13,6 +13,7 @@ import (
 	"strings"
 
 	"chaos-gate-unlocker/internal/files"
+	"chaos-gate-unlocker/internal/saveinfo"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/dialog"
@@ -38,7 +39,17 @@ func openFile(w fyne.Window, fm *files.Manager, onData func(name string, data []
 		return
 	}
 
-	showSavePicker(w, names, func(name string) {
+	infoCache := map[string]saveinfo.Info{}
+	info := func(name string) saveinfo.Info {
+		if v, ok := infoCache[name]; ok {
+			return v
+		}
+		v := saveinfo.ParseFile(filepath.Join(dir, name))
+		infoCache[name] = v
+		return v
+	}
+
+	showSavePicker(w, names, info, func(name string) {
 		path := filepath.Join(dir, name)
 		data, err := os.ReadFile(path)
 		if err != nil {
@@ -71,17 +82,7 @@ func saveFile(fm *files.Manager) error {
 func showTryOnline() bool { return true }
 
 func confirmSave(w fyne.Window, do func()) {
-	d := dialog.NewConfirm(
-		"Save confirmation",
-		"\n\n\nThis will override the existing save file. Are you sure?\nPlease make a backup if needed.",
-		func(r bool) {
-			if r {
-				do()
-			}
-		}, w)
-	d.SetConfirmText("Save")
-	d.SetDismissText("Cancel")
-	d.Show()
+	showSaveConfirm(w, do)
 }
 
 func validateScale() {

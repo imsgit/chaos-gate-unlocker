@@ -9,6 +9,8 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
+
+	"chaos-gate-unlocker/internal/saveinfo"
 )
 
 const maxSaveBytes = 64 << 20
@@ -42,6 +44,8 @@ func (h *Handler) resolve(name string) string {
 type entry struct {
 	Name    string `json:"name"`
 	ModTime int64  `json:"modTime"`
+	Title   string `json:"title"`
+	Detail  string `json:"detail"`
 }
 
 func (h *Handler) list(w http.ResponseWriter, r *http.Request) {
@@ -65,7 +69,11 @@ func (h *Handler) list(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			continue
 		}
-		out = append(out, entry{Name: e.Name(), ModTime: info.ModTime().Unix()})
+		si := saveinfo.ParseFile(filepath.Join(h.dir(), e.Name()))
+		out = append(out, entry{
+			Name: e.Name(), ModTime: info.ModTime().Unix(),
+			Title: si.Title, Detail: si.Detail,
+		})
 	}
 	sort.Slice(out, func(i, j int) bool { return out[i].ModTime > out[j].ModTime })
 
