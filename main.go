@@ -7,10 +7,10 @@ import (
 	"chaos-gate-unlocker/internal/ui/anim"
 	"chaos-gate-unlocker/internal/ui/widgets/dragscroll"
 	"chaos-gate-unlocker/internal/ui/widgets/dropdown"
-	"chaos-gate-unlocker/internal/ui/widgets/listitem"
 	"chaos-gate-unlocker/internal/ui/widgets/progress"
 	"chaos-gate-unlocker/internal/ui/widgets/toggle"
 	"chaos-gate-unlocker/internal/ui/widgets/tooltip"
+	"chaos-gate-unlocker/internal/ui/widgets/unitlistitem"
 
 	"context"
 	"fmt"
@@ -176,10 +176,10 @@ func main() {
 
 	unitsList := widget.NewListWithData(
 		unitsProvider,
-		listitem.New,
+		unitlistitem.New,
 		func(item binding.DataItem, o fyne.CanvasObject) {
 			val, ok := item.(binding.Untyped)
-			listItem, ok2 := o.(*listitem.Widget)
+			listItem, ok2 := o.(*unitlistitem.Widget)
 			if ok && ok2 {
 				v, _ := val.Get()
 				listItem.Bind(v)

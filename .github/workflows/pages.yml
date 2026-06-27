@@ -33,7 +33,7 @@ jobs:
         run: pipx install fonttools
 
       - name: Build and compress wasm bundle
-        run: bash build/build-wasm.sh
+        run: bash build/build_wasm.sh
 
       - name: Archive Pages artifact
         run: |

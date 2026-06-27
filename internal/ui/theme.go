@@ -17,8 +17,10 @@ func (Theme) Color(c fyne.ThemeColorName, v fyne.ThemeVariant) color.Color {
 		return color.NRGBA{R: 0xFF, G: 0xFF, B: 0xFF, A: 0xFF}
 	case theme.ColorNameBackground:
 		return color.NRGBA{R: 0x15, G: 0x15, B: 0x15, A: 0xFF}
-	case theme.ColorNameButton, theme.ColorNameShadow:
+	case theme.ColorNameButton:
 		return color.NRGBA{R: 0x26, G: 0x26, B: 0x26, A: 0xF5}
+	case theme.ColorNameShadow:
+		return color.NRGBA{R: 0x00, G: 0x00, B: 0x00, A: 0x66}
 	case theme.ColorNameInputBackground:
 		return color.NRGBA{R: 0x26, G: 0x26, B: 0x26, A: 0xAB}
 	case theme.ColorNameDisabledButton:

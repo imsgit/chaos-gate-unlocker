@@ -52,7 +52,7 @@ func main() {
 	go func() { log.Fatalf("serve: %v", http.Serve(ln, mux)) }()
 
 	appURL := "http://" + ln.Addr().String() + sitePath + "?t=" + token
-	boot := fmt.Sprintf(`<!doctype html><meta charset="utf-8"><style>html,body{margin:0;height:100%%;background:#151515}@media(prefers-color-scheme:light){html,body{background:#fff}}</style><script>location.replace(%q)</script>`, appURL)
+	boot := fmt.Sprintf(`<!doctype html><meta charset="utf-8"><style>html,body{margin:0;height:100%%;background:#151515}</style><script>location.replace(%q)</script>`, appURL)
 	openWindow("Chaos Gate Unlocker", boot)
 }
 

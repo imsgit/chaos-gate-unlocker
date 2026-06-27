@@ -1,4 +1,4 @@
-package listitem
+package unitlistitem
 
 import (
 	"chaos-gate-unlocker/internal/features"

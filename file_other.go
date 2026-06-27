@@ -3,45 +3,65 @@
 package main
 
 import (
-	"io"
+	"errors"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"regexp"
 	"runtime"
 	"strconv"
+	"strings"
 
 	"chaos-gate-unlocker/internal/files"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/dialog"
-	"fyne.io/fyne/v2/storage"
 )
 
 func openFile(w fyne.Window, fm *files.Manager, onData func(name string, data []byte)) {
-	fileDialog := dialog.NewFileOpen(func(rc fyne.URIReadCloser, _ error) {
-		if rc == nil {
-			return
-		}
+	dir := fm.GetCurrentPath()
 
-		name := rc.URI().Path()
-		data, err := io.ReadAll(rc)
-		rc.Close()
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		dialog.ShowError(err, w)
+		return
+	}
+
+	var names []string
+	for _, e := range entries {
+		if !e.IsDir() && strings.HasSuffix(e.Name(), ".gksave") {
+			names = append(names, e.Name())
+		}
+	}
+	if len(names) == 0 {
+		dialog.ShowError(errors.New("\n\n\nNo .gksave files found in the save folder.\n\n"), w)
+		return
+	}
+
+	showSavePicker(w, names, func(name string) {
+		path := filepath.Join(dir, name)
+		data, err := os.ReadFile(path)
 		if err != nil {
 			dialog.ShowError(err, w)
 			return
 		}
+		onData(path, data)
+	}, func() {
+		openSaveDir(dir)
+	})
+}
 
-		onData(name, data)
-	}, w)
-
-	l, _ := storage.ListerForURI(storage.NewFileURI(fm.GetCurrentPath()))
-	fileDialog.SetTitleText("Open game save file ../" + fm.SaveDir())
-	fileDialog.SetConfirmText("Open")
-	fileDialog.SetDismissText("Cancel")
-	fileDialog.SetLocation(l)
-	fileDialog.Resize(fyne.NewSize(800, 600))
-	fileDialog.SetFilter(storage.NewExtensionFileFilter([]string{".gksave"}))
-	fileDialog.Show()
+func openSaveDir(dir string) {
+	var cmd *exec.Cmd
+	switch runtime.GOOS {
+	case "windows":
+		cmd = exec.Command("explorer", dir)
+	case "darwin":
+		cmd = exec.Command("open", dir)
+	default:
+		cmd = exec.Command("xdg-open", dir)
+	}
+	_ = cmd.Start()
 }
 
 func saveFile(fm *files.Manager) error {

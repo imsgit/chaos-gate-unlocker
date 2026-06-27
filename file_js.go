@@ -17,7 +17,6 @@ import (
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/dialog"
-	"fyne.io/fyne/v2/widget"
 )
 
 var (
@@ -131,18 +130,7 @@ func bridgePick(w fyne.Window, tok string, onData func(name string, data []byte)
 }
 
 func showBridgePicker(w fyne.Window, tok string, names []string, onData func(name string, data []byte)) {
-	listw := widget.NewList(
-		func() int { return len(names) },
-		func() fyne.CanvasObject { return widget.NewLabel("") },
-		func(i widget.ListItemID, o fyne.CanvasObject) { o.(*widget.Label).SetText(names[i]) },
-	)
-
-	d := dialog.NewCustom("Open game save file", "Cancel", listw, w)
-	d.Resize(fyne.NewSize(420, 420))
-
-	listw.OnSelected = func(i widget.ListItemID) {
-		name := names[i]
-		d.Hide()
+	showSavePicker(w, names, func(name string) {
 		go func() {
 			data, err := bridgeGet(bridgeBase() + "/api/file?t=" + url.QueryEscape(tok) + "&name=" + url.QueryEscape(name))
 			if err != nil {
@@ -152,9 +140,7 @@ func showBridgePicker(w fyne.Window, tok string, names []string, onData func(nam
 			bridgeFile = name
 			fyne.Do(func() { onData(name, data) })
 		}()
-	}
-
-	d.Show()
+	}, nil)
 }
 
 func saveFile(fm *files.Manager) error {

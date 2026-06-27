@@ -16,9 +16,8 @@ tags=no_emoji
 trap restore_swaps EXIT
 stub_fonts
 slim_charset
-slim_filedialog
 slim_markdown
-slim_test_asserts
+round_dialogs
 
 for os in windows linux; do
 	echo "=== Build $os/amd64 ==="

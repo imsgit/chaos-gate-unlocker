@@ -49,24 +49,47 @@ func (p *siteProxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		upstream += "?" + enc
 	}
 
-	resp, err := p.client.Get(upstream)
-	if err == nil && resp.StatusCode == http.StatusOK {
-		body, readErr := io.ReadAll(resp.Body)
-		resp.Body.Close()
-		if readErr == nil {
-			ct := resp.Header.Get("Content-Type")
-			ce := resp.Header.Get("Content-Encoding")
-			p.store(r.URL.Path, body, ct, ce)
+	ct, ce, etag, lastMod, haveCache := p.loadMeta(r.URL.Path)
+
+	if req, err := http.NewRequest(http.MethodGet, upstream, nil); err == nil {
+		if haveCache {
+			if etag != "" {
+				req.Header.Set("If-None-Match", etag)
+			}
+			if lastMod != "" {
+				req.Header.Set("If-Modified-Since", lastMod)
+			}
+		}
+		if resp, derr := p.client.Do(req); derr == nil {
+			if resp.StatusCode == http.StatusOK {
+				body, readErr := io.ReadAll(resp.Body)
+				resp.Body.Close()
+				if readErr == nil {
+					nct := resp.Header.Get("Content-Type")
+					nce := resp.Header.Get("Content-Encoding")
+					p.store(r.URL.Path, body, nct, nce,
+						resp.Header.Get("ETag"), resp.Header.Get("Last-Modified"))
+					serveAsset(w, body, nct, nce)
+					return
+				}
+			} else {
+				notModified := resp.StatusCode == http.StatusNotModified
+				resp.Body.Close()
+				if notModified && haveCache {
+					if body, ok := p.loadBody(r.URL.Path); ok {
+						serveAsset(w, body, ct, ce)
+						return
+					}
+				}
+			}
+		}
+	}
+
+	if haveCache {
+		if body, ok := p.loadBody(r.URL.Path); ok {
 			serveAsset(w, body, ct, ce)
 			return
 		}
-	} else if resp != nil {
-		resp.Body.Close()
-	}
-
-	if body, ct, ce, ok := p.load(r.URL.Path); ok {
-		serveAsset(w, body, ct, ce)
-		return
 	}
 
 	http.Error(w, "site unavailable and not cached", http.StatusBadGateway)
@@ -94,7 +117,7 @@ func (p *siteProxy) cachePath(reqPath string) string {
 	return full
 }
 
-func (p *siteProxy) store(reqPath string, body []byte, contentType, contentEncoding string) {
+func (p *siteProxy) store(reqPath string, body []byte, contentType, contentEncoding, etag, lastModified string) {
 	dst := p.cachePath(reqPath)
 	if dst == "" {
 		return
@@ -103,19 +126,37 @@ func (p *siteProxy) store(reqPath string, body []byte, contentType, contentEncod
 		return
 	}
 	_ = os.WriteFile(dst, body, 0o644)
-	_ = os.WriteFile(dst+".hdr", []byte(contentType+"\n"+contentEncoding), 0o644)
+	hdr := strings.Join([]string{contentType, contentEncoding, etag, lastModified}, "\n")
+	_ = os.WriteFile(dst+".hdr", []byte(hdr), 0o644)
 }
 
-func (p *siteProxy) load(reqPath string) (body []byte, contentType, contentEncoding string, ok bool) {
+func (p *siteProxy) loadMeta(reqPath string) (contentType, contentEncoding, etag, lastModified string, ok bool) {
 	src := p.cachePath(reqPath)
 	if src == "" {
-		return nil, "", "", false
+		return "", "", "", "", false
+	}
+	if _, err := os.Stat(src); err != nil {
+		return "", "", "", "", false
+	}
+	hdr, err := os.ReadFile(src + ".hdr")
+	if err != nil {
+		return "", "", "", "", false
+	}
+	f := strings.SplitN(string(hdr), "\n", 4)
+	for len(f) < 4 {
+		f = append(f, "")
+	}
+	return f[0], f[1], f[2], f[3], true
+}
+
+func (p *siteProxy) loadBody(reqPath string) (body []byte, ok bool) {
+	src := p.cachePath(reqPath)
+	if src == "" {
+		return nil, false
 	}
 	body, err := os.ReadFile(src)
 	if err != nil {
-		return nil, "", "", false
+		return nil, false
 	}
-	hdr, _ := os.ReadFile(src + ".hdr")
-	ct, ce, _ := strings.Cut(string(hdr), "\n")
-	return body, ct, ce, true
+	return body, true
 }
