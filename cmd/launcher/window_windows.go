@@ -50,6 +50,13 @@ static void cg_strip_icon(void *hwnd) {
 	SendMessageW(h, WM_SETICON, ICON_BIG, 0);
 	SetWindowLongPtrW(h, GWL_EXSTYLE, GetWindowLongPtrW(h, GWL_EXSTYLE) | WS_EX_DLGMODALFRAME);
 	SetWindowPos(h, NULL, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_FRAMECHANGED);
+
+	RECT rc;
+	if (GetWindowRect(h, &rc)) {
+		int ww = rc.right - rc.left, wh = rc.bottom - rc.top;
+		int sw = GetSystemMetrics(SM_CXSCREEN), sh = GetSystemMetrics(SM_CYSCREEN);
+		SetWindowPos(h, NULL, (sw - ww) / 2, (sh - wh) / 2, 0, 0, SWP_NOSIZE | SWP_NOZORDER);
+	}
 }
 */
 import "C"

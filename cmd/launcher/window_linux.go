@@ -11,6 +11,7 @@ static void paint_dark(void *win) {
 	if (!win) {
 		return;
 	}
+	gtk_window_set_position(GTK_WINDOW(win), GTK_WIN_POS_CENTER);
 	GtkWidget *child = gtk_bin_get_child(GTK_BIN(win));
 	if (child && WEBKIT_IS_WEB_VIEW(child)) {
 		const GdkRGBA bg = {0.082, 0.082, 0.082, 1.0};
