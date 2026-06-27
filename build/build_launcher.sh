@@ -19,10 +19,18 @@ build_windows() {
 	local out=fyne-cross/bin/windows-amd64/ChaosGateUnlockerLauncher.exe
 	echo "=== launcher v$ver → $out (windows/amd64) ==="
 	mkdir -p "$(dirname "$out")"
-	CGO_ENABLED=1 \
-		CGO_CFLAGS="-I$PWD/build/winsdk" \
-		CGO_CXXFLAGS="-I$PWD/build/winsdk" \
-		go build -trimpath \
+
+	local env=(CGO_ENABLED=1 CGO_CFLAGS="-I$PWD/build/winsdk" CGO_CXXFLAGS="-I$PWD/build/winsdk")
+	case "$(uname -s)" in
+	MINGW* | MSYS* | CYGWIN* | Windows_NT) ;;
+	*)
+		command -v x86_64-w64-mingw32-gcc >/dev/null ||
+			{ echo "[!] x86_64-w64-mingw32-gcc not found (needed to cross-build the Windows launcher)" >&2; exit 1; }
+		env+=(GOOS=windows GOARCH=amd64 CC=x86_64-w64-mingw32-gcc CXX=x86_64-w64-mingw32-g++)
+		;;
+	esac
+
+	env "${env[@]}" go build -trimpath \
 		-ldflags "-s -w -H windowsgui -X main.version=$ver" \
 		-o "$out" ./cmd/launcher
 	ls -lh "$out"

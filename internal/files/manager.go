@@ -158,6 +158,16 @@ func (m *Manager) Status() string {
 		ts.Years, ts.Months, ts.Days, ts.Hours, ts.Minutes, ts.Seconds)
 
 	return fmt.Sprintf("%s   ·   %s   ·   Day %d   ·   %s   ·   %s",
-		filepath.Base(m.filePath), strings.ToUpper(m.header.SaveName), m.header.GameDays,
+		slotLabel(m.filePath), strings.ToUpper(m.header.SaveName), m.header.GameDays,
 		saveinfo.DifficultyName(m.header.Difficulty, m.header.IronMan), timestamp)
+}
+
+func slotLabel(path string) string {
+	base := strings.TrimSuffix(filepath.Base(path), ".gksave")
+	if i := strings.IndexByte(base, '_'); i >= 0 {
+		if n, err := strconv.Atoi(base[:i]); err == nil {
+			return "SLOT " + strconv.Itoa(n+1)
+		}
+	}
+	return strings.ToUpper(base)
 }

@@ -1,4 +1,4 @@
-name: Deploy WASM to Pages
+name: Build (wasm + launchers)
 
 on:
   push:
@@ -11,11 +11,11 @@ permissions:
   id-token: write
 
 concurrency:
-  group: pages
+  group: build
   cancel-in-progress: true
 
 jobs:
-  build:
+  wasm:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
@@ -50,7 +50,7 @@ jobs:
           if-no-files-found: error
 
   deploy:
-    needs: build
+    needs: wasm
     runs-on: ubuntu-latest
     environment:
       name: github-pages
@@ -58,3 +58,33 @@ jobs:
     steps:
       - id: deployment
         uses: actions/deploy-pages@v5
+
+  launchers:
+    runs-on: ubuntu-latest
+    env:
+      CGO_ENABLED: "1"
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+          cache: false
+
+      - name: Install toolchains (WebKitGTK + mingw-w64)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libgtk-3-dev libwebkit2gtk-4.0-dev \
+            gcc-mingw-w64-x86-64 g++-mingw-w64-x86-64
+
+      - name: Build launchers (linux + windows)
+        run: bash build/build_launcher.sh linux windows
+
+      - uses: actions/upload-artifact@v6
+        with:
+          name: ChaosGateUnlockerLauncher-windows
+          path: fyne-cross/bin/windows-amd64/ChaosGateUnlockerLauncher.exe
+
+      - uses: actions/upload-artifact@v6
+        with:
+          name: chaos-gate-unlocker-launcher-linux
+          path: fyne-cross/bin/linux-amd64/chaos-gate-unlocker-launcher

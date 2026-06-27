@@ -25,9 +25,9 @@ func slotOf(name string) string {
 
 func slotLabel(s string) string {
 	if n, err := strconv.Atoi(s); err == nil {
-		return "Slot " + strconv.Itoa(n+1)
+		return "SLOT " + strconv.Itoa(n+1)
 	}
-	return s
+	return strings.ToUpper(s)
 }
 
 type oneTwoLayout struct {

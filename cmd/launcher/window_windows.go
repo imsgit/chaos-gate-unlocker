@@ -48,10 +48,21 @@ static void cg_hide(void *hwnd) {
 }
 
 static void cg_show(void *hwnd) {
-	if (hwnd) {
-		ShowWindow((HWND)hwnd, SW_SHOW);
-		SetForegroundWindow((HWND)hwnd);
-		SetFocus((HWND)hwnd);
+	if (!hwnd) {
+		return;
+	}
+	HWND h = (HWND)hwnd;
+	ShowWindow(h, SW_SHOW);
+
+	HWND fg = GetForegroundWindow();
+	DWORD fgThread = GetWindowThreadProcessId(fg, NULL);
+	DWORD curThread = GetCurrentThreadId();
+	BOOL attached = (fg && fgThread != curThread && AttachThreadInput(curThread, fgThread, TRUE));
+	BringWindowToTop(h);
+	SetForegroundWindow(h);
+	SetFocus(h);
+	if (attached) {
+		AttachThreadInput(curThread, fgThread, FALSE);
 	}
 }
 
@@ -90,6 +101,7 @@ import "C"
 
 import (
 	"reflect"
+	"sync"
 	"unsafe"
 
 	webview "github.com/webview/webview_go"
@@ -109,7 +121,14 @@ func openWindow(title, html string) {
 	C.cg_set_app_icon(w.Window())
 	C.cg_center(w.Window())
 
+	var once sync.Once
+	_ = w.Bind("__cgReady", func() {
+		once.Do(func() { C.cg_show(w.Window()) })
+	})
+	w.Init(`(function(){function r(){window.__cgReady&&window.__cgReady()}` +
+		`if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',r);else r();` +
+		`setTimeout(r,3000)})()`)
+
 	w.SetHtml(html)
-	C.cg_show(w.Window())
 	w.Run()
 }

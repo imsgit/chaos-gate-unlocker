@@ -7,7 +7,7 @@ package main
 #include <gtk/gtk.h>
 #include <webkit2/webkit2.h>
 
-static void paint_dark(void *win) {
+static void paint_dark(void *win, int ww, int wh) {
 	if (!win) {
 		return;
 	}
@@ -34,8 +34,6 @@ static void paint_dark(void *win) {
 	}
 	GdkRectangle geo;
 	gdk_monitor_get_geometry(mon, &geo);
-	int ww = 0, wh = 0;
-	gtk_window_get_size(window, &ww, &wh);
 	gtk_window_move(window, geo.x + (geo.width - ww) / 2, geo.y + (geo.height - wh) / 2);
 }
 */
@@ -48,7 +46,7 @@ func openWindow(title, html string) {
 	defer w.Destroy()
 	w.SetTitle(title)
 	w.SetSize(800, 600, webview.HintNone)
-	C.paint_dark(w.Window())
+	C.paint_dark(w.Window(), 800, 600)
 	w.SetHtml(html)
 	w.Run()
 }
