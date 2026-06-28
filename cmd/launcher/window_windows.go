@@ -66,7 +66,7 @@ import (
 	webview "github.com/webview/webview_go"
 )
 
-func openWindow(title, html string) {
+func openWindow(title, url string) {
 	w := webview.New(false)
 	defer w.Destroy()
 
@@ -85,6 +85,6 @@ func openWindow(title, html string) {
 	w.Init(`(function(){function r(){window.__cgReady&&window.__cgReady()}` +
 		`requestAnimationFrame(function(){requestAnimationFrame(r)});setTimeout(r,3000)})()`)
 
-	w.SetHtml(html)
+	w.Navigate(url)
 	w.Run()
 }

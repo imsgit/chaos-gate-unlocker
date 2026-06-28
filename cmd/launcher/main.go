@@ -45,15 +45,20 @@ func main() {
 		log.Fatalf("proxy: %v", err)
 	}
 
+	appURL := "http://" + ln.Addr().String() + sitePath + "?t=" + token
+	boot := fmt.Sprintf(`<!doctype html><meta charset="utf-8"><style>html,body{margin:0;height:100%%;background:#151515}</style><script>requestAnimationFrame(function(){requestAnimationFrame(function(){location.replace(%q)})})</script>`, appURL)
+
 	mux := http.NewServeMux()
 	bridge.New(token, func() string { return dir }).Register(mux)
+	mux.HandleFunc("/__launch", func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "text/html; charset=utf-8")
+		_, _ = w.Write([]byte(boot))
+	})
 	mux.Handle("/", proxy)
 
 	go func() { log.Fatalf("serve: %v", http.Serve(ln, mux)) }()
 
-	appURL := "http://" + ln.Addr().String() + sitePath + "?t=" + token
-	boot := fmt.Sprintf(`<!doctype html><meta charset="utf-8"><style>html,body{margin:0;height:100%%;background:#151515}</style><script>requestAnimationFrame(function(){requestAnimationFrame(function(){location.replace(%q)})})</script>`, appURL)
-	openWindow("Chaos Gate Unlocker", boot)
+	openWindow("Chaos Gate Unlocker", "http://"+ln.Addr().String()+"/__launch")
 }
 
 func newToken() string {

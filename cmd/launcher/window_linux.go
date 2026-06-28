@@ -39,12 +39,12 @@ import "C"
 
 import webview "github.com/webview/webview_go"
 
-func openWindow(title, html string) {
+func openWindow(title, url string) {
 	w := webview.New(false)
 	defer w.Destroy()
 	w.SetTitle(title)
 	w.SetSize(800, 600, webview.HintNone)
 	C.paint_dark(w.Window(), 800, 600)
-	w.SetHtml(html)
+	w.Navigate(url)
 	w.Run()
 }
