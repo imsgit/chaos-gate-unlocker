@@ -47,7 +47,8 @@ stub_fonts() {
 		for f in NotoSans-Regular.ttf NotoSans-Bold.ttf; do
 			swap "$fontdir/$f"
 			pyftsubset "${_bak[$fontdir/$f]}" --output-file="$fontdir/$f" \
-				--unicodes="$FONT_SUBSET_RANGES" --no-hinting --desubroutinize
+				--unicodes="$FONT_SUBSET_RANGES" --no-hinting --desubroutinize \
+				--drop-tables+=TTFA
 		done
 	else
 		echo "[!] pyftsubset not found — skipping subset (install: pip install fonttools)"
