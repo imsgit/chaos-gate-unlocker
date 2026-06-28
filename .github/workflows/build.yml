@@ -73,7 +73,7 @@ jobs:
       - name: Install toolchains (WebKitGTK + mingw-w64)
         run: |
           sudo apt-get update
-          sudo apt-get install -y libgtk-3-dev libwebkit2gtk-4.0-dev \
+          sudo apt-get install -y libgtk-3-dev libwebkit2gtk-4.1-dev \
             gcc-mingw-w64-x86-64 g++-mingw-w64-x86-64
 
       - name: Build launchers (linux + windows)

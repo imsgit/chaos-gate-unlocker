@@ -88,7 +88,7 @@ hide_webview_window() {
 	gone "$wv" "ShowWindow(m_window, SW_SHOW)"
 }
 
-use_webkit_4_1() {
+link_webkit() {
 	local f=vendor/github.com/webview/webview_go/webview.go
 	echo "=== Link launcher against webkit2gtk-4.1 (libsoup3) instead of 4.0 ==="
 	swap "$f"
