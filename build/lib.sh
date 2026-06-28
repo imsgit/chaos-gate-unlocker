@@ -88,6 +88,14 @@ hide_webview_window() {
 	gone "$wv" "ShowWindow(m_window, SW_SHOW)"
 }
 
+use_webkit_4_1() {
+	local f=vendor/github.com/webview/webview_go/webview.go
+	echo "=== Link launcher against webkit2gtk-4.1 (libsoup3) instead of 4.0 ==="
+	swap "$f"
+	sed -i 's/webkit2gtk-4\.0/webkit2gtk-4.1/' "$f"
+	gone "$f" "webkit2gtk-4.0"
+}
+
 slim_charset() {
 	local cf=vendor/golang.org/x/net/html/charset/charset.go
 	echo "=== Slim SVG charset reader (UTF-8 only; drops x/text CJK tables) ==="

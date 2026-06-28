@@ -13,6 +13,7 @@ hide_webview_window
 build_linux() {
 	local out=fyne-cross/bin/linux-amd64/chaos-gate-unlocker-launcher
 	echo "=== launcher v$ver → $out (linux/amd64) ==="
+	use_webkit_4_1
 	mkdir -p "$(dirname "$out")"
 	CGO_ENABLED=1 go build -trimpath \
 		-ldflags "-s -w -X main.version=$ver" \
