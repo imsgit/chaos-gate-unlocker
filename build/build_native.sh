@@ -23,7 +23,9 @@ round_dialogs
 
 for os in windows linux; do
 	echo "=== Build $os/amd64 ==="
-	fyne-cross "$os" -arch=amd64 -app-build "$build" -tags "$tags"
+	name_args=()
+	[ "$os" = windows ] && name_args=(-name ChaosGateUnlocker)
+	fyne-cross "$os" -arch=amd64 -app-build "$build" -tags "$tags" "${name_args[@]}"
 done
 write_build "$build"
 

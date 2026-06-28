@@ -115,7 +115,7 @@ func showSavePicker(w fyne.Window, names []string, info func(name string) save.I
 		dragscroll.List(slotsList), dragscroll.List(savesList),
 	)
 
-	d := dialog.NewCustomWithoutButtons("Open game save", body, w)
+	d := dialog.NewCustomWithoutButtons("Save selection", body, w)
 	buttons := make([]fyne.CanvasObject, 0, 2)
 	buttons = append(buttons, widget.NewButtonWithIcon("Cancel", theme.CancelIcon(), d.Hide))
 	if onOpenDir != nil {
