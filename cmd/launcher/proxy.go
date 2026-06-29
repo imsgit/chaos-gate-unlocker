@@ -1,15 +1,19 @@
 package main
 
 import (
+	"bytes"
 	"io"
 	"net"
 	"net/http"
 	"net/url"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 )
+
+const cacheMagic = "cgu1"
 
 type asset struct {
 	body            []byte
@@ -122,6 +126,7 @@ func serveAsset(w http.ResponseWriter, a asset) {
 	if a.contentEncoding != "" {
 		w.Header().Set("Content-Encoding", a.contentEncoding)
 	}
+	w.Header().Set("Content-Length", strconv.Itoa(len(a.body)))
 	w.Write(a.body)
 }
 
@@ -145,9 +150,29 @@ func (p *siteProxy) store(reqPath string, a asset) {
 	if err := os.MkdirAll(filepath.Dir(dst), 0o755); err != nil {
 		return
 	}
-	_ = os.WriteFile(dst, a.body, 0o644)
-	hdr := strings.Join([]string{a.contentType, a.contentEncoding, a.etag, a.lastModified}, "\n")
-	_ = os.WriteFile(dst+".hdr", []byte(hdr), 0o644)
+	header := strings.Join([]string{cacheMagic, a.contentType, a.contentEncoding, a.etag, a.lastModified}, "\n") + "\n"
+	_ = writeFileAtomic(dst, []byte(header), a.body)
+}
+
+func writeFileAtomic(path string, parts ...[]byte) error {
+	tmp, err := os.CreateTemp(filepath.Dir(path), filepath.Base(path)+".*.tmp")
+	if err != nil {
+		return err
+	}
+	name := tmp.Name()
+	for _, part := range parts {
+		if _, err = tmp.Write(part); err != nil {
+			break
+		}
+	}
+	if cerr := tmp.Close(); err == nil {
+		err = cerr
+	}
+	if err != nil {
+		os.Remove(name)
+		return err
+	}
+	return os.Rename(name, path)
 }
 
 func (p *siteProxy) load(reqPath string) (asset, bool) {
@@ -155,17 +180,19 @@ func (p *siteProxy) load(reqPath string) (asset, bool) {
 	if src == "" {
 		return asset{}, false
 	}
-	body, err := os.ReadFile(src)
+	data, err := os.ReadFile(src)
 	if err != nil {
 		return asset{}, false
 	}
-	hdr, err := os.ReadFile(src + ".hdr")
-	if err != nil {
+	f := bytes.SplitN(data, []byte("\n"), 6)
+	if len(f) < 6 || string(f[0]) != cacheMagic {
 		return asset{}, false
 	}
-	f := strings.SplitN(string(hdr), "\n", 4)
-	for len(f) < 4 {
-		f = append(f, "")
-	}
-	return asset{body: body, contentType: f[0], contentEncoding: f[1], etag: f[2], lastModified: f[3]}, true
+	return asset{
+		contentType:     string(f[1]),
+		contentEncoding: string(f[2]),
+		etag:            string(f[3]),
+		lastModified:    string(f[4]),
+		body:            f[5],
+	}, true
 }
