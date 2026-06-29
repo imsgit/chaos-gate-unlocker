@@ -34,10 +34,37 @@ static void paint_dark(void *win, int ww, int wh) {
 	gdk_monitor_get_geometry(mon, &geo);
 	gtk_window_move(window, geo.x + (geo.width - ww) / 2, geo.y + (geo.height - wh) / 2);
 }
+
+static void set_app_icon(void *win, const unsigned char *data, int len) {
+	if (!win || !data || len <= 0) {
+		return;
+	}
+	GdkPixbufLoader *loader = gdk_pixbuf_loader_new();
+	GError *err = NULL;
+	if (gdk_pixbuf_loader_write(loader, data, (gsize)len, &err) &&
+		gdk_pixbuf_loader_close(loader, &err)) {
+		GdkPixbuf *pb = gdk_pixbuf_loader_get_pixbuf(loader);
+		if (pb) {
+			gtk_window_set_icon(GTK_WINDOW(win), pb);
+		}
+	}
+	if (err) {
+		g_error_free(err);
+	}
+	g_object_unref(loader);
+}
 */
 import "C"
 
-import webview "github.com/webview/webview_go"
+import (
+	_ "embed"
+	"unsafe"
+
+	webview "github.com/webview/webview_go"
+)
+
+//go:embed icon.png
+var iconPNG []byte
 
 func openWindow(title, url string) {
 	w := webview.New(false)
@@ -45,6 +72,9 @@ func openWindow(title, url string) {
 	w.SetTitle(title)
 	w.SetSize(800, 600, webview.HintNone)
 	C.paint_dark(w.Window(), 800, 600)
+	if len(iconPNG) > 0 {
+		C.set_app_icon(w.Window(), (*C.uchar)(unsafe.Pointer(&iconPNG[0])), C.int(len(iconPNG)))
+	}
 	w.Navigate(url)
 	w.Run()
 }
