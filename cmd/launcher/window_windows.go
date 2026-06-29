@@ -39,48 +39,17 @@ static void cg_set_app_icon(void *hwnd) {
 	}
 }
 
-static void cg_fit_to_native(void *hwnd, int baseW, int baseH) {
+static void cg_center(void *hwnd) {
 	if (!hwnd) {
 		return;
 	}
 	HWND h = (HWND)hwnd;
-	HMODULE user32 = GetModuleHandleW(L"user32.dll");
-
-	UINT dpi = 96;
-	typedef UINT(WINAPI * GetDpiForWindowFn)(HWND);
-	GetDpiForWindowFn getDpi = user32 ? (GetDpiForWindowFn)GetProcAddress(user32, "GetDpiForWindow") : NULL;
-	if (getDpi) {
-		UINT d = getDpi(h);
-		if (d) {
-			dpi = d;
-		}
+	RECT rc;
+	if (GetWindowRect(h, &rc)) {
+		int ww = rc.right - rc.left, wh = rc.bottom - rc.top;
+		int sw = GetSystemMetrics(SM_CXSCREEN), sh = GetSystemMetrics(SM_CYSCREEN);
+		SetWindowPos(h, NULL, (sw - ww) / 2, (sh - wh) / 2, 0, 0, SWP_NOSIZE | SWP_NOZORDER);
 	}
-
-	int scaleTenths = (int)((dpi * 10 + 48) / 96);
-	if (scaleTenths < 10) {
-		scaleTenths = 10;
-	}
-
-	RECT r;
-	r.left = 0;
-	r.top = 0;
-	r.right = MulDiv(baseW, scaleTenths, 10);
-	r.bottom = MulDiv(baseH, scaleTenths, 10);
-
-	DWORD style = (DWORD)GetWindowLongPtrW(h, GWL_STYLE);
-	DWORD exStyle = (DWORD)GetWindowLongPtrW(h, GWL_EXSTYLE);
-	typedef BOOL(WINAPI * AdjForDpiFn)(LPRECT, DWORD, BOOL, DWORD, UINT);
-	AdjForDpiFn adj = user32 ? (AdjForDpiFn)GetProcAddress(user32, "AdjustWindowRectExForDpi") : NULL;
-	if (adj) {
-		adj(&r, style, FALSE, exStyle, dpi);
-	} else {
-		AdjustWindowRectEx(&r, style, FALSE, exStyle);
-	}
-
-	int ww = r.right - r.left, wh = r.bottom - r.top;
-	int sw = GetSystemMetrics(SM_CXSCREEN), sh = GetSystemMetrics(SM_CYSCREEN);
-	SetWindowPos(h, NULL, (sw - ww) / 2, (sh - wh) / 2, ww, wh,
-		SWP_NOZORDER | SWP_NOACTIVATE);
 }
 */
 import "C"
@@ -99,13 +68,11 @@ func openWindow(title, url string) {
 	w.SetSize(800, 600, webview.HintNone)
 
 	C.cg_set_app_icon(w.Window())
+	C.cg_center(w.Window())
 
 	var once sync.Once
 	_ = w.Bind("__cgReady", func() {
-		once.Do(func() {
-			C.cg_fit_to_native(w.Window(), 800, 600)
-			C.cg_show(w.Window())
-		})
+		once.Do(func() { C.cg_show(w.Window()) })
 	})
 
 	w.Init(`(function(){function r(){window.__cgReady&&window.__cgReady()}` +

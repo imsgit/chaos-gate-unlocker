@@ -87,6 +87,19 @@ hide_webview_window() {
       SetFocus(m_window);
     }'
 	gone "$wv" "ShowWindow(m_window, SW_SHOW)"
+
+	echo "=== Close() the WebView2 controller on teardown (stop msedgewebview2 lingering) ==="
+	replace_block "$wv" \
+		'    if (m_controller) {
+      m_controller->Release();
+      m_controller = nullptr;
+    }' \
+		'    if (m_controller) {
+      m_controller->Close();
+      m_controller->Release();
+      m_controller = nullptr;
+    }'
+	have "$wv" "m_controller->Close()"
 }
 
 link_webkit() {
