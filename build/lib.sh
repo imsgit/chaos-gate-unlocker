@@ -75,7 +75,7 @@ GOEOF
 
 hide_webview_window() {
 	local wv=vendor/github.com/webview/webview_go/libs/webview/include/webview.h
-	echo "=== Cloak owned webview window during New() (kills white flash, keeps DPI-correct realize) ==="
+	echo "=== Keep owned webview window hidden during New() (kills Windows white flash) ==="
 	swap "$wv"
 	replace_block "$wv" \
 		'    if (m_owns_window) {
@@ -84,20 +84,9 @@ hide_webview_window() {
       SetFocus(m_window);
     }' \
 		'    if (m_owns_window) {
-      HMODULE cg_dwm = LoadLibraryW(L"dwmapi.dll");
-      if (cg_dwm) {
-        typedef HRESULT(WINAPI * cg_dwmsa_t)(HWND, DWORD, LPCVOID, DWORD);
-        cg_dwmsa_t cg_set = (cg_dwmsa_t)GetProcAddress(cg_dwm, "DwmSetWindowAttribute");
-        if (cg_set) {
-          BOOL cg_cloak = TRUE;
-          cg_set(m_window, 13 /*DWMWA_CLOAK*/, &cg_cloak, sizeof(cg_cloak));
-        }
-      }
-      ShowWindow(m_window, SW_SHOW);
-      UpdateWindow(m_window);
       SetFocus(m_window);
     }'
-	have "$wv" "DwmSetWindowAttribute"
+	gone "$wv" "ShowWindow(m_window, SW_SHOW)"
 }
 
 link_webkit() {

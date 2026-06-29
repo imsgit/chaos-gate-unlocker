@@ -4,23 +4,56 @@ package main
 #cgo windows LDFLAGS: -luser32
 #include <windows.h>
 
+static void cg_enable_dpi_awareness(void) {
+	HMODULE u32 = GetModuleHandleW(L"user32.dll");
+	if (u32) {
+		typedef BOOL(WINAPI * SetProcessDpiAwarenessContext_t)(HANDLE);
+		SetProcessDpiAwarenessContext_t spdac =
+			(SetProcessDpiAwarenessContext_t)GetProcAddress(u32, "SetProcessDpiAwarenessContext");
+		if (spdac) {
+			if (spdac((HANDLE)-4)) {
+				return;
+			}
+			if (GetLastError() == ERROR_ACCESS_DENIED) {
+				return;
+			}
+			if (spdac((HANDLE)-3)) {
+				return;
+			}
+		}
+	}
+	HMODULE shcore = LoadLibraryW(L"shcore.dll");
+	if (shcore) {
+		typedef HRESULT(WINAPI * SetProcessDpiAwareness_t)(int);
+		SetProcessDpiAwareness_t spda =
+			(SetProcessDpiAwareness_t)GetProcAddress(shcore, "SetProcessDpiAwareness");
+		if (spda) {
+			HRESULT hr = spda(2);
+			if (hr == S_OK || hr == E_ACCESSDENIED) {
+				return;
+			}
+		}
+	}
+	if (u32) {
+		typedef BOOL(WINAPI * SetProcessDPIAware_t)(void);
+		SetProcessDPIAware_t spda = (SetProcessDPIAware_t)GetProcAddress(u32, "SetProcessDPIAware");
+		if (spda) {
+			spda();
+		}
+	}
+}
+
+static void cg_hide(void *hwnd) {
+	if (hwnd) {
+		ShowWindow((HWND)hwnd, SW_HIDE);
+	}
+}
+
 static void cg_show(void *hwnd) {
 	if (!hwnd) {
 		return;
 	}
 	HWND h = (HWND)hwnd;
-
-	HMODULE dwm = LoadLibraryW(L"dwmapi.dll");
-	if (dwm) {
-		typedef HRESULT(WINAPI * DwmSetWindowAttribute_t)(HWND, DWORD, LPCVOID, DWORD);
-		DwmSetWindowAttribute_t set =
-			(DwmSetWindowAttribute_t)GetProcAddress(dwm, "DwmSetWindowAttribute");
-		if (set) {
-			BOOL cloak = FALSE;
-			set(h, 13, &cloak, sizeof(cloak));
-		}
-	}
-
 	ShowWindow(h, SW_SHOW);
 
 	HWND fg = GetForegroundWindow();
@@ -51,6 +84,37 @@ static void cg_set_app_icon(void *hwnd) {
 	}
 }
 
+static void cg_resize_client(void *hwnd, int w, int h) {
+	if (!hwnd) {
+		return;
+	}
+	HWND wnd = (HWND)hwnd;
+	RECT wr, cr;
+	if (!GetWindowRect(wnd, &wr) || !GetClientRect(wnd, &cr)) {
+		return;
+	}
+	int frameW = (wr.right - wr.left) - (cr.right - cr.left);
+	int frameH = (wr.bottom - wr.top) - (cr.bottom - cr.top);
+
+	UINT dpi = 96;
+	HMODULE u32 = GetModuleHandleW(L"user32.dll");
+	if (u32) {
+		typedef UINT(WINAPI * GetDpiForWindow_t)(HWND);
+		GetDpiForWindow_t getDpi = (GetDpiForWindow_t)GetProcAddress(u32, "GetDpiForWindow");
+		if (getDpi) {
+			UINT d = getDpi(wnd);
+			if (d) {
+				dpi = d;
+			}
+		}
+	}
+	int cw = MulDiv(w, dpi, 96);
+	int ch = MulDiv(h, dpi, 96);
+
+	SetWindowPos(wnd, NULL, 0, 0, cw + frameW, ch + frameH,
+		SWP_NOMOVE | SWP_NOZORDER | SWP_NOACTIVATE | SWP_FRAMECHANGED);
+}
+
 static void cg_center(void *hwnd) {
 	if (!hwnd) {
 		return;
@@ -73,13 +137,17 @@ import (
 )
 
 func openWindow(title, url string) {
+	C.cg_enable_dpi_awareness()
+
 	w := webview.New(false)
 	defer w.Destroy()
 
 	w.SetTitle(title)
 	w.SetSize(800, 600, webview.HintNone)
 
+	C.cg_hide(w.Window())
 	C.cg_set_app_icon(w.Window())
+	C.cg_resize_client(w.Window(), 800, 600)
 	C.cg_center(w.Window())
 
 	var once sync.Once
