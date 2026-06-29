@@ -63,13 +63,10 @@ import (
 func openWindow(title, url string) {
 	w := webview.New(false)
 	defer w.Destroy()
-
 	w.SetTitle(title)
 	w.SetSize(800, 600, webview.HintNone)
-
 	C.cg_set_app_icon(w.Window())
 	C.cg_center(w.Window())
-
 	var once sync.Once
 	_ = w.Bind("__cgReady", func() {
 		once.Do(func() { C.cg_show(w.Window()) })
