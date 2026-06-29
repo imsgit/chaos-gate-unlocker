@@ -45,37 +45,6 @@ static void cg_set_app_icon(void *hwnd) {
 	}
 }
 
-static void cg_resize_client(void *hwnd, int w, int h) {
-	if (!hwnd) {
-		return;
-	}
-	HWND wnd = (HWND)hwnd;
-	RECT wr, cr;
-	if (!GetWindowRect(wnd, &wr) || !GetClientRect(wnd, &cr)) {
-		return;
-	}
-	int frameW = (wr.right - wr.left) - (cr.right - cr.left);
-	int frameH = (wr.bottom - wr.top) - (cr.bottom - cr.top);
-
-	UINT dpi = 96;
-	HMODULE u32 = GetModuleHandleW(L"user32.dll");
-	if (u32) {
-		typedef UINT(WINAPI * GetDpiForWindow_t)(HWND);
-		GetDpiForWindow_t getDpi = (GetDpiForWindow_t)GetProcAddress(u32, "GetDpiForWindow");
-		if (getDpi) {
-			UINT d = getDpi(wnd);
-			if (d) {
-				dpi = d;
-			}
-		}
-	}
-	int cw = MulDiv(w, dpi, 96);
-	int ch = MulDiv(h, dpi, 96);
-
-	SetWindowPos(wnd, NULL, 0, 0, cw + frameW, ch + frameH,
-		SWP_NOMOVE | SWP_NOZORDER | SWP_NOACTIVATE | SWP_FRAMECHANGED);
-}
-
 static void cg_center(void *hwnd) {
 	if (!hwnd) {
 		return;
@@ -106,7 +75,6 @@ func openWindow(title, url string) {
 
 	C.cg_hide(w.Window())
 	C.cg_set_app_icon(w.Window())
-	C.cg_resize_client(w.Window(), 800, 600)
 	C.cg_center(w.Window())
 
 	var once sync.Once
