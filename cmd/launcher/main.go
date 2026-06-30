@@ -8,6 +8,7 @@ import (
 	"log"
 	"net"
 	"net/http"
+	"time"
 
 	"chaos-gate-unlocker/internal/bridge"
 	"chaos-gate-unlocker/internal/save"
@@ -56,7 +57,8 @@ func main() {
 	})
 	mux.Handle("/", proxy)
 
-	go func() { log.Fatalf("serve: %v", http.Serve(ln, mux)) }()
+	srv := &http.Server{Handler: mux, ReadHeaderTimeout: 10 * time.Second}
+	go func() { log.Fatalf("serve: %v", srv.Serve(ln)) }()
 
 	openWindow("Chaos Gate Unlocker", "http://"+ln.Addr().String()+"/__launch")
 }

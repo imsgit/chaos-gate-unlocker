@@ -99,17 +99,21 @@ func (h *Handler) open(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
-func openDir(dir string) error {
+func openExternally(winName string, winArgs []string, target string) error {
 	var cmd *exec.Cmd
 	switch runtime.GOOS {
 	case "windows":
-		cmd = exec.Command("explorer", dir)
+		cmd = exec.Command(winName, append(winArgs, target)...)
 	case "darwin":
-		cmd = exec.Command("open", dir)
+		cmd = exec.Command("open", target)
 	default:
-		cmd = exec.Command("xdg-open", dir)
+		cmd = exec.Command("xdg-open", target)
 	}
 	return cmd.Start()
+}
+
+func openDir(dir string) error {
+	return openExternally("explorer", nil, dir)
 }
 
 func (h *Handler) openURL(w http.ResponseWriter, r *http.Request) {
@@ -130,16 +134,7 @@ func (h *Handler) openURL(w http.ResponseWriter, r *http.Request) {
 }
 
 func openInBrowser(rawURL string) error {
-	var cmd *exec.Cmd
-	switch runtime.GOOS {
-	case "windows":
-		cmd = exec.Command("rundll32", "url.dll,FileProtocolHandler", rawURL)
-	case "darwin":
-		cmd = exec.Command("open", rawURL)
-	default:
-		cmd = exec.Command("xdg-open", rawURL)
-	}
-	return cmd.Start()
+	return openExternally("rundll32", []string{"url.dll,FileProtocolHandler"}, rawURL)
 }
 
 func (h *Handler) file(w http.ResponseWriter, r *http.Request) {
