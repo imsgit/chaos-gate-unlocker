@@ -14,6 +14,8 @@ stub_fonts
 slim_charset
 slim_markdown
 round_dialogs
+enable_touch_scroll
+drag_scroll_widget
 
 fyne package -os wasm --app-build "$build" --tags no_emoji
 write_build "$build"

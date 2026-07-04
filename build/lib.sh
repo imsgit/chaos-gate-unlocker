@@ -3,9 +3,14 @@ write_build() { sed -i -E "s/^(\s*Build *= *).*/\1${1}/" FyneApp.toml; }
 read_version() { grep -oE 'Version *= *"[^"]+"' FyneApp.toml | grep -oE '[0-9]+(\.[0-9]+)*'; }
 
 declare -A _bak=()
+declare -a _added=()
 swap() { _bak["$1"]="$(mktemp)"; cp "$1" "${_bak[$1]}"; }
 write_swap() { swap "$1"; cat > "$1"; }
-restore_swaps() { for s in "${!_bak[@]}"; do mv -f "${_bak[$s]}" "$s"; done; }
+add_swap() { _added+=("$1"); cat > "$1"; }
+restore_swaps() {
+	for s in "${!_bak[@]}"; do mv -f "${_bak[$s]}" "$s"; done
+	for f in "${_added[@]}"; do rm -f "$f"; done
+}
 
 have() { grep -qF "$2" "$1" || { echo "[!] expected '$2' in $1" >&2; exit 1; }; }
 gone() { ! grep -qF "$2" "$1" || { echo "[!] '$2' still present in $1" >&2; exit 1; }; }
@@ -149,6 +154,93 @@ func parseMarkdown(content string) []RichTextSegment {
 		return nil
 	}
 	return []RichTextSegment{&TextSegment{Style: RichTextStyleParagraph, Text: content}}
+}
+GOEOF
+}
+
+enable_touch_scroll() {
+	local bw=vendor/github.com/fyne-io/glfw-js/browser_wasm.go
+	echo "=== Enable touch->mouse emulation in glfw-js (touch scroll on mobile/Deck browsers) ==="
+	have "$bw" 'addDocumentEventListener.Invoke("beforeUnload"'
+	swap "$bw"
+	replace_block "$bw" \
+		'	addDocumentEventListener.Invoke("beforeUnload",' \
+		'	touchPos := func(te js.Value) (float64, float64, bool) {
+		touches := te.Get("touches")
+		if touches.Length() == 0 {
+			return 0, 0, false
+		}
+		t := touches.Index(0)
+		return t.Get("clientX").Float() * w.devicePixelRatio, t.Get("clientY").Float() * w.devicePixelRatio, true
+	}
+	touchStart := newJsFuncFrom(func(this js.Value, args []js.Value) any {
+		te := args[0]
+		w.goFullscreenIfRequested()
+		if x, y, ok := touchPos(te); ok {
+			w.cursorPos[0], w.cursorPos[1] = x, y
+			if w.cursorPosCallback != nil {
+				go w.cursorPosCallback(w, x, y)
+			}
+		}
+		w.mouseButton[0] = Press
+		if w.mouseButtonCallback != nil {
+			go w.mouseButtonCallback(w, MouseButton1, Press, 0)
+		}
+		te.Call("preventDefault")
+		return nil
+	})
+	touchMove := newJsFuncFrom(func(this js.Value, args []js.Value) any {
+		te := args[0]
+		if x, y, ok := touchPos(te); ok {
+			mvX, mvY := x-w.cursorPos[0], y-w.cursorPos[1]
+			w.cursorPos[0], w.cursorPos[1] = x, y
+			if w.cursorPosCallback != nil {
+				go w.cursorPosCallback(w, x, y)
+			}
+			if w.mouseMovementCallback != nil {
+				go w.mouseMovementCallback(w, x, y, mvX, mvY)
+			}
+		}
+		te.Call("preventDefault")
+		return nil
+	})
+	touchEnd := newJsFuncFrom(func(this js.Value, args []js.Value) any {
+		te := args[0]
+		w.mouseButton[0] = Release
+		if w.mouseButtonCallback != nil {
+			go w.mouseButtonCallback(w, MouseButton1, Release, 0)
+		}
+		te.Call("preventDefault")
+		return nil
+	})
+	touchOpts := map[string]any{"passive": false}
+	addDocumentEventListener.Invoke("touchstart", touchStart, touchOpts)
+	addDocumentEventListener.Invoke("touchmove", touchMove, touchOpts)
+	addDocumentEventListener.Invoke("touchend", touchEnd, touchOpts)
+	addDocumentEventListener.Invoke("touchcancel", touchEnd, touchOpts)
+
+	addDocumentEventListener.Invoke("beforeUnload",'
+	have "$bw" 'Invoke("touchstart"'
+}
+
+drag_scroll_widget() {
+	local f=vendor/fyne.io/fyne/v2/internal/widget/scroller_web.go
+	echo "=== Make Scroll draggable on wasm (finger drag scrolls list + dropdown content) ==="
+	gone vendor/fyne.io/fyne/v2/internal/widget/scroller.go 'func (s *Scroll) Dragged'
+	add_swap "$f" <<'GOEOF'
+//go:build js
+
+package widget
+
+import "fyne.io/fyne/v2"
+
+func (s *Scroll) DragEnd() {
+}
+
+func (s *Scroll) Dragged(e *fyne.DragEvent) {
+	if s.updateOffset(e.Dragged.DX, e.Dragged.DY) {
+		s.refreshWithoutOffsetUpdate()
+	}
 }
 GOEOF
 }
