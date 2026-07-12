@@ -1,10 +1,11 @@
-read_build() { grep -oE 'Build *= *[0-9]+' FyneApp.toml | grep -oE '[0-9]+'; }
+_toml() { grep -oE "$1" FyneApp.toml | grep -oE "$2"; }
+read_build() { _toml 'Build *= *[0-9]+' '[0-9]+'; }
+read_version() { _toml 'Version *= *"[^"]+"' '[0-9]+(\.[0-9]+)*'; }
 write_build() { sed -i -E "s/^(\s*Build *= *).*/\1${1}/" FyneApp.toml; }
-read_version() { grep -oE 'Version *= *"[^"]+"' FyneApp.toml | grep -oE '[0-9]+(\.[0-9]+)*'; }
 
 declare -A _bak=()
 declare -a _added=()
-swap() { _bak["$1"]="$(mktemp)"; cp "$1" "${_bak[$1]}"; }
+swap() { [ -n "${_bak[$1]:-}" ] || { _bak["$1"]="$(mktemp)"; cp "$1" "${_bak[$1]}"; }; }
 write_swap() { swap "$1"; cat > "$1"; }
 add_swap() { _added+=("$1"); cat > "$1"; }
 restore_swaps() {
@@ -27,6 +28,9 @@ del() { sed -i "$2" "$1"; gone "$1" "$3"; }
 replace_block() { OLD="$2" NEW="$3" perl -0777 -i -pe '
 	my $i = index($_, $ENV{OLD}); die "block not found in '"$1"'\n" if $i < 0;
 	substr($_, $i, length($ENV{OLD})) = $ENV{NEW};' "$1"; }
+
+vsub() { swap "$1"; sub "$1" "$2" "$3"; }
+vblock() { swap "$1"; replace_block "$1" "$2" "$3"; }
 
 FONT_SUBSET_RANGES="U+0000-00FF,U+0100-017F,U+0400-04FF,U+2010-2027,U+2030-205E,U+20A0-20BF,U+2116,U+2122,U+2026"
 
@@ -72,8 +76,7 @@ GOEOF
 hide_webview_window() {
 	local wv=vendor/github.com/webview/webview_go/libs/webview/include/webview.h
 	echo "=== Keep owned webview window hidden during New() (kills Windows white flash) ==="
-	swap "$wv"
-	replace_block "$wv" \
+	vblock "$wv" \
 		'    if (m_owns_window) {
       ShowWindow(m_window, SW_SHOW);
       UpdateWindow(m_window);
@@ -85,7 +88,7 @@ hide_webview_window() {
 	gone "$wv" "ShowWindow(m_window, SW_SHOW)"
 
 	echo "=== Close() the WebView2 controller on teardown (stop msedgewebview2 lingering) ==="
-	replace_block "$wv" \
+	vblock "$wv" \
 		'    if (m_controller) {
       m_controller->Release();
       m_controller = nullptr;
@@ -101,8 +104,7 @@ hide_webview_window() {
 link_webkit() {
 	local f=vendor/github.com/webview/webview_go/webview.go
 	echo "=== Link launcher against webkit2gtk-4.1 (libsoup3) instead of 4.0 ==="
-	swap "$f"
-	sed -i 's/webkit2gtk-4\.0/webkit2gtk-4.1/' "$f"
+	vsub "$f" 's/webkit2gtk-4\.0/webkit2gtk-4.1/' 'webkit2gtk-4.1'
 	gone "$f" "webkit2gtk-4.0"
 }
 
@@ -152,8 +154,7 @@ GOEOF
 enable_touch_scroll() {
 	local ww=vendor/fyne.io/fyne/v2/internal/driver/glfw/window_wasm.go
 	echo "=== Flush pending move before click ==="
-	swap "$ww"
-	replace_block "$ww" \
+	vblock "$ww" \
 		'	runOnMain(func() {
 		button, modifiers := convertMouseButton(btn, mods)' \
 		'	runOnMain(func() {
@@ -166,14 +167,12 @@ enable_touch_scroll() {
 
 	local wc=vendor/fyne.io/fyne/v2/internal/driver/glfw/window.go
 	echo "=== Widen drag slop 2->12 for touch (finger jitter must not turn a tap into a scroll-drag) ==="
-	swap "$wc"
-	sub "$wc" 's/dragMoveThreshold = 2 /dragMoveThreshold = 12 /' 'dragMoveThreshold = 12'
+	vsub "$wc" 's/dragMoveThreshold = 2 /dragMoveThreshold = 12 /' 'dragMoveThreshold = 12'
 
 	local bw=vendor/github.com/fyne-io/glfw-js/browser_wasm.go
 	echo "=== Enable touch->mouse emulation in glfw-js (touch scroll on mobile/Deck browsers) ==="
 	have "$bw" 'addDocumentEventListener.Invoke("beforeUnload"'
-	swap "$bw"
-	replace_block "$bw" \
+	vblock "$bw" \
 		'	addDocumentEventListener.Invoke("beforeUnload",' \
 		'	touchPos := func(te js.Value) (float64, float64, bool) {
 		touches := te.Get("touches")
