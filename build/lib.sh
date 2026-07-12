@@ -24,21 +24,6 @@ replace_block() { OLD="$2" NEW="$3" perl -0777 -i -pe '
 
 FONT_SUBSET_RANGES="U+0000-00FF,U+0100-017F,U+0400-04FF,U+2010-2027,U+2030-205E,U+20A0-20BF,U+2116,U+2122,U+2026"
 
-round_dialogs() {
-	echo "=== Round dialog/popup corners (match listitem selection radius) ==="
-	local base=vendor/fyne.io/fyne/v2/dialog/base.go
-	swap "$base"
-	sub "$base" \
-		's|rect := canvas.NewRectangle(theme.Color(theme.ColorNameOverlayBackground))|&\n\trect.CornerRadius = theme.Size(theme.SizeNameInputRadius)|' \
-		"rect.CornerRadius"
-
-	local popup=vendor/fyne.io/fyne/v2/widget/popup.go
-	swap "$popup"
-	sub "$popup" \
-		's|background := canvas.NewRectangle(th.Color(theme.ColorNameOverlayBackground, v))|&\n\tbackground.CornerRadius = th.Size(theme.SizeNameInputRadius)|' \
-		"background.CornerRadius"
-}
-
 stub_fonts() {
 	local fontdir=vendor/fyne.io/fyne/v2/theme/font f
 	echo "=== Stub unused fonts (italic/bolditalic/mono) ==="
@@ -62,7 +47,7 @@ stub_fonts() {
 	echo "=== Disable system-font scan ==="
 	local fontprod=vendor/fyne.io/fyne/v2/internal/painter/font_prod.go
 	write_swap "$fontprod" <<'GOEOF'
-//go:build !test
+//go:build !ci && !test
 
 package painter
 
@@ -243,4 +228,28 @@ func (s *Scroll) Dragged(e *fyne.DragEvent) {
 	}
 }
 GOEOF
+}
+
+tab_selector_edge() {
+	echo "=== Trailing AppTabs: put selector on the outer (window) edge + hide the divider line ==="
+	local tabs=vendor/fyne.io/fyne/v2/container/tabs.go
+	swap "$tabs"
+	sub "$tabs" \
+		's|r.divider.FillColor = th.Color(theme.ColorNameShadow, v)|r.divider.FillColor = th.Color(theme.ColorNameBackground, v)|' \
+		"r.divider.FillColor = th.Color(theme.ColorNameBackground, v)"
+
+	sub "$tabs" \
+		's|r.label.Color = th.Color(theme.ColorNameForeground, v)|r.label.Color = th.Color(theme.ColorNamePlaceHolder, v)|' \
+		"r.label.Color = th.Color(theme.ColorNamePlaceHolder, v)"
+
+	echo "=== Unselected tab labels: regular weight (only the selected/HighImportance tab stays bold) ==="
+	sub "$tabs" \
+		's|r.label.TextSize = th.Size(theme.SizeNameText)|r.label.TextStyle.Bold = r.button.importance == widget.HighImportance\n\tr.label.TextSize = th.Size(theme.SizeNameText)|' \
+		"r.label.TextStyle.Bold = r.button.importance == widget.HighImportance"
+
+	local apptabs=vendor/fyne.io/fyne/v2/container/apptabs.go
+	swap "$apptabs"
+	sub "$apptabs" \
+		's|indicatorPos = fyne.NewPos(r.bar.Position().X-pad, selectedPos.Y)|indicatorPos = fyne.NewPos(r.bar.Position().X+r.bar.Size().Width-dividerWidth, selectedPos.Y)|' \
+		"r.bar.Size().Width-dividerWidth"
 }

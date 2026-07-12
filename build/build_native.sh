@@ -11,7 +11,7 @@ fc=$(fyne-cross version 2>/dev/null | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -
 build=$(read_build)
 echo "=== fyne-cross $fc | build $build (no auto-bump) ==="
 
-tags=no_emoji
+tags=no_emoji,x11
 
 created_vendor=
 [ -d vendor ] || { echo "=== go mod vendor (for font/charset/markdown swaps) ==="; go mod vendor; created_vendor=1; }
@@ -19,7 +19,7 @@ trap 'restore_swaps; [ -n "$created_vendor" ] && rm -rf vendor' EXIT
 stub_fonts
 slim_charset
 slim_markdown
-round_dialogs
+tab_selector_edge
 
 for os in windows linux; do
 	echo "=== Build $os/amd64 ==="

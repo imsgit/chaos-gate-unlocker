@@ -115,7 +115,7 @@ func showSavePicker(w fyne.Window, names []string, info func(name string) save.I
 		dragscroll.List(slotsList), dragscroll.List(savesList),
 	)
 
-	d := dialog.NewCustomWithoutButtons("Save selection", body, w)
+	d := dialog.NewCustomWithoutButtons(" Save selection", body, w)
 	buttons := make([]fyne.CanvasObject, 0, 2)
 	buttons = append(buttons, widget.NewButtonWithIcon("Cancel", theme.CancelIcon(), d.Hide))
 	if onOpenDir != nil {
@@ -152,7 +152,7 @@ func showSaveConfirm(w fyne.Window, do func()) {
 		"\n\n\nThis will override the existing save file. Are you sure?\nPlease make a backup if needed.\n\n\n",
 		fyne.TextAlignCenter, fyne.TextStyle{})
 
-	d := dialog.NewCustomWithoutButtons("Save confirmation", msg, w)
+	d := dialog.NewCustomWithoutButtons(" Save confirmation", msg, w)
 	d.SetIcon(theme.QuestionIcon())
 	save := widget.NewButtonWithIcon("Save", theme.ConfirmIcon(), func() {
 		d.Hide()

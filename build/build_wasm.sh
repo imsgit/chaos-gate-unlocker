@@ -13,9 +13,9 @@ trap 'restore_swaps; [ -n "$created_vendor" ] && rm -rf vendor' EXIT
 stub_fonts
 slim_charset
 slim_markdown
-round_dialogs
 enable_touch_scroll
 drag_scroll_widget
+tab_selector_edge
 
 fyne package -os wasm --app-build "$build" --tags no_emoji
 write_build "$build"

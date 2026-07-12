@@ -15,6 +15,8 @@ func (Theme) Color(c fyne.ThemeColorName, v fyne.ThemeVariant) color.Color {
 	switch c {
 	case theme.ColorNameForeground, theme.ColorNameHyperlink:
 		return color.NRGBA{R: 0xFF, G: 0xFF, B: 0xFF, A: 0xFF}
+	case theme.ColorNamePlaceHolder:
+		return MutedForeground
 	case theme.ColorNameBackground:
 		return color.NRGBA{R: 0x15, G: 0x15, B: 0x15, A: 0xFF}
 	case theme.ColorNameButton, theme.ColorNameShadow:
@@ -60,6 +62,8 @@ func (Theme) Size(s fyne.ThemeSizeName) float32 {
 		return 13.0
 	case theme.SizeNameScrollBarSmall:
 		return 4.0
+	case theme.SizeNameDialogRadius, theme.SizeNamePopupRadius:
+		return theme.DefaultTheme().Size(theme.SizeNameInputRadius)
 	}
 	return theme.DefaultTheme().Size(s)
 }
