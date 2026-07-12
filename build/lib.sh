@@ -151,7 +151,7 @@ GOEOF
 
 enable_touch_scroll() {
 	local ww=vendor/fyne.io/fyne/v2/internal/driver/glfw/window_wasm.go
-	echo "=== Flush pending mouse-move before click ==="
+	echo "=== Flush pending move before click ==="
 	swap "$ww"
 	replace_block "$ww" \
 		'	runOnMain(func() {
@@ -163,6 +163,11 @@ enable_touch_scroll() {
 		}
 		button, modifiers := convertMouseButton(btn, mods)'
 	have "$ww" 'if !w.mousePosUpdateProcessed {'
+
+	local wc=vendor/fyne.io/fyne/v2/internal/driver/glfw/window.go
+	echo "=== Widen drag slop 2->12 for touch (finger jitter must not turn a tap into a scroll-drag) ==="
+	swap "$wc"
+	sub "$wc" 's/dragMoveThreshold = 2 /dragMoveThreshold = 12 /' 'dragMoveThreshold = 12'
 
 	local bw=vendor/github.com/fyne-io/glfw-js/browser_wasm.go
 	echo "=== Enable touch->mouse emulation in glfw-js (touch scroll on mobile/Deck browsers) ==="
