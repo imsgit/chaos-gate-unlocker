@@ -28,9 +28,9 @@ static void cg_set_app_icon(void *hwnd) {
 	HWND h = (HWND)hwnd;
 	HINSTANCE inst = GetModuleHandleW(NULL);
 	HICON big = (HICON)LoadImageW(inst, L"APP", IMAGE_ICON,
-		GetSystemMetrics(SM_CXICON), GetSystemMetrics(SM_CYICON), LR_DEFAULTCOLOR);
+		GetSystemMetrics(SM_CXICON), GetSystemMetrics(SM_CYICON), LR_DEFAULTCOLOR | LR_SHARED);
 	HICON small = (HICON)LoadImageW(inst, L"APP", IMAGE_ICON,
-		GetSystemMetrics(SM_CXSMICON), GetSystemMetrics(SM_CYSMICON), LR_DEFAULTCOLOR);
+		GetSystemMetrics(SM_CXSMICON), GetSystemMetrics(SM_CYSMICON), LR_DEFAULTCOLOR | LR_SHARED);
 	if (big) {
 		SendMessageW(h, WM_SETICON, ICON_BIG, (LPARAM)big);
 	}

@@ -12,7 +12,7 @@ import (
 type Widget struct {
 	widget.BaseWidget
 
-	bar  *canvas.Rectangle
+	bg   *canvas.Rectangle
 	edge *canvas.Rectangle
 
 	width  float32
@@ -21,7 +21,7 @@ type Widget struct {
 
 func New() *Widget {
 	p := &Widget{
-		bar:  canvas.NewRectangle(color.Transparent),
+		bg:   canvas.NewRectangle(color.Transparent),
 		edge: canvas.NewRectangle(color.White),
 	}
 	p.ExtendBaseWidget(p)
@@ -34,9 +34,6 @@ func (p *Widget) MinSize() fyne.Size {
 }
 
 func (p *Widget) Grow(width float32) {
-	if !p.active {
-		p.bar.FillColor = p.Theme().Color(theme.ColorNameButton, 0)
-	}
 	p.width = width
 	p.active = true
 	p.Refresh()
@@ -50,11 +47,11 @@ func (p *Widget) Complete() {
 func (p *Widget) Reset() {
 	p.width = 0
 	p.active = false
-	p.bar.FillColor = color.Transparent
 	p.Refresh()
 }
 
 func (p *Widget) CreateRenderer() fyne.WidgetRenderer {
+	p.bg.FillColor = p.Theme().Color(theme.ColorNameDisabledButton, 0)
 	return &progressRenderer{progress: p}
 }
 
@@ -64,8 +61,8 @@ type progressRenderer struct {
 
 func (r *progressRenderer) Layout(size fyne.Size) {
 	p := r.progress
-	p.bar.Resize(fyne.NewSize(p.width, size.Height))
-	p.bar.Move(fyne.NewPos(0, 0))
+	p.bg.Resize(size)
+	p.bg.Move(fyne.NewPos(0, 0))
 
 	if p.active {
 		p.edge.Resize(fyne.NewSize(1, size.Height))
@@ -82,12 +79,12 @@ func (r *progressRenderer) MinSize() fyne.Size {
 
 func (r *progressRenderer) Refresh() {
 	r.Layout(r.progress.Size())
-	r.progress.bar.Refresh()
+	r.progress.bg.Refresh()
 	r.progress.edge.Refresh()
 }
 
 func (r *progressRenderer) Objects() []fyne.CanvasObject {
-	return []fyne.CanvasObject{r.progress.bar, r.progress.edge}
+	return []fyne.CanvasObject{r.progress.bg, r.progress.edge}
 }
 
 func (r *progressRenderer) Destroy() {}

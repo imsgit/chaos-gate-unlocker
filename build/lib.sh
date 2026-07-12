@@ -12,6 +12,12 @@ restore_swaps() {
 	for f in "${_added[@]}"; do rm -f "$f"; done
 }
 
+ensure_vendor() {
+	created_vendor=
+	[ -d vendor ] || { echo "=== go mod vendor ($1) ==="; go mod vendor; created_vendor=1; }
+	trap 'restore_swaps; [ -n "$created_vendor" ] && rm -rf vendor' EXIT
+}
+
 have() { grep -qF "$2" "$1" || { echo "[!] expected '$2' in $1" >&2; exit 1; }; }
 gone() { ! grep -qF "$2" "$1" || { echo "[!] '$2' still present in $1" >&2; exit 1; }; }
 
@@ -228,23 +234,4 @@ func (s *Scroll) Dragged(e *fyne.DragEvent) {
 	}
 }
 GOEOF
-}
-
-tab_selector_edge() {
-	echo "=== Trailing AppTabs: put selector on the outer (window) edge + hide the divider line ==="
-	local tabs=vendor/fyne.io/fyne/v2/container/tabs.go
-	swap "$tabs"
-	sub "$tabs" \
-		's|r.divider.FillColor = th.Color(theme.ColorNameShadow, v)|r.divider.FillColor = th.Color(theme.ColorNameBackground, v)|' \
-		"r.divider.FillColor = th.Color(theme.ColorNameBackground, v)"
-
-	sub "$tabs" \
-		's|r.label.Color = th.Color(theme.ColorNameForeground, v)|r.label.Color = th.Color(theme.ColorNamePlaceHolder, v)|' \
-		"r.label.Color = th.Color(theme.ColorNamePlaceHolder, v)"
-
-	local apptabs=vendor/fyne.io/fyne/v2/container/apptabs.go
-	swap "$apptabs"
-	sub "$apptabs" \
-		's|indicatorPos = fyne.NewPos(r.bar.Position().X-pad, selectedPos.Y)|indicatorPos = fyne.NewPos(r.bar.Position().X+r.bar.Size().Width-dividerWidth, selectedPos.Y)|' \
-		"r.bar.Size().Width-dividerWidth"
 }

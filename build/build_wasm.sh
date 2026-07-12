@@ -6,16 +6,13 @@ source build/lib.sh
 build=$(read_build)
 echo "=== fyne package wasm | build $build (no auto-bump) ==="
 
-created_vendor=
-[ -d vendor ] || { echo "=== go mod vendor (for font stubbing) ==="; go mod vendor; created_vendor=1; }
-trap 'restore_swaps; [ -n "$created_vendor" ] && rm -rf vendor' EXIT
+ensure_vendor "font stubbing"
 
 stub_fonts
 slim_charset
 slim_markdown
 enable_touch_scroll
 drag_scroll_widget
-tab_selector_edge
 
 fyne package -os wasm --app-build "$build" --tags no_emoji
 write_build "$build"

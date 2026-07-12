@@ -31,9 +31,7 @@ func (p *selectPopup) FocusLost()     {}
 func (p *selectPopup) TypedRune(rune) {}
 
 func (p *selectPopup) Dragged(e *fyne.DragEvent) {
-	if p.scroll != nil {
-		p.scroll.ScrollToOffset(fyne.NewPos(p.scroll.Offset.X, p.scroll.Offset.Y-e.Dragged.DY))
-	}
+	p.scroll.ScrollToOffset(fyne.NewPos(p.scroll.Offset.X, p.scroll.Offset.Y-e.Dragged.DY))
 }
 
 func (p *selectPopup) DragEnd() {}
@@ -71,13 +69,11 @@ func (p *selectPopup) activate() {
 	if p.highlight < 0 || p.highlight >= len(p.rows) {
 		return
 	}
-	if row := p.rows[p.highlight]; row.onTapped != nil {
-		row.onTapped()
-	}
+	p.rows[p.highlight].onTapped()
 }
 
 func (p *selectPopup) scrollTo(i int) {
-	if p.scroll == nil || len(p.rows) == 0 {
+	if len(p.rows) == 0 {
 		return
 	}
 	rowH := p.rows[i].MinSize().Height

@@ -8,6 +8,7 @@ import (
 	"chaos-gate-unlocker/internal/ui/widgets/dragscroll"
 	"chaos-gate-unlocker/internal/ui/widgets/dropdown"
 	"chaos-gate-unlocker/internal/ui/widgets/progress"
+	"chaos-gate-unlocker/internal/ui/widgets/tabs"
 	"chaos-gate-unlocker/internal/ui/widgets/toggle"
 	"chaos-gate-unlocker/internal/ui/widgets/tooltip"
 	"chaos-gate-unlocker/internal/ui/widgets/unitlistitem"
@@ -259,8 +260,8 @@ func main() {
 	eyeGlowOverlay := eyeGlow.Overlay()
 	eyeGlow.Animate()
 
-	mainTab := container.NewTabItemWithIcon("Main", ui.AppTabMainIcon(),
-		container.NewGridWithColumns(2,
+	mainTab := &tabs.Item{Title: "Main", Icon: ui.AppTabMainIcon(),
+		Content: container.NewGridWithColumns(2,
 			container.NewVBox(
 				authorizeDreadnoughtMissionsSwitch,
 				repairDreadnoughtSwitch,
@@ -276,22 +277,21 @@ func main() {
 				unlockAssassinsSwitch,
 				unlockGladiusFrigateSwitch,
 				unlockPuritySealsSwitch,
-				unlockInfiniteCampaignSwitch)))
-	unitsTab := container.NewTabItemWithIcon("Units", ui.AppTabUnitsIcon(),
-		container.NewGridWithColumns(2, dragscroll.List(unitsList), dragscroll.Scroll(unitsScrollBox)))
+				unlockInfiniteCampaignSwitch))}
+	unitsTab := &tabs.Item{Title: "Units", Icon: ui.AppTabUnitsIcon(),
+		Content: container.NewGridWithColumns(2, dragscroll.List(unitsList), dragscroll.Scroll(unitsScrollBox))}
 	nexusURL, _ := url.Parse("https://www.nexusmods.com/warhammer40kchaosgatedaemonhunters/mods/5")
 	fyneURL, _ := url.Parse("https://apps.fyne.io/apps/chaos.gate.unlocker.html")
-	aboutTab := container.NewTabItemWithIcon("About", ui.AppTabAboutIcon(),
-		container.NewBorder(nil, nil,
+	aboutTab := &tabs.Item{Title: "About", Icon: ui.AppTabAboutIcon(),
+		Content: container.NewBorder(nil, nil,
 			container.NewVBox(
 				widget.NewHyperlink("> Visit Nexus Mods for more information", nexusURL),
 				widget.NewHyperlink("> Visit Fyne.io for app details", fyneURL)),
-			widget.NewLabel(fmt.Sprintf(version, a.Metadata().Version, a.Metadata().Build))))
+			widget.NewLabel(fmt.Sprintf(version, a.Metadata().Version, a.Metadata().Build)))}
 
 	var acancel context.CancelFunc
-	layoutTabs := container.NewAppTabs(mainTab, unitsTab, aboutTab)
-	layoutTabs.SetTabLocation(container.TabLocationTrailing)
-	layoutTabs.OnSelected = func(item *container.TabItem) {
+	layoutTabs := tabs.New(mainTab, unitsTab, aboutTab)
+	layoutTabs.OnSelected = func(item *tabs.Item) {
 		switch item {
 		case aboutTab:
 			var actx context.Context

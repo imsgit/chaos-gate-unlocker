@@ -13,13 +13,10 @@ echo "=== fyne-cross $fc | build $build (no auto-bump) ==="
 
 tags=no_emoji,x11
 
-created_vendor=
-[ -d vendor ] || { echo "=== go mod vendor (for font/charset/markdown swaps) ==="; go mod vendor; created_vendor=1; }
-trap 'restore_swaps; [ -n "$created_vendor" ] && rm -rf vendor' EXIT
+ensure_vendor "font/charset/markdown swaps"
 stub_fonts
 slim_charset
 slim_markdown
-tab_selector_edge
 
 for os in windows linux; do
 	echo "=== Build $os/amd64 ==="

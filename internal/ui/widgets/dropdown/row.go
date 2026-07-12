@@ -50,9 +50,6 @@ func (r *selectRow) ExtendBaseWidget(wid fyne.Widget) {
 }
 
 func (r *selectRow) Tapped(*fyne.PointEvent) {
-	if r.onTapped == nil {
-		return
-	}
 	r.onTapped()
 }
 

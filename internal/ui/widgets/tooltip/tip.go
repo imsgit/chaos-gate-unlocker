@@ -26,12 +26,11 @@ func newTip(text string) *tip {
 }
 
 func (t *tip) MinSize() fyne.Size {
-	return fyne.NewSize(0, 0)
+	return fyne.Size{}
 }
 
 func (t *tip) Resize(size fyne.Size) {
 	t.updateRichText()
-	t.richtext.Resize(size)
 	t.BaseWidget.Resize(size)
 }
 
@@ -84,7 +83,6 @@ type tipRenderer struct {
 
 func (r *tipRenderer) Layout(s fyne.Size) {
 	r.bg.Resize(s)
-	r.bg.Move(fyne.NewPos(0, 0))
 
 	innerPad := r.tip.Theme().Size(theme.SizeNameInnerPadding)
 	off := r.tip.pad() - innerPad

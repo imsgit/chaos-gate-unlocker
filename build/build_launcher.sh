@@ -5,9 +5,7 @@ source build/lib.sh
 
 ver=$(read_version)
 
-created_vendor=
-[ -d vendor ] || { echo "=== go mod vendor (for webview.h swap) ==="; go mod vendor; created_vendor=1; }
-trap 'restore_swaps; [ -n "$created_vendor" ] && rm -rf vendor' EXIT
+ensure_vendor "webview.h swap"
 hide_webview_window
 
 build_linux() {
