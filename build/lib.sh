@@ -150,6 +150,20 @@ GOEOF
 }
 
 enable_touch_scroll() {
+	local ww=vendor/fyne.io/fyne/v2/internal/driver/glfw/window_wasm.go
+	echo "=== Flush pending mouse-move before click ==="
+	swap "$ww"
+	replace_block "$ww" \
+		'	runOnMain(func() {
+		button, modifiers := convertMouseButton(btn, mods)' \
+		'	runOnMain(func() {
+		if !w.mousePosUpdateProcessed {
+			w.processMouseMoved(w.newMousePosX, w.newMousePosY)
+			w.mousePosUpdateProcessed = true
+		}
+		button, modifiers := convertMouseButton(btn, mods)'
+	have "$ww" 'if !w.mousePosUpdateProcessed {'
+
 	local bw=vendor/github.com/fyne-io/glfw-js/browser_wasm.go
 	echo "=== Enable touch->mouse emulation in glfw-js (touch scroll on mobile/Deck browsers) ==="
 	have "$bw" 'addDocumentEventListener.Invoke("beforeUnload"'
@@ -170,7 +184,7 @@ enable_touch_scroll() {
 		if x, y, ok := touchPos(te); ok {
 			w.cursorPos[0], w.cursorPos[1] = x, y
 			if w.cursorPosCallback != nil {
-				go w.cursorPosCallback(w, x, y)
+				w.cursorPosCallback(w, x, y)
 			}
 		}
 		w.mouseButton[0] = Press
@@ -186,7 +200,7 @@ enable_touch_scroll() {
 			mvX, mvY := x-w.cursorPos[0], y-w.cursorPos[1]
 			w.cursorPos[0], w.cursorPos[1] = x, y
 			if w.cursorPosCallback != nil {
-				go w.cursorPosCallback(w, x, y)
+				w.cursorPosCallback(w, x, y)
 			}
 			if w.mouseMovementCallback != nil {
 				go w.mouseMovementCallback(w, x, y, mvX, mvY)
