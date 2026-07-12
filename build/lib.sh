@@ -242,11 +242,6 @@ tab_selector_edge() {
 		's|r.label.Color = th.Color(theme.ColorNameForeground, v)|r.label.Color = th.Color(theme.ColorNamePlaceHolder, v)|' \
 		"r.label.Color = th.Color(theme.ColorNamePlaceHolder, v)"
 
-	echo "=== Unselected tab labels: regular weight (only the selected/HighImportance tab stays bold) ==="
-	sub "$tabs" \
-		's|r.label.TextSize = th.Size(theme.SizeNameText)|r.label.TextStyle.Bold = r.button.importance == widget.HighImportance\n\tr.label.TextSize = th.Size(theme.SizeNameText)|' \
-		"r.label.TextStyle.Bold = r.button.importance == widget.HighImportance"
-
 	local apptabs=vendor/fyne.io/fyne/v2/container/apptabs.go
 	swap "$apptabs"
 	sub "$apptabs" \
