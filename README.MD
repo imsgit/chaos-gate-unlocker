@@ -24,6 +24,8 @@ This tool is available for Windows and Linux and is distributed free of charge. 
 
 ## Getting Started
 
+<img src="https://staticdelivery.nexusmods.com/mods/4502/images/5/5-1783917722-983035234.png" alt="Open" width="820">
+
 1. Open the tool and load a save with the **Open** button.
 2. Switch on the options you want on the **Main** and **Units** pages.
 3. Press **Save** to write the changes back, then continue playing in-game.
@@ -32,7 +34,7 @@ This tool is available for Windows and Linux and is distributed free of charge. 
 
 The Main page is split into two columns. The left column holds Dreadnought and gear actions you can apply whenever you like, while the right column holds one-time unlocks.
 
-<img src="https://staticdelivery.nexusmods.com/mods/4502/images/5/5-1782211681-1110821735.png" alt="Main page" width="820">
+<img src="https://staticdelivery.nexusmods.com/mods/4502/images/5/5-1783917732-855147584.png" alt="Main page" width="820">
 
 **Left column**
 
@@ -58,7 +60,7 @@ The Main page is split into two columns. The left column holds Dreadnought and g
 
 On the Units page everything is organized in the same order as the units appear in the game. You can view the status and information of each unit and apply per-unit changes.
 
-<img src="https://staticdelivery.nexusmods.com/mods/4502/images/5/5-1782211876-724887743.png" alt="Units page" width="820">
+<img src="https://staticdelivery.nexusmods.com/mods/4502/images/5/5-1783917742-865668371.png" alt="Units page" width="820">
 
 - **Augmetics** — when you heal a critical wound, you can add an augmetic or change existing ones. A knight cannot have more augmetics than the resilience they have lost.
 - **Talents** — manage a unit's existing talents. Extra talents can be earned through special events, such as A Solitary Duty or The Tournament.
