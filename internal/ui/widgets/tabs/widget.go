@@ -2,7 +2,6 @@ package tabs
 
 import (
 	"image/color"
-	"math"
 
 	"chaos-gate-unlocker/internal/ui"
 
@@ -92,11 +91,11 @@ func (t *Tabs) CreateRenderer() fyne.WidgetRenderer {
 }
 
 type tabsRenderer struct {
-	tabs      *Tabs
-	bar       *fyne.Container
-	selection *canvas.Rectangle
-	anim      *fyne.Animation
-	animating bool
+	tabs       *Tabs
+	bar        *fyne.Container
+	selection  *canvas.Rectangle
+	anim       *fyne.Animation
+	animTarget fyne.Position
 }
 
 func (r *tabsRenderer) Layout(size fyne.Size) {
@@ -106,7 +105,8 @@ func (r *tabsRenderer) Layout(size fyne.Size) {
 	r.tabs.contents.Resize(fyne.NewSize(size.Width-barW, size.Height))
 	r.tabs.contents.Move(fyne.NewPos(0, 0))
 
-	if target, ok := r.placeSelection(); ok && !r.animating {
+	if target, ok := r.placeSelection(); ok && (r.anim == nil || target != r.animTarget) {
+		r.stopAnim()
 		r.selection.Move(target)
 	}
 }
@@ -122,27 +122,26 @@ func (r *tabsRenderer) placeSelection() (fyne.Position, bool) {
 	return r.bar.Position().Add(b.Position()), true
 }
 
+func (r *tabsRenderer) stopAnim() {
+	if r.anim != nil {
+		r.anim.Stop()
+		r.anim = nil
+	}
+}
+
 func (r *tabsRenderer) moveSelection(animate bool) {
 	target, ok := r.placeSelection()
 	if !ok {
 		return
 	}
-	if r.anim != nil {
-		r.anim.Stop()
-		r.anim = nil
-	}
-	r.animating = animate
+	r.stopAnim()
 	if !animate {
 		r.selection.Move(target)
 		return
 	}
+	r.animTarget = target
 	r.anim = canvas.NewPositionAnimation(r.selection.Position(), target,
-		canvas.DurationShort, func(p fyne.Position) {
-			r.selection.Move(p)
-			if math.Abs(float64(p.Y-target.Y)) < 0.5 {
-				r.animating = false
-			}
-		})
+		canvas.DurationShort, func(p fyne.Position) { r.selection.Move(p) })
 	r.anim.Curve = fyne.AnimationEaseInOut
 	r.anim.Start()
 }
@@ -166,10 +165,7 @@ func (r *tabsRenderer) Objects() []fyne.CanvasObject {
 }
 
 func (r *tabsRenderer) Destroy() {
-	if r.anim != nil {
-		r.anim.Stop()
-		r.anim = nil
-	}
+	r.stopAnim()
 }
 
 type tabButton struct {

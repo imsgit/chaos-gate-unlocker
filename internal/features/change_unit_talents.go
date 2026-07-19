@@ -4,44 +4,15 @@ import (
 	"chaos-gate-unlocker/internal/objects"
 )
 
-var (
-	talentsByName = map[string]string{
-		"Aegis Adept":          "Talent_Guerilla",
-		"Battle Prodigy":       "Talent_BattleProdigy",
-		"Blademaster":          "Talent_Blademaster",
-		"Crack Shot":           "Talent_CrackShot",
-		"Cultbane":             "Talent_Cultbane",
-		"Daemonbane":           "Talent_Daemonbane",
-		"Deathless":            "Talent_Deathless",
-		"Devoted Practitioner": "Talent_DevotedPractitioner",
-		"Duelist":              "Talent_Duelist",
-		"Eagle Eye":            "Talent_EagleEye",
-		"Enginebane":           "Talent_Enginebane",
-		"Farseer":              "Talent_Farseer",
-		"Fast Recovery":        "Talent_FastRecovery",
-		"Great Destiny":        "Talent_GreatDestiny",
-		"Indomitable":          "Talent_Indomitable",
-		"Lightning Reflexes":   "Talent_LightningReflexes",
-		"Omnissiah's Chosen":   "Talent_OmnissiahsChosen",
-		"Provident":            "Talent_Provident",
-		"Quartermaster":        "Talent_Quartermaster",
-		"Resilient":            "Talent_Resilient",
-		"Skull Keeper":         "Talent_SkullKeeper",
-		"Sure Strike":          "Talent_SureStrike",
-		"Throwing Arm":         "Talent_ThrowingArm",
-		"Venerable Soul":       "Talent_VenerableSoul",
-		"Zealous Scholar":      "Talent_ZealousScholar",
-		"Undying Apothecary":   "Talent_UndyingApothecary",
-		"Undying Chaplain":     "Talent_UndyingChaplain",
-		"Undying Interceptor":  "Talent_UndyingInterceptor",
-		"Undying Justicar":     "Talent_UndyingJusticar",
-		"Undying Librarian":    "Talent_UndyingLibrarian",
-		"Undying Paladin":      "Talent_UndyingPaladin",
-		"Undying Purgator":     "Talent_UndyingPurgator",
-		"Undying Purifier":     "Talent_UndyingPurifier",
-		"Undying Techmarine":   "Talent_UndyingTechMarine",
+var talentsByName = func() map[string]string {
+	byName := make(map[string]string, len(talentsByID))
+	for id, t := range talentsByID {
+		byName[t.Name] = id
 	}
+	return byName
+}()
 
+var (
 	talentsByID = map[string]Talent{
 		"Talent_Guerilla": {
 			ID:          "Talent_Guerilla",

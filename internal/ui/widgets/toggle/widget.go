@@ -13,7 +13,6 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
-	"fyne.io/fyne/v2/driver/desktop"
 	"fyne.io/fyne/v2/widget"
 )
 
@@ -48,7 +47,7 @@ func New(onChanged func(on bool), icon, name, toolTip string) *Widget {
 
 	s.icon.Image = ui.DecodeMasked(ui.IconByName(icon))
 
-	prewarmOnce.Do(func() { go getSwitchFrames() })
+	go getSwitchFrames()
 
 	s.ExtendBaseWidget(s)
 	s.showStatic()
@@ -59,10 +58,6 @@ func (s *Widget) ExtendBaseWidget(wid fyne.Widget) {
 	s.ExtendToolTipWidget(wid)
 	s.BaseWidget.ExtendBaseWidget(wid)
 }
-
-func (s *Widget) MouseIn(e *desktop.MouseEvent)    { s.WidgetExtend.MouseIn(e) }
-func (s *Widget) MouseMoved(e *desktop.MouseEvent) { s.WidgetExtend.MouseMoved(e) }
-func (s *Widget) MouseOut()                        { s.WidgetExtend.MouseOut() }
 
 func (s *Widget) SetState(on, notify bool) {
 	s.set(on, notify, false)
@@ -160,7 +155,6 @@ func (s *Widget) animateTo(on bool) {
 }
 
 func (s *Widget) MinSize() fyne.Size {
-	s.ExtendBaseWidget(s)
 	return fyne.NewSize(0, 54)
 }
 
@@ -193,11 +187,9 @@ func (s *Widget) Tapped(*fyne.PointEvent) {
 		return
 	}
 
-	if !s.focused {
-		if !fyne.CurrentDevice().IsMobile() {
-			if c := fyne.CurrentApp().Driver().CanvasForObject(s); c != nil {
-				c.Focus(s)
-			}
+	if !s.focused && !fyne.CurrentDevice().IsMobile() {
+		if c := fyne.CurrentApp().Driver().CanvasForObject(s); c != nil {
+			c.Focus(s)
 		}
 	}
 

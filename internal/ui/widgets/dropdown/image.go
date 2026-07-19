@@ -29,16 +29,12 @@ func (w *iconImage) ExtendBaseWidget(wid fyne.Widget) {
 }
 
 func (w *iconImage) SetResource(res fyne.Resource) {
-	w.img.Resource = nil
 	w.img.Image = ui.DecodeMasked(res)
 	w.Refresh()
 }
 
 func (w *iconImage) MouseIn(e *desktop.MouseEvent) {
-	if tooltip.OverlayShown(w) {
-		return
-	}
-	w.WidgetExtend.MouseIn(e)
+	w.MouseInUnlessOverlay(e)
 }
 
 func (w *iconImage) CreateRenderer() fyne.WidgetRenderer {

@@ -13,7 +13,7 @@ type WidgetExtend struct {
 
 	toolTip string
 
-	handle           *handle
+	tipLayer         *fyne.Container
 	absoluteMousePos fyne.Position
 	pendingCancel    context.CancelFunc
 }
@@ -51,21 +51,16 @@ func (t *WidgetExtend) setPending() {
 	ctx, cancel := context.WithCancel(context.Background())
 	t.pendingCancel = cancel
 
-	delay := nextDelay()
-	go func() {
-		select {
-		case <-ctx.Done():
-		case <-time.After(delay):
-			fyne.Do(func() {
-				if ctx.Err() != nil {
-					return
-				}
-				t.cancel()
-				canvas := fyne.CurrentApp().Driver().CanvasForObject(t.Obj)
-				t.handle = showAtMousePosition(canvas, t.absoluteMousePos, t.toolTip)
-			})
-		}
-	}()
+	time.AfterFunc(nextDelay(), func() {
+		fyne.Do(func() {
+			if ctx.Err() != nil {
+				return
+			}
+			t.cancel()
+			canvas := fyne.CurrentApp().Driver().CanvasForObject(t.Obj)
+			t.tipLayer = showAtMousePosition(canvas, t.absoluteMousePos, t.toolTip)
+		})
+	})
 }
 
 func (t *WidgetExtend) cancel() {
@@ -73,8 +68,8 @@ func (t *WidgetExtend) cancel() {
 		t.pendingCancel()
 		t.pendingCancel = nil
 	}
-	if t.handle != nil {
-		hide(t.handle)
-		t.handle = nil
+	if t.tipLayer != nil {
+		hide(t.tipLayer)
+		t.tipLayer = nil
 	}
 }

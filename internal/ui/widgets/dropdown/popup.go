@@ -45,16 +45,14 @@ func (p *selectPopup) TypedKey(e *fyne.KeyEvent) {
 	case fyne.KeyReturn, fyne.KeyEnter:
 		p.activate()
 	case fyne.KeyEscape, fyne.KeySpace:
-		if p.onDismiss != nil {
-			p.onDismiss()
-		}
+		p.onDismiss()
 	}
 }
 
 func (p *selectPopup) move(dir int) {
 	for i := p.highlight + dir; i >= 0 && i < len(p.rows); i += dir {
 		if !p.rows[i].selected {
-			if p.highlight >= 0 && p.highlight < len(p.rows) {
+			if p.highlight >= 0 {
 				p.rows[p.highlight].setHighlighted(false)
 			}
 			p.highlight = i
@@ -66,7 +64,7 @@ func (p *selectPopup) move(dir int) {
 }
 
 func (p *selectPopup) activate() {
-	if p.highlight < 0 || p.highlight >= len(p.rows) {
+	if p.highlight < 0 {
 		return
 	}
 	p.rows[p.highlight].onTapped()

@@ -28,11 +28,6 @@ func New() *Widget {
 	return p
 }
 
-func (p *Widget) MinSize() fyne.Size {
-	p.ExtendBaseWidget(p)
-	return fyne.NewSize(0, 4)
-}
-
 func (p *Widget) Grow(width float32) {
 	p.width = width
 	p.active = true
@@ -62,7 +57,6 @@ type progressRenderer struct {
 func (r *progressRenderer) Layout(size fyne.Size) {
 	p := r.progress
 	p.bg.Resize(size)
-	p.bg.Move(fyne.NewPos(0, 0))
 
 	if p.active {
 		p.edge.Resize(fyne.NewSize(1, size.Height))

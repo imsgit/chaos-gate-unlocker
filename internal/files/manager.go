@@ -116,13 +116,7 @@ func (m *Manager) Encode() ([]byte, error) {
 	}
 	stateBytes = encodeDecode(stateBytes)
 
-	fileLength := len(headerBytes) + len(sep) + len(stateBytes) + len(sep)
-
-	if len(m.combatStateBytes) > 0 {
-		fileLength += len(m.combatStateBytes) + len(sep)
-	}
-
-	file := make([]byte, 0, fileLength)
+	file := make([]byte, 0, len(headerBytes)+len(stateBytes)+len(m.combatStateBytes)+3*len(sep))
 	file = append(file, headerBytes...)
 	file = append(file, sep...)
 	file = append(file, stateBytes...)

@@ -30,7 +30,6 @@ type Widget struct {
 
 	hoverBg   *canvas.Rectangle
 	iconClass *canvas.Image
-	classBox  *fyne.Container
 	imgLvl    *canvas.Image
 
 	textName   *canvas.Text
@@ -49,7 +48,6 @@ func New() fyne.CanvasObject {
 	}
 
 	i.imgLvl.Image = ui.DecodeMasked(ui.WidgetUnitLevelIcon())
-	i.classBox = container.NewStack(i.iconClass)
 
 	i.textName.TextStyle = fyne.TextStyle{Bold: true}
 	i.textLvl.TextStyle = fyne.TextStyle{Bold: true}
@@ -65,7 +63,6 @@ func (i *Widget) ExtendBaseWidget(wid fyne.Widget) {
 }
 
 func (i *Widget) MinSize() fyne.Size {
-	i.ExtendBaseWidget(i)
 	return fyne.NewSize(0, 54)
 }
 
@@ -84,7 +81,7 @@ func (i *Widget) MouseOut() {
 func (i *Widget) CreateRenderer() fyne.WidgetRenderer {
 	i.hoverBg.CornerRadius = i.Theme().Size(theme.SizeNameSelectionRadius)
 
-	classContainer := container.NewPadded(i.classBox)
+	classContainer := container.NewPadded(i.iconClass)
 
 	lvlContainer := container.NewPadded(container.NewCenter(
 		i.imgLvl,
@@ -131,9 +128,7 @@ func (i *Widget) Bind(val interface{}) {
 		sideMission = object.CurrentSideMission.MissionID != ""
 	}
 
-	i.iconClass.Resource = nil
 	i.iconClass.Image = ui.DecodeMasked(ui.IconByName(class))
-	i.classBox.Refresh()
 	i.SetToolTip(splitOnCapital(class))
 
 	i.textName.Text = name

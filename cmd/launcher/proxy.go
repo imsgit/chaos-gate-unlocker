@@ -11,6 +11,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"chaos-gate-unlocker/internal/bridge"
 )
 
 const cacheMagic = "cgu1"
@@ -151,28 +153,7 @@ func (p *siteProxy) store(reqPath string, a asset) {
 		return
 	}
 	header := strings.Join([]string{cacheMagic, a.contentType, a.contentEncoding, a.etag, a.lastModified}, "\n") + "\n"
-	_ = writeFileAtomic(dst, []byte(header), a.body)
-}
-
-func writeFileAtomic(path string, parts ...[]byte) error {
-	tmp, err := os.CreateTemp(filepath.Dir(path), filepath.Base(path)+".*.tmp")
-	if err != nil {
-		return err
-	}
-	name := tmp.Name()
-	for _, part := range parts {
-		if _, err = tmp.Write(part); err != nil {
-			break
-		}
-	}
-	if cerr := tmp.Close(); err == nil {
-		err = cerr
-	}
-	if err != nil {
-		os.Remove(name)
-		return err
-	}
-	return os.Rename(name, path)
+	_ = bridge.WriteFileAtomic(dst, []byte(header), a.body)
 }
 
 func (p *siteProxy) load(reqPath string) (asset, bool) {

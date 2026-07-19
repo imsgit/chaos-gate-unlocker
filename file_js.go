@@ -20,10 +20,7 @@ import (
 	"fyne.io/fyne/v2/dialog"
 )
 
-var (
-	bridgeFile string
-	bridgeWin  fyne.Window
-)
+var bridgeFile string
 
 func bridgeToken() string {
 	search := js.Global().Get("location").Get("search").String()
@@ -46,7 +43,6 @@ func bridgeBase() string {
 }
 
 func openFile(w fyne.Window, fm *files.Manager, beginLoad func(), onData func(name string, data []byte, err error)) {
-	bridgeWin = w
 	if tok := bridgeToken(); tok != "" {
 		go bridgePick(w, tok, beginLoad, onData)
 		return
@@ -165,27 +161,24 @@ func showBridgePicker(w fyne.Window, tok string, names []string, infoMap map[str
 	})
 }
 
-func saveFile(fm *files.Manager) error {
-	if tok := bridgeToken(); tok != "" {
-		return bridgeSave(tok, fm)
-	}
-
+func saveFile(fm *files.Manager, done func(error)) {
 	data, err := fm.Encode()
 	if err != nil {
-		return err
+		done(err)
+		return
+	}
+	if tok := bridgeToken(); tok != "" {
+		bridgeSave(tok, fm.Name(), data, done)
+		return
 	}
 	download(fm.Name(), data)
-	return nil
+	done(nil)
 }
 
-func bridgeSave(tok string, fm *files.Manager) error {
-	data, err := fm.Encode()
-	if err != nil {
-		return err
-	}
+func bridgeSave(tok, fallbackName string, data []byte, done func(error)) {
 	name := bridgeFile
 	if name == "" {
-		name = fm.Name()
+		name = fallbackName
 	}
 
 	go func() {
@@ -197,12 +190,8 @@ func bridgeSave(tok string, fm *files.Manager) error {
 			}
 			resp.Body.Close()
 		}
-		if err != nil {
-			fyne.Do(func() { dialog.ShowError(err, bridgeWin) })
-		}
+		fyne.Do(func() { done(err) })
 	}()
-
-	return nil
 }
 
 func confirmSave(w fyne.Window, do func()) {

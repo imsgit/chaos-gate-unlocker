@@ -20,20 +20,15 @@ const (
 	aboveMouseDistance  = 8
 )
 
-var (
-	layers        = make(map[fyne.Canvas]*layer)
-	lastShownUnix int64
-)
-
-type handle struct {
-	canvas  fyne.Canvas
-	overlay fyne.CanvasObject
-}
-
 type layer struct {
 	Container fyne.Container
-	overlays  map[fyne.CanvasObject]*layer
+	overlays  map[fyne.CanvasObject]*fyne.Container
 }
+
+var (
+	layers    = make(map[fyne.Canvas]*layer)
+	lastShown time.Time
+)
 
 func AddWindowToolTipLayer(content fyne.CanvasObject, canvas fyne.Canvas) fyne.CanvasObject {
 	l := &layer{}
@@ -47,12 +42,12 @@ func AddOverlayToolTipLayer(overlay fyne.CanvasObject, canvas fyne.Canvas) *fyne
 		fyne.LogError("", errors.New("no tooltip layer for parent canvas"))
 		return nil
 	}
-	l := &layer{}
 	if parent.overlays == nil {
-		parent.overlays = make(map[fyne.CanvasObject]*layer)
+		parent.overlays = make(map[fyne.CanvasObject]*fyne.Container)
 	}
-	parent.overlays[overlay] = l
-	return &l.Container
+	c := &fyne.Container{}
+	parent.overlays[overlay] = c
+	return c
 }
 
 func RemoveOverlayToolTipLayer(overlay fyne.CanvasObject, canvas fyne.Canvas) {
@@ -61,58 +56,56 @@ func RemoveOverlayToolTipLayer(overlay fyne.CanvasObject, canvas fyne.Canvas) {
 	}
 }
 
+func OverlayShown(obj fyne.CanvasObject) bool {
+	c := fyne.CurrentApp().Driver().CanvasForObject(obj)
+	if c == nil {
+		return false
+	}
+	return c.Overlays().Top() != nil
+}
+
 func nextDelay() time.Duration {
-	if time.Now().UnixMilli()-lastShownUnix < subsequentValidTime.Milliseconds() {
+	if time.Since(lastShown) < subsequentValidTime {
 		return subsequentDelay
 	}
 	return initialDelay
 }
 
-func showAtMousePosition(canvas fyne.Canvas, pos fyne.Position, text string) *handle {
+func showAtMousePosition(canvas fyne.Canvas, pos fyne.Position, text string) *fyne.Container {
 	if canvas == nil {
 		return nil
 	}
 
-	lastShownUnix = time.Now().UnixMilli()
-	overlay := canvas.Overlays().Top()
-	h := &handle{canvas: canvas, overlay: overlay}
-	l := findLayer(h)
+	lastShown = time.Now()
+	l := layers[canvas]
 	if l == nil {
 		return nil
+	}
+	c := &l.Container
+	if overlay := canvas.Overlays().Top(); overlay != nil {
+		c = l.overlays[overlay]
+		if c == nil {
+			return nil
+		}
 	}
 
 	t := newTip(text)
-	l.Container.Objects = []fyne.CanvasObject{t}
+	c.Objects = []fyne.CanvasObject{t}
 
-	zeroPos := fyne.CurrentApp().Driver().AbsolutePositionForObject(&l.Container)
-
-	sizeAndPosition(zeroPos, pos.Subtract(zeroPos), t, canvas)
-	l.Container.Refresh()
-	return h
+	zeroPos := fyne.CurrentApp().Driver().AbsolutePositionForObject(c)
+	sizeAndPosition(zeroPos, pos, t, canvas)
+	c.Refresh()
+	return c
 }
 
-func hide(h *handle) {
-	if h == nil {
-		return
-	}
-	if l := findLayer(h); l != nil {
-		l.Container.Objects = nil
-		l.Container.Refresh()
+func hide(c *fyne.Container) {
+	if c != nil {
+		c.Objects = nil
+		c.Refresh()
 	}
 }
 
-func findLayer(h *handle) *layer {
-	l := layers[h.canvas]
-	if l == nil {
-		return nil
-	}
-	if h.overlay != nil {
-		return l.overlays[h.overlay]
-	}
-	return l
-}
-
-func sizeAndPosition(zeroPos, relPos fyne.Position, t *tip, canvas fyne.Canvas) {
+func sizeAndPosition(zeroPos, pos fyne.Position, t *tip, canvas fyne.Canvas) {
 	canvasSize := canvas.Size()
 	pad := theme.Padding()
 
@@ -120,18 +113,15 @@ func sizeAndPosition(zeroPos, relPos fyne.Position, t *tip, canvas fyne.Canvas) 
 	t.Resize(fyne.NewSize(w, 1))
 	t.Resize(fyne.NewSize(w, t.textMinSize().Height))
 
-	if rightEdge := relPos.X + zeroPos.X + w; rightEdge > canvasSize.Width-pad {
-		relPos.X -= rightEdge - canvasSize.Width + pad
+	if rightEdge := pos.X + w; rightEdge > canvasSize.Width-pad {
+		pos.X -= rightEdge - canvasSize.Width + pad
 	}
-	if bottomEdge := relPos.Y + zeroPos.Y + t.Size().Height + belowMouseDistance; bottomEdge > canvasSize.Height-pad {
-		relPos.Y -= t.Size().Height + aboveMouseDistance
+	if bottomEdge := pos.Y + t.Size().Height + belowMouseDistance; bottomEdge > canvasSize.Height-pad {
+		pos.Y -= t.Size().Height + aboveMouseDistance
 	} else {
-		relPos.Y += belowMouseDistance
+		pos.Y += belowMouseDistance
 	}
 
 	scale := canvas.Scale()
-	relPos.X = ui.SnapToPixel(relPos.X+zeroPos.X, scale) - zeroPos.X
-	relPos.Y = ui.SnapToPixel(relPos.Y+zeroPos.Y, scale) - zeroPos.Y
-
-	t.Move(relPos)
+	t.Move(fyne.NewPos(ui.SnapToPixel(pos.X, scale)-zeroPos.X, ui.SnapToPixel(pos.Y, scale)-zeroPos.Y))
 }

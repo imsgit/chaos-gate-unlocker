@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"crypto/rand"
 	"encoding/hex"
 	"flag"
@@ -8,6 +9,7 @@ import (
 	"log"
 	"net"
 	"net/http"
+	"sync/atomic"
 	"time"
 
 	"chaos-gate-unlocker/internal/bridge"
@@ -46,21 +48,43 @@ func main() {
 		log.Fatalf("proxy: %v", err)
 	}
 
-	appURL := "http://" + ln.Addr().String() + sitePath + "?t=" + token
+	host := ln.Addr().String()
+	appURL := "http://" + host + sitePath + "?t=" + token
 	boot := fmt.Sprintf(`<!doctype html><meta charset="utf-8"><style>html,body{margin:0;height:100%%;background:#151515}</style><script>requestAnimationFrame(function(){requestAnimationFrame(function(){location.replace(%q)})})</script>`, appURL)
 
 	mux := http.NewServeMux()
 	bridge.New(token, func() string { return dir }).Register(mux)
+	var launched atomic.Bool
 	mux.HandleFunc("/__launch", func(w http.ResponseWriter, _ *http.Request) {
+		if !launched.CompareAndSwap(false, true) {
+			http.Error(w, "gone", http.StatusGone)
+			return
+		}
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
 		_, _ = w.Write([]byte(boot))
 	})
 	mux.Handle("/", proxy)
 
-	srv := &http.Server{Handler: mux, ReadHeaderTimeout: 10 * time.Second}
-	go func() { log.Fatalf("serve: %v", srv.Serve(ln)) }()
+	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Host != host {
+			http.Error(w, "forbidden", http.StatusForbidden)
+			return
+		}
+		mux.ServeHTTP(w, r)
+	})
 
-	openWindow("Chaos Gate Unlocker", "http://"+ln.Addr().String()+"/__launch")
+	srv := &http.Server{Handler: handler, ReadHeaderTimeout: 10 * time.Second}
+	go func() {
+		if err := srv.Serve(ln); err != http.ErrServerClosed {
+			log.Fatalf("serve: %v", err)
+		}
+	}()
+
+	openWindow("Chaos Gate Unlocker", "http://"+host+"/__launch")
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+	_ = srv.Shutdown(ctx)
 }
 
 func newToken() string {

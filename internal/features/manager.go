@@ -39,16 +39,8 @@ func NewManager() *Manager {
 	return &Manager{}
 }
 
-func (m *Manager) ApplyState() func(state *internal.State) {
-	return func(state *internal.State) {
-		m.state = state
-	}
-}
-
-type Sort []interface{}
-
-func (s Sort) Len() int {
-	return len(s)
+func (m *Manager) SetState(state *internal.State) {
+	m.state = state
 }
 
 func classStatusLvlName(obj interface{}) (class, status, lvl int, name string) {
@@ -68,9 +60,9 @@ func classStatusLvlName(obj interface{}) (class, status, lvl int, name string) {
 	}
 }
 
-func (s Sort) Less(i, j int) bool {
-	iClass, iStatus, iLvl, iName := classStatusLvlName(s[i])
-	jClass, jStatus, jLvl, jName := classStatusLvlName(s[j])
+func unitLess(a, b interface{}) bool {
+	iClass, iStatus, iLvl, iName := classStatusLvlName(a)
+	jClass, jStatus, jLvl, jName := classStatusLvlName(b)
 
 	if jClass != iClass {
 		return jClass < iClass
@@ -82,10 +74,6 @@ func (s Sort) Less(i, j int) bool {
 		return jLvl < iLvl
 	}
 	return jName > iName
-}
-
-func (s Sort) Swap(i, j int) {
-	s[i], s[j] = s[j], s[i]
 }
 
 func (m *Manager) Units() []interface{} {
@@ -113,14 +101,13 @@ func (m *Manager) Units() []interface{} {
 		}
 	}
 
-	sort.Sort(Sort(units))
+	sort.Slice(units, func(i, j int) bool { return unitLess(units[i], units[j]) })
 
 	return units
 }
 
 func getClass(s string) string {
-	class, _, _ := strings.Cut(s, "_")
-	return class
+	return stem(s)
 }
 
 func stem(s string) string {

@@ -15,8 +15,6 @@ var (
 
 	staticFramesOnce sync.Once
 	staticImgs       switchStatics
-
-	prewarmOnce sync.Once
 )
 
 type switchStatics struct {
@@ -30,19 +28,17 @@ func getSwitchFrames() []image.Image {
 
 func getStaticFrames() switchStatics {
 	staticFramesOnce.Do(func() {
-		off, on := switchBase()
-		staticImgs = switchStatics{off: off, on: on}
+		staticImgs = switchStatics{
+			off: ui.DecodeMasked(ui.WidgetSwitchOffIcon()),
+			on:  ui.DecodeMasked(ui.WidgetSwitchOnIcon()),
+		}
 	})
 	return staticImgs
 }
 
-func switchBase() (off, on image.Image) {
-	return ui.DecodeMasked(ui.WidgetSwitchOffIcon()),
-		ui.DecodeMasked(ui.WidgetSwitchOnIcon())
-}
-
 func buildSwitchFrames() {
-	off, on := switchBase()
+	st := getStaticFrames()
+	off, on := st.off, st.on
 	if off == nil || on == nil {
 		return
 	}
@@ -90,12 +86,6 @@ func maskCircle(src image.Image, cx, cy, r int, inside bool) *image.RGBA {
 }
 
 func drawAlpha(dst *image.RGBA, src image.Image, f float64) {
-	if f <= 0 {
-		return
-	}
-	if f > 1 {
-		f = 1
-	}
 	mask := image.NewUniform(color.Alpha{A: uint8(255 * f)})
 	draw.DrawMask(dst, dst.Bounds(), src, src.Bounds().Min, mask, image.Point{}, draw.Over)
 }

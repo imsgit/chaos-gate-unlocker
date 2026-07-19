@@ -16,14 +16,12 @@ import (
 	"context"
 	"fmt"
 	"net/url"
-	"runtime/debug"
 	"slices"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/app"
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
-	"fyne.io/fyne/v2/data/binding"
 	"fyne.io/fyne/v2/dialog"
 	"fyne.io/fyne/v2/widget"
 )
@@ -33,14 +31,58 @@ const (
 	websiteURL = "https://imsgit.github.io/chaos-gate-unlocker/"
 )
 
+type feature struct {
+	on        bool
+	sw        *toggle.Widget
+	apply     func()
+	can       func() (bool, bool)
+	icon      string
+	name      string
+	toolTip   string
+	onToggled func(on bool)
+}
+
 var (
 	featuresManager = features.NewManager()
 	filesManager    = files.NewManager()
 
-	unlockInfiniteCampaign, unlockPreorderItems, unlockAdvancedClasses, unlockPuritySeals, unlockAssassins,
-	restorePrognosticars, unlockGarranCrowe, authorizeDreadnoughtMissions, repairDreadnought, unlockGladiusFrigate,
-	completeCurrentResearch, completeCurrentConstruction, unequipMastercraftedWeapons,
-	unequipMastercraftedArmor bool
+	repairDreadnought = &feature{apply: featuresManager.RepairDreadnought, can: featuresManager.CanRepairDreadnought,
+		icon: "ActRepair", name: "Repair Dreadnought", toolTip: "Repairs the Dreadnought's damage;\nDreadnought access is required"}
+
+	leftFeatures = []*feature{
+		{apply: featuresManager.AuthorizeDreadnoughtMissions, can: featuresManager.CanAuthorizeDreadnoughtMissions,
+			icon: "ActDread", name: "Authorize Dreadnought missions", toolTip: "Marks all regular missions as Technophage, including Hive missions;\nThe difficulty of the missions will increase, won't affect frigate missions;\nDreadnought access is required"},
+		repairDreadnought,
+		{apply: featuresManager.RestorePrognosticars, can: featuresManager.CanRestorePrognosticars,
+			icon: "ActPrognosticars", name: "Restore prognosticars", toolTip: "Makes all attuned prognosticars available again"},
+		{apply: featuresManager.CompleteCurrentResearch, can: featuresManager.CanCompleteCurrentResearch,
+			icon: "ActComplete", name: "Complete current research", toolTip: "Completes current research project;\nAdvance time to take effect"},
+		{apply: featuresManager.CompleteCurrentConstruction, can: featuresManager.CanCompleteCurrentConstruction,
+			icon: "ActComplete", name: "Complete current construction", toolTip: "Completes current construction project;\nAdvance time to take effect"},
+		{apply: featuresManager.UnequipMastercraftedArmor, can: featuresManager.CanUnequipMastercraftedArmor,
+			icon: "ActUnequip", name: "Unequip mastercrafted armor", toolTip: "Unequips all mastercrafted armor and frees the slots;\nAlso unlocks unavailable armor, won't affect frigate missions"},
+		{apply: featuresManager.UnequipMastercraftedWeapons, can: featuresManager.CanUnequipMastercraftedWeapons,
+			icon: "ActUnequip", name: "Unequip mastercrafted weapons", toolTip: "Unequips all mastercrafted weapons;\nAlso unlocks unavailable weapons, won't affect frigate missions"},
+	}
+
+	rightFeatures = []*feature{
+		{apply: featuresManager.UnlockPreorderItems, can: featuresManager.CanUnlockPreorderItems,
+			icon: "ActPreorder", name: "Unlock pre-order items", toolTip: "Unlocks the Domina Liber Daemonica tome and Destroyer of Crys'yllix hammer"},
+		{apply: featuresManager.UnlockAdvancedClasses, can: featuresManager.CanUnlockAdvancedClasses,
+			icon: "Librarian", name: "Unlock advanced classes", toolTip: "Unlocks the Librarian, Paladin, Chaplain and Purifier classes;\nAdvance time to take effect"},
+		{apply: featuresManager.UnlockGarranCrowe, can: featuresManager.CanUnlockGarranCrowe,
+			icon: "GarranCrowe", name: "Unlock Garran Crowe", toolTip: "Unlocks castellan Garran Crowe;\nDLC access is required;\nAdvance time to take effect"},
+		{apply: featuresManager.UnlockAssassins, can: featuresManager.CanUnlockAssassins,
+			icon: "ActAssassins", name: "Unlock assassins", toolTip: "Unlocks imperial assassins;\nDLC access is required;\nAdvance time to take effect"},
+		{apply: featuresManager.UnlockGladiusFrigate, can: featuresManager.CanUnlockGladiusFrigate,
+			icon: "ActFrigate", name: "Unlock Gladius frigate", toolTip: "Unlocks the Gladius frigate, the Cleanse mission will still appear as expected;\nDLC access is required;\nAdvance time to take effect"},
+		{apply: featuresManager.UnlockPuritySeals, can: featuresManager.CanUnlockPuritySeals,
+			icon: "ActSeals", name: "Unlock purity seals", toolTip: "Unlocks purity seals upgrades;\nPoxus seeds access is required;\nAdvance time to take effect"},
+		{apply: featuresManager.UnlockInfiniteCampaign, can: featuresManager.CanUnlockInfiniteCampaign,
+			icon: "ActReaper", name: "Unlock infinite campaign", toolTip: "Removes the Exterminatus deadline so the purge can continue indefinitely;\nEndgame access is required"},
+	}
+
+	allFeatures = slices.Concat(leftFeatures, rightFeatures)
 
 	currUnit       any
 	healUnits      = map[any]bool{}
@@ -49,29 +91,7 @@ var (
 	augmeticsUnits = map[any][][]string{}
 )
 
-var featureActions = []struct {
-	flag  *bool
-	apply func()
-}{
-	{&unlockPuritySeals, featuresManager.UnlockPuritySeals},
-	{&repairDreadnought, featuresManager.RepairDreadnought},
-	{&unlockPreorderItems, featuresManager.UnlockPreorderItems},
-	{&unlockAdvancedClasses, featuresManager.UnlockAdvancedClasses},
-	{&restorePrognosticars, featuresManager.RestorePrognosticars},
-	{&unlockGarranCrowe, featuresManager.UnlockGarranCrowe},
-	{&authorizeDreadnoughtMissions, featuresManager.AuthorizeDreadnoughtMissions},
-	{&unlockGladiusFrigate, featuresManager.UnlockGladiusFrigate},
-	{&completeCurrentConstruction, featuresManager.CompleteCurrentConstruction},
-	{&completeCurrentResearch, featuresManager.CompleteCurrentResearch},
-	{&unequipMastercraftedWeapons, featuresManager.UnequipMastercraftedWeapons},
-	{&unequipMastercraftedArmor, featuresManager.UnequipMastercraftedArmor},
-	{&unlockInfiniteCampaign, featuresManager.UnlockInfiniteCampaign},
-	{&unlockAssassins, featuresManager.UnlockAssassins},
-}
-
 func main() {
-	debug.SetGCPercent(50)
-
 	validateScale()
 
 	a := app.NewWithID("chaos.gate.unlocker")
@@ -90,8 +110,8 @@ func main() {
 	refreshSaveButton = func() {
 		canApplyChanges := len(healUnits) > 0 || len(retrainUnits) > 0 ||
 			anyDirty(augmeticsUnits) || anyDirty(talentsUnits)
-		for _, action := range featureActions {
-			if *action.flag {
+		for _, f := range allFeatures {
+			if f.on {
 				canApplyChanges = true
 				break
 			}
@@ -103,30 +123,17 @@ func main() {
 		}
 	}
 
-	filesManager.OnLoadState(featuresManager.ApplyState())
+	filesManager.OnLoadState(featuresManager.SetState)
 
-	authorizeDreadnoughtMissionsSwitch := boolSwitch(&authorizeDreadnoughtMissions, "ActDread", "Authorize Dreadnought missions", "Marks all regular missions as Technophage, including Hive missions;\nThe difficulty of the missions will increase, won't affect frigate missions;\nDreadnought access is required")
-	restorePrognosticarsSwitch := boolSwitch(&restorePrognosticars, "ActPrognosticars", "Restore prognosticars", "Makes all attuned prognosticars available again")
-	completeCurrentResearchSwitch := boolSwitch(&completeCurrentResearch, "ActComplete", "Complete current research", "Completes current research project;\nAdvance time to take effect")
-	completeCurrentConstructionSwitch := boolSwitch(&completeCurrentConstruction, "ActComplete", "Complete current construction", "Completes current construction project;\nAdvance time to take effect")
-	unequipMastercraftedArmorSwitch := boolSwitch(&unequipMastercraftedArmor, "ActUnequip", "Unequip mastercrafted armor", "Unequips all mastercrafted armor and frees the slots;\nAlso unlocks unavailable armor, won't affect frigate missions")
-	unequipMastercraftedWeaponsSwitch := boolSwitch(&unequipMastercraftedWeapons, "ActUnequip", "Unequip mastercrafted weapons", "Unequips all mastercrafted weapons;\nAlso unlocks unavailable weapons, won't affect frigate missions")
-	unlockPreorderItemsSwitch := boolSwitch(&unlockPreorderItems, "ActPreorder", "Unlock pre-order items", "Unlocks the Domina Liber Daemonica tome and Destroyer of Crys'yllix hammer")
-	unlockAdvancedClassesSwitch := boolSwitch(&unlockAdvancedClasses, "Librarian", "Unlock advanced classes", "Unlocks the Librarian, Paladin, Chaplain and Purifier classes;\nAdvance time to take effect")
-	unlockGarranCroweSwitch := boolSwitch(&unlockGarranCrowe, "GarranCrowe", "Unlock Garran Crowe", "Unlocks castellan Garran Crowe;\nDLC access is required;\nAdvance time to take effect")
-	unlockAssassinsSwitch := boolSwitch(&unlockAssassins, "ActAssassins", "Unlock assassins", "Unlocks imperial assassins;\nDLC access is required;\nAdvance time to take effect")
-	unlockGladiusFrigateSwitch := boolSwitch(&unlockGladiusFrigate, "ActFrigate", "Unlock Gladius frigate", "Unlocks the Gladius frigate, the Cleanse mission will still appear as expected;\nDLC access is required;\nAdvance time to take effect")
-	unlockPuritySealsSwitch := boolSwitch(&unlockPuritySeals, "ActSeals", "Unlock purity seals", "Unlocks purity seals upgrades;\nPoxus seeds access is required;\nAdvance time to take effect")
-	unlockInfiniteCampaignSwitch := boolSwitch(&unlockInfiniteCampaign, "ActReaper", "Unlock infinite campaign", "Removes the Exterminatus deadline so the purge can continue indefinitely;\nEndgame access is required")
-
-	var repairDamageSwitch *toggle.Widget
-	repairDreadnoughtSwitch := toggle.New(func(on bool) {
-		repairDreadnought = on
-		refreshSaveButton()
-		if repairDamageSwitch.Visible() {
-			repairDamageSwitch.SetState(on, false)
-		}
-	}, "ActRepair", "Repair Dreadnought", "Repairs the Dreadnought's damage;\nDreadnought access is required")
+	for _, f := range allFeatures {
+		f.sw = toggle.New(func(on bool) {
+			f.on = on
+			refreshSaveButton()
+			if f.onToggled != nil {
+				f.onToggled(on)
+			}
+		}, f.icon, f.name, f.toolTip)
+	}
 
 	unitsBox := container.NewVBox()
 	unitsScrollBox := container.NewVScroll(unitsBox)
@@ -153,12 +160,16 @@ func main() {
 	}, "ActHeal", "Heal wound", "Heals the wound")
 	healWoundSwitch.Hide()
 
-	repairDamageSwitch = toggle.New(func(on bool) {
-		repairDreadnought = on
-		refreshSaveButton()
-		repairDreadnoughtSwitch.SetState(on, false)
+	repairDamageSwitch := toggle.New(func(on bool) {
+		repairDreadnought.sw.SetState(on, true)
 	}, "ActRepair", "Repair damage", "Repairs the Dreadnought's damage")
 	repairDamageSwitch.Hide()
+
+	repairDreadnought.onToggled = func(on bool) {
+		if repairDamageSwitch.Visible() {
+			repairDamageSwitch.SetState(on, false)
+		}
+	}
 
 	retrainSwitch := toggle.New(func(on bool) {
 		delete(retrainUnits, currUnit)
@@ -172,23 +183,23 @@ func main() {
 	unitsBox.Objects = append(unitsBox.Objects,
 		healWoundSwitch, repairDamageSwitch, retrainSwitch, container.NewVBox(), container.NewVBox())
 
-	unitsProvider := binding.NewUntypedList()
-	status := binding.NewString()
+	var units []any
+	statusLabel := widget.NewLabel("")
 
-	unitsList := widget.NewListWithData(
-		unitsProvider,
+	unitsList := widget.NewList(
+		func() int { return len(units) },
 		unitlistitem.New,
-		func(item binding.DataItem, o fyne.CanvasObject) {
-			val, ok := item.(binding.Untyped)
-			listItem, ok2 := o.(*unitlistitem.Widget)
-			if ok && ok2 {
-				v, _ := val.Get()
-				listItem.Bind(v)
+		func(id widget.ListItemID, o fyne.CanvasObject) {
+			if listItem, ok := o.(*unitlistitem.Widget); ok && id < len(units) {
+				listItem.Bind(units[id])
 			}
 		})
 	unitsList.HideSeparators = true
 	unitsList.OnSelected = func(id widget.ListItemID) {
-		currUnit, _ = unitsProvider.GetValue(id)
+		if id >= len(units) {
+			return
+		}
+		currUnit = units[id]
 
 		enable, showHeal := featuresManager.CanHealUnit(currUnit)
 		if showHeal {
@@ -209,7 +220,7 @@ func main() {
 			repairDamageSwitch.Show()
 			if enable {
 				repairDamageSwitch.Enable()
-				repairDamageSwitch.SetState(repairDreadnought, false)
+				repairDamageSwitch.SetState(repairDreadnought.on, false)
 			} else {
 				repairDamageSwitch.Disable()
 				repairDamageSwitch.SetState(true, false)
@@ -260,24 +271,15 @@ func main() {
 	eyeGlowOverlay := eyeGlow.Overlay()
 	eyeGlow.Animate()
 
+	featureColumn := func(fs []*feature) *fyne.Container {
+		box := container.NewVBox()
+		for _, f := range fs {
+			box.Add(f.sw)
+		}
+		return box
+	}
 	mainTab := &tabs.Item{Title: "Main", Icon: ui.AppTabMainIcon(),
-		Content: container.NewGridWithColumns(2,
-			container.NewVBox(
-				authorizeDreadnoughtMissionsSwitch,
-				repairDreadnoughtSwitch,
-				restorePrognosticarsSwitch,
-				completeCurrentResearchSwitch,
-				completeCurrentConstructionSwitch,
-				unequipMastercraftedArmorSwitch,
-				unequipMastercraftedWeaponsSwitch),
-			container.NewVBox(
-				unlockPreorderItemsSwitch,
-				unlockAdvancedClassesSwitch,
-				unlockGarranCroweSwitch,
-				unlockAssassinsSwitch,
-				unlockGladiusFrigateSwitch,
-				unlockPuritySealsSwitch,
-				unlockInfiniteCampaignSwitch))}
+		Content: container.NewGridWithColumns(2, featureColumn(leftFeatures), featureColumn(rightFeatures))}
 	unitsTab := &tabs.Item{Title: "Units", Icon: ui.AppTabUnitsIcon(),
 		Content: container.NewGridWithColumns(2, dragscroll.List(unitsList), dragscroll.Scroll(unitsScrollBox))}
 	nexusURL, _ := url.Parse("https://www.nexusmods.com/warhammer40kchaosgatedaemonhunters/mods/5")
@@ -346,11 +348,12 @@ func main() {
 		layoutTabs.Hide()
 		layoutTabs.SelectIndex(0)
 		unitsList.UnselectAll()
-		status.Set("")
+		statusLabel.SetText("")
 	}
 
 	var loadCancel context.CancelFunc
 	beginLoad := func() {
+		eyeGlow.Flash()
 		loadCancel = animateTop(true, layoutTabs.Show)
 
 		healUnits = map[any]bool{}
@@ -374,24 +377,14 @@ func main() {
 			return
 		}
 
-		unitsProvider.Set(featuresManager.Units())
+		units = featuresManager.Units()
+		unitsList.Refresh()
 
-		toggle.Reset(unlockAdvancedClassesSwitch, featuresManager.CanUnlockAdvancedClasses)
-		toggle.Reset(repairDreadnoughtSwitch, featuresManager.CanRepairDreadnought)
-		toggle.Reset(unlockPuritySealsSwitch, featuresManager.CanUnlockPuritySeals)
-		toggle.Reset(restorePrognosticarsSwitch, featuresManager.CanRestorePrognosticars)
-		toggle.Reset(unlockGarranCroweSwitch, featuresManager.CanUnlockGarranCrowe)
-		toggle.Reset(authorizeDreadnoughtMissionsSwitch, featuresManager.CanAuthorizeDreadnoughtMissions)
-		toggle.Reset(unlockGladiusFrigateSwitch, featuresManager.CanUnlockGladiusFrigate)
-		toggle.Reset(completeCurrentResearchSwitch, featuresManager.CanCompleteCurrentResearch)
-		toggle.Reset(completeCurrentConstructionSwitch, featuresManager.CanCompleteCurrentConstruction)
-		toggle.Reset(unlockAssassinsSwitch, featuresManager.CanUnlockAssassins)
-		toggle.Reset(unlockPreorderItemsSwitch, featuresManager.CanUnlockPreorderItems)
-		toggle.Reset(unequipMastercraftedWeaponsSwitch, featuresManager.CanUnequipMastercraftedWeapons)
-		toggle.Reset(unequipMastercraftedArmorSwitch, featuresManager.CanUnequipMastercraftedArmor)
-		toggle.Reset(unlockInfiniteCampaignSwitch, featuresManager.CanUnlockInfiniteCampaign)
+		for _, f := range allFeatures {
+			toggle.Reset(f.sw, f.can)
+		}
 
-		status.Set(filesManager.Status())
+		statusLabel.SetText(filesManager.Status())
 	}
 
 	openButton = widget.NewButton("Open", func() {
@@ -406,16 +399,16 @@ func main() {
 
 			resetUI()
 
-			if err := saveFile(filesManager); err != nil {
-				cancel()
-				dialog.ShowError(err, w)
-				return
-			}
+			saveFile(filesManager, func(err error) {
+				if err != nil {
+					cancel()
+					dialog.ShowError(err, w)
+				}
+			})
 		})
 	})
 	saveButton.Disable()
 
-	statusLabel := widget.NewLabelWithData(status)
 	var bottomBar fyne.CanvasObject = statusLabel
 	if showTryOnline() {
 		siteURL, _ := url.Parse(websiteURL)
@@ -557,9 +550,9 @@ func containsOpt(list []string, val string) bool {
 var refreshSaveButton func()
 
 func applyChanges() {
-	for _, action := range featureActions {
-		if *action.flag {
-			action.apply()
+	for _, f := range allFeatures {
+		if f.on {
+			f.apply()
 		}
 	}
 	for unit := range healUnits {
@@ -574,11 +567,4 @@ func applyChanges() {
 	for unit, talents := range talentsUnits {
 		featuresManager.ChangeUnitTalents(unit, talents[1])
 	}
-}
-
-func boolSwitch(flag *bool, icon, name, tooltip string) *toggle.Widget {
-	return toggle.New(func(on bool) {
-		*flag = on
-		refreshSaveButton()
-	}, icon, name, tooltip)
 }

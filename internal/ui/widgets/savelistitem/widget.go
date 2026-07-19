@@ -36,7 +36,6 @@ func New() fyne.CanvasObject {
 }
 
 func (i *Widget) MinSize() fyne.Size {
-	i.ExtendBaseWidget(i)
 	return fyne.NewSize(0, 50)
 }
 

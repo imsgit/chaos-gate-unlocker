@@ -20,7 +20,9 @@ type tip struct {
 }
 
 func newTip(text string) *tip {
-	t := &tip{Text: text}
+	t := &tip{Text: text, richtext: widget.NewRichTextWithText(text)}
+	t.richtext.Wrapping = fyne.TextWrapWord
+	t.richtext.Segments[0].(*widget.TextSegment).Style = tipTextStyle
 	t.ExtendBaseWidget(t)
 	return t
 }
@@ -29,17 +31,11 @@ func (t *tip) MinSize() fyne.Size {
 	return fyne.Size{}
 }
 
-func (t *tip) Resize(size fyne.Size) {
-	t.updateRichText()
-	t.BaseWidget.Resize(size)
-}
-
 func (t *tip) pad() float32 {
 	return t.Theme().Size(theme.SizeNameInnerPadding) * 1.25
 }
 
 func (t *tip) textMinSize() fyne.Size {
-	t.updateRichText()
 	innerPad := t.Theme().Size(theme.SizeNameInnerPadding)
 	contentH := t.richtext.MinSize().Height - 2*innerPad
 	return fyne.NewSize(t.textWidth(), contentH+2*t.pad())
@@ -58,18 +54,7 @@ func (t *tip) textWidth() float32 {
 	return widest + 2*t.pad()
 }
 
-func (t *tip) updateRichText() {
-	if t.richtext == nil {
-		t.richtext = widget.NewRichTextWithText(t.Text)
-		t.richtext.Wrapping = fyne.TextWrapWord
-	}
-	seg := t.richtext.Segments[0].(*widget.TextSegment)
-	seg.Text = t.Text
-	seg.Style = tipTextStyle
-}
-
 func (t *tip) CreateRenderer() fyne.WidgetRenderer {
-	t.updateRichText()
 	bg := canvas.NewRectangle(color.Transparent)
 	bg.CornerRadius = t.Theme().Size(theme.SizeNameSelectionRadius)
 	return &tipRenderer{tip: t, bg: bg, objects: []fyne.CanvasObject{bg, t.richtext}}
@@ -103,7 +88,6 @@ func (r *tipRenderer) Refresh() {
 	r.bg.StrokeWidth = th.Size(theme.SizeNameInputBorder)
 	r.bg.Refresh()
 
-	r.tip.updateRichText()
 	r.tip.richtext.Refresh()
 	canvas.Refresh(r.tip)
 }

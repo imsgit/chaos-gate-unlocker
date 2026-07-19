@@ -72,8 +72,8 @@ func openSaveDir(dir string) {
 	_ = cmd.Start()
 }
 
-func saveFile(fm *files.Manager) error {
-	return fm.Save()
+func saveFile(fm *files.Manager, done func(error)) {
+	done(fm.Save())
 }
 
 func showTryOnline() bool { return true }

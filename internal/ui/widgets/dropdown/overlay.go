@@ -35,10 +35,8 @@ func newPopOverlay(content fyne.CanvasObject, canvas fyne.Canvas, onDismiss func
 func (p *popOverlay) showAt(pos fyne.Position, size fyne.Size) {
 	p.innerPos = pos
 	p.innerSize = size
-	if !p.shown {
-		p.canvas.Overlays().Add(p)
-		p.shown = true
-	}
+	p.canvas.Overlays().Add(p)
+	p.shown = true
 	p.Move(fyne.NewPos(0, 0))
 	p.Resize(p.canvas.Size())
 	p.Refresh()

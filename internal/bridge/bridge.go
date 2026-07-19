@@ -137,6 +137,27 @@ func openInBrowser(rawURL string) error {
 	return openExternally("rundll32", []string{"url.dll,FileProtocolHandler"}, rawURL)
 }
 
+func WriteFileAtomic(path string, parts ...[]byte) error {
+	tmp, err := os.CreateTemp(filepath.Dir(path), filepath.Base(path)+".*.tmp")
+	if err != nil {
+		return err
+	}
+	name := tmp.Name()
+	for _, part := range parts {
+		if _, err = tmp.Write(part); err != nil {
+			break
+		}
+	}
+	if cerr := tmp.Close(); err == nil {
+		err = cerr
+	}
+	if err != nil {
+		os.Remove(name)
+		return err
+	}
+	return os.Rename(name, path)
+}
+
 func (h *Handler) file(w http.ResponseWriter, r *http.Request) {
 	if !h.authed(r) {
 		http.Error(w, "forbidden", http.StatusForbidden)
@@ -165,7 +186,7 @@ func (h *Handler) file(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
-		if err := os.WriteFile(path, data, 0600); err != nil {
+		if err := WriteFileAtomic(path, data); err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
