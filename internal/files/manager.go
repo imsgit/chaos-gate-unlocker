@@ -46,14 +46,12 @@ func (m *Manager) GetCurrentPath() string {
 }
 
 func (m *Manager) LoadBytes(path string, file []byte) error {
-	m.filePath = path
-
 	chunks := bytes.SplitN(file, sep, 3)
 	if len(chunks) < 3 {
 		return ErrWrongSaveFileFormat
 	}
 
-	headerBytes, stateBytes, combatStateBytes := chunks[0], chunks[1], chunks[2]
+	headerBytes, stateBytes, combatStateBytes := chunks[0], chunks[1], bytes.TrimSuffix(chunks[2], sep)
 
 	if err := m.loadHeader(headerBytes); err != nil {
 		return err
@@ -63,6 +61,7 @@ func (m *Manager) LoadBytes(path string, file []byte) error {
 		return err
 	}
 
+	m.filePath = path
 	m.combatStateBytes = bytes.Clone(combatStateBytes)
 
 	for _, callback := range m.onLoadState {

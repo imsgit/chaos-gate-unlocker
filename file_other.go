@@ -20,43 +20,47 @@ import (
 )
 
 func openFile(w fyne.Window, fm *files.Manager, beginLoad func(), onData func(name string, data []byte, err error)) {
-	dir := fm.GetCurrentPath()
+	go func() {
+		dir := fm.GetCurrentPath()
+		entries, err := os.ReadDir(dir)
 
-	entries, err := os.ReadDir(dir)
-	if err != nil {
-		dialog.ShowError(err, w)
-		return
-	}
+		fyne.Do(func() {
+			if err != nil {
+				dialog.ShowError(err, w)
+				return
+			}
 
-	var names []string
-	for _, e := range entries {
-		if !e.IsDir() && strings.HasSuffix(e.Name(), ".gksave") {
-			names = append(names, e.Name())
-		}
-	}
-	if len(names) == 0 {
-		dialog.ShowError(errors.New("\n\n\nNo .gksave files found in the save folder.\n\n"), w)
-		return
-	}
+			var names []string
+			for _, e := range entries {
+				if !e.IsDir() && strings.HasSuffix(e.Name(), ".gksave") {
+					names = append(names, e.Name())
+				}
+			}
+			if len(names) == 0 {
+				dialog.ShowError(errors.New("\n\n\nNo .gksave files found in the save folder.\n\n"), w)
+				return
+			}
 
-	infoCache := map[string]save.Info{}
-	info := func(name string) save.Info {
-		if v, ok := infoCache[name]; ok {
-			return v
-		}
-		v := save.ParseFile(filepath.Join(dir, name))
-		infoCache[name] = v
-		return v
-	}
+			infoCache := map[string]save.Info{}
+			info := func(name string) save.Info {
+				if v, ok := infoCache[name]; ok {
+					return v
+				}
+				v := save.ParseFile(filepath.Join(dir, name))
+				infoCache[name] = v
+				return v
+			}
 
-	showSavePicker(w, names, info, func(name string) {
-		beginLoad()
-		path := filepath.Join(dir, name)
-		data, err := os.ReadFile(path)
-		onData(path, data, err)
-	}, func() {
-		openSaveDir(dir)
-	})
+			showSavePicker(w, names, info, func(name string) {
+				beginLoad()
+				path := filepath.Join(dir, name)
+				data, err := os.ReadFile(path)
+				onData(path, data, err)
+			}, func() {
+				openSaveDir(dir)
+			})
+		})
+	}()
 }
 
 func openSaveDir(dir string) {

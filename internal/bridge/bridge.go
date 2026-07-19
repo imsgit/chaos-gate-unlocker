@@ -41,7 +41,7 @@ func (h *Handler) authed(r *http.Request) bool {
 }
 
 func (h *Handler) resolve(name string) string {
-	if name == "" || filepath.Base(name) != name || !strings.HasSuffix(name, ".gksave") {
+	if name == "" || filepath.Base(name) != name || strings.ContainsRune(name, ':') || !strings.HasSuffix(name, ".gksave") {
 		return ""
 	}
 	return filepath.Join(h.dir(), name)
@@ -148,14 +148,20 @@ func WriteFileAtomic(path string, parts ...[]byte) error {
 			break
 		}
 	}
+	if err == nil {
+		err = tmp.Sync()
+	}
 	if cerr := tmp.Close(); err == nil {
 		err = cerr
+	}
+	if err == nil {
+		err = os.Rename(name, path)
 	}
 	if err != nil {
 		os.Remove(name)
 		return err
 	}
-	return os.Rename(name, path)
+	return nil
 }
 
 func (h *Handler) file(w http.ResponseWriter, r *http.Request) {

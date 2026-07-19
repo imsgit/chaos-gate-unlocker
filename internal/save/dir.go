@@ -7,6 +7,7 @@ import (
 	"regexp"
 	"runtime"
 	"strings"
+	"sync"
 )
 
 const (
@@ -16,13 +17,35 @@ const (
 	protonUser = "pfx/drive_c/users/steamuser"
 )
 
+var (
+	discoverMu sync.Mutex
+	discovered string
+)
+
 func Discover(currentPath string) string {
 	d := filepath.Dir(currentPath)
 	if currentPath != "" && dirExists(d) {
 		return d
 	}
 
-	d, _ = os.UserHomeDir()
+	discoverMu.Lock()
+	defer discoverMu.Unlock()
+
+	if discovered != "" && dirExists(discovered) {
+		return discovered
+	}
+
+	if d = discover(); dirExists(d) {
+		discovered = d
+		return d
+	}
+
+	d, _ = os.Getwd()
+	return d
+}
+
+func discover() string {
+	d, _ := os.UserHomeDir()
 
 	switch runtime.GOOS {
 	case "linux":
@@ -51,10 +74,6 @@ func Discover(currentPath string) string {
 		}
 	case "windows":
 		d = filepath.Join(d, dir)
-	}
-
-	if !dirExists(d) {
-		d, _ = os.Getwd()
 	}
 
 	return d

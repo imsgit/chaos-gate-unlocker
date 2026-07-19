@@ -54,12 +54,16 @@ func openFile(w fyne.Window, fm *files.Manager, beginLoad func(), onData func(na
 	input.Set("accept", ".gksave")
 	input.Get("style").Set("display", "none")
 
-	var onChange js.Func
+	var onChange, onCancel js.Func
+	cleanup := func() {
+		input.Call("remove")
+		onChange.Release()
+		onCancel.Release()
+	}
 	onChange = js.FuncOf(func(_ js.Value, _ []js.Value) any {
 		list := input.Get("files")
 		if list.Length() == 0 {
-			input.Call("remove")
-			onChange.Release()
+			cleanup()
 			return nil
 		}
 
@@ -69,26 +73,37 @@ func openFile(w fyne.Window, fm *files.Manager, beginLoad func(), onData func(na
 
 		fyne.Do(beginLoad)
 
-		var onLoad js.Func
+		var onLoad, onError js.Func
+		done := func(data []byte, err error) {
+			cleanup()
+			onLoad.Release()
+			onError.Release()
+			fyne.Do(func() { onData(name, data, err) })
+		}
 		onLoad = js.FuncOf(func(_ js.Value, _ []js.Value) any {
 			buf := js.Global().Get("Uint8Array").New(reader.Get("result"))
 			data := make([]byte, buf.Length())
 			js.CopyBytesToGo(data, buf)
-
-			input.Call("remove")
-			onChange.Release()
-			onLoad.Release()
-
-			fyne.Do(func() { onData(name, data, nil) })
+			done(data, nil)
+			return nil
+		})
+		onError = js.FuncOf(func(_ js.Value, _ []js.Value) any {
+			done(nil, errors.New("\n\n\nError. Cannot read the selected file.\n\n"))
 			return nil
 		})
 
 		reader.Set("onload", onLoad)
+		reader.Set("onerror", onError)
 		reader.Call("readAsArrayBuffer", file)
+		return nil
+	})
+	onCancel = js.FuncOf(func(_ js.Value, _ []js.Value) any {
+		cleanup()
 		return nil
 	})
 
 	input.Set("onchange", onChange)
+	input.Call("addEventListener", "cancel", onCancel)
 	doc.Get("body").Call("appendChild", input)
 	input.Call("click")
 }

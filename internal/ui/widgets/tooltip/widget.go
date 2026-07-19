@@ -1,7 +1,6 @@
 package tooltip
 
 import (
-	"context"
 	"time"
 
 	"fyne.io/fyne/v2"
@@ -15,7 +14,8 @@ type WidgetExtend struct {
 
 	tipLayer         *fyne.Container
 	absoluteMousePos fyne.Position
-	pendingCancel    context.CancelFunc
+	pending          *time.Timer
+	pendingActive    bool
 }
 
 func (t *WidgetExtend) SetToolTip(toolTip string) { t.toolTip = toolTip }
@@ -45,15 +45,14 @@ func (t *WidgetExtend) MouseOut() {
 }
 
 func (t *WidgetExtend) setPending() {
-	if t.pendingCancel != nil {
-		t.pendingCancel()
+	t.pendingActive = true
+	if t.pending != nil {
+		t.pending.Reset(nextDelay())
+		return
 	}
-	ctx, cancel := context.WithCancel(context.Background())
-	t.pendingCancel = cancel
-
-	time.AfterFunc(nextDelay(), func() {
+	t.pending = time.AfterFunc(nextDelay(), func() {
 		fyne.Do(func() {
-			if ctx.Err() != nil {
+			if !t.pendingActive {
 				return
 			}
 			t.cancel()
@@ -64,9 +63,9 @@ func (t *WidgetExtend) setPending() {
 }
 
 func (t *WidgetExtend) cancel() {
-	if t.pendingCancel != nil {
-		t.pendingCancel()
-		t.pendingCancel = nil
+	t.pendingActive = false
+	if t.pending != nil {
+		t.pending.Stop()
 	}
 	if t.tipLayer != nil {
 		hide(t.tipLayer)

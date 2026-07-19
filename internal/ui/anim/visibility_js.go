@@ -10,25 +10,26 @@ import (
 var (
 	pageHidden atomic.Bool
 	onVisible  func()
-)
 
-func init() {
-	doc := js.Global().Get("document")
-	if !doc.Truthy() {
-		return
-	}
-	read := func() bool { return doc.Get("hidden").Bool() }
-	pageHidden.Store(read())
-
-	doc.Call("addEventListener", "visibilitychange", js.FuncOf(func(js.Value, []js.Value) any {
-		h := read()
-		pageHidden.Store(h)
-		if !h && onVisible != nil {
-			onVisible()
+	_ = func() bool {
+		doc := js.Global().Get("document")
+		if !doc.Truthy() {
+			return false
 		}
-		return nil
-	}))
-}
+		read := func() bool { return doc.Get("hidden").Bool() }
+		pageHidden.Store(read())
+
+		doc.Call("addEventListener", "visibilitychange", js.FuncOf(func(js.Value, []js.Value) any {
+			h := read()
+			pageHidden.Store(h)
+			if !h && onVisible != nil {
+				onVisible()
+			}
+			return nil
+		}))
+		return true
+	}()
+)
 
 func hidden() bool { return pageHidden.Load() }
 

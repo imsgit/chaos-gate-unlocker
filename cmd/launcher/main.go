@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"crypto/rand"
+	"crypto/subtle"
 	"encoding/hex"
 	"flag"
 	"fmt"
@@ -55,7 +56,11 @@ func main() {
 	mux := http.NewServeMux()
 	bridge.New(token, func() string { return dir }).Register(mux)
 	var launched atomic.Bool
-	mux.HandleFunc("/__launch", func(w http.ResponseWriter, _ *http.Request) {
+	mux.HandleFunc("/__launch", func(w http.ResponseWriter, r *http.Request) {
+		if subtle.ConstantTimeCompare([]byte(r.URL.Query().Get("t")), []byte(token)) != 1 {
+			http.Error(w, "forbidden", http.StatusForbidden)
+			return
+		}
 		if !launched.CompareAndSwap(false, true) {
 			http.Error(w, "gone", http.StatusGone)
 			return
@@ -80,7 +85,7 @@ func main() {
 		}
 	}()
 
-	openWindow("Chaos Gate Unlocker", "http://"+host+"/__launch")
+	openWindow("Chaos Gate Unlocker", "http://"+host+"/__launch?t="+token)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()

@@ -3,7 +3,11 @@ package files
 import "unicode/utf8"
 
 func encodeDecode(data []byte) []byte {
-	result := make([]byte, 0, len(data))
+	c := len(data)
+	if c > 0 && data[0] != 194 {
+		c *= 2
+	}
+	result := make([]byte, 0, c)
 
 	for len(data) > 0 {
 		r, size := utf8.DecodeRune(data)

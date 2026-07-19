@@ -44,7 +44,7 @@ jobs:
 
       - uses: actions/upload-artifact@v6
         with:
-          name: github-pages
+          name: wasm
           path: ${{ runner.temp }}/artifact.tar
           retention-days: "1"
           if-no-files-found: error
@@ -58,6 +58,8 @@ jobs:
     steps:
       - id: deployment
         uses: actions/deploy-pages@v5
+        with:
+          artifact_name: wasm
 
   launchers:
     runs-on: ubuntu-22.04

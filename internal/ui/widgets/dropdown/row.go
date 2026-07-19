@@ -144,10 +144,6 @@ func (r *selectRowRenderer) Refresh() {
 	r.text.Text = r.row.text
 	r.text.Color = th.Color(theme.ColorNameForeground, v)
 
-	if r.img != nil {
-		r.img.Refresh()
-	}
-
 	switch {
 	case r.row.selected:
 		r.bg.FillColor = th.Color(theme.ColorNameSelection, v)

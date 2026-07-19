@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"context"
 	"io"
 	"net"
 	"net/http"
@@ -15,7 +16,10 @@ import (
 	"chaos-gate-unlocker/internal/bridge"
 )
 
-const cacheMagic = "cgu1"
+const (
+	cacheMagic   = "cgu1"
+	stallTimeout = 10 * time.Second
+)
 
 type asset struct {
 	body            []byte
@@ -92,13 +96,16 @@ func (p *siteProxy) fetch(reqPath string, q url.Values, etag, lastMod string) (a
 	if err != nil {
 		return asset{}, false
 	}
+	req.Header.Set("Accept-Encoding", "gzip")
 	if etag != "" {
 		req.Header.Set("If-None-Match", etag)
 	}
 	if lastMod != "" {
 		req.Header.Set("If-Modified-Since", lastMod)
 	}
-	resp, err := p.client.Do(req)
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	resp, err := p.client.Do(req.WithContext(ctx))
 	if err != nil {
 		return asset{}, false
 	}
@@ -106,7 +113,9 @@ func (p *siteProxy) fetch(reqPath string, q url.Values, etag, lastMod string) (a
 	if resp.StatusCode != http.StatusOK {
 		return asset{}, false
 	}
-	body, err := io.ReadAll(resp.Body)
+	stall := time.AfterFunc(stallTimeout, cancel)
+	defer stall.Stop()
+	body, err := io.ReadAll(&stallReader{r: resp.Body, timer: stall})
 	if err != nil {
 		return asset{}, false
 	}
@@ -119,6 +128,19 @@ func (p *siteProxy) fetch(reqPath string, q url.Values, etag, lastMod string) (a
 	}
 	p.store(reqPath, a)
 	return a, true
+}
+
+type stallReader struct {
+	r     io.Reader
+	timer *time.Timer
+}
+
+func (s *stallReader) Read(p []byte) (int, error) {
+	n, err := s.r.Read(p)
+	if n > 0 {
+		s.timer.Reset(stallTimeout)
+	}
+	return n, err
 }
 
 func serveAsset(w http.ResponseWriter, a asset) {

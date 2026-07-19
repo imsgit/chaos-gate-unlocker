@@ -37,7 +37,9 @@ func Frames(n int, interval time.Duration, onDone func(), step func(i int)) cont
 		render := func(i int) {
 			busy.Store(true)
 			fyne.Do(func() {
-				step(i)
+				if ctx.Err() == nil {
+					step(i)
+				}
 				busy.Store(false)
 			})
 		}

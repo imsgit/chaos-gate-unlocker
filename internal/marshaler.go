@@ -85,7 +85,11 @@ func (r *LinearRecord) UnmarshalJSON(data []byte) error {
 		return nil
 	}
 
-	unquoted, _ := strconv.Unquote(string(t.SerializedContents))
+	unquoted, err := strconv.Unquote(string(t.SerializedContents))
+	if err != nil || unquoted == "" {
+		r.SerializedContents = t.SerializedContents
+		return nil
+	}
 
 	r.SerializedObject = newObject()
 	return json.Unmarshal([]byte(unquoted), r.SerializedObject)
