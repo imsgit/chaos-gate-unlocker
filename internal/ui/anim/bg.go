@@ -52,15 +52,13 @@ uniform vec2 frame;
 uniform vec4 bounds;
 uniform sampler2D glow;
 uniform float intensity;
-uniform float texw;
-uniform float texh;
+uniform float aspect;
 
 void main() {
 	vec2 size = vec2(bounds[2] - bounds[0], bounds[3] - bounds[1]);
 	if (size.x <= 0.0 || size.y <= 0.0) {
 		discard;
 	}
-	float aspect = texw / texh;
 	vec2 p = vec2(gl_FragCoord.x - bounds[0], frame.y - gl_FragCoord.y - bounds[1]);
 	vec2 fit = size;
 	if (size.x / size.y > aspect) {
@@ -72,7 +70,6 @@ void main() {
 	if (uv.x < 0.0 || uv.x > 1.0 || uv.y < 0.0 || uv.y > 1.0) {
 		discard;
 	}
-	uv = (floor(uv * vec2(texw, texh)) + 0.5) / vec2(texw, texh);
 	vec4 c = texture2D(glow, uv);
 	vec3 q = min(2.0 * c.rgb * intensity, 1.0);
 	float a = max(c.a * intensity, max(q.r, max(q.g, q.b)));
@@ -195,8 +192,7 @@ func (g *EyeGlow) build() {
 		g.sh.Textures = map[string]image.Image{"glow": g.img}
 		g.sh.Uniforms = map[string]float32{
 			"intensity": 0,
-			"texw":      float32(b.Dx()),
-			"texh":      float32(b.Dy()),
+			"aspect":    float32(b.Dx()) / float32(b.Dy()),
 		}
 	})
 }
