@@ -16,7 +16,7 @@ type IconWidget struct {
 func NewIconWidget() *IconWidget {
 	s := &IconWidget{
 		icon: newIconImage(fyne.NewSize(46, 46)),
-		sel:  New(),
+		sel:  newWidget(),
 	}
 
 	s.ExtendBaseWidget(s)

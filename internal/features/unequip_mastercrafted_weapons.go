@@ -18,7 +18,7 @@ func (m *Manager) UnequipMastercraftedWeapons() {
 		switch record.TypeName {
 		case internal.KnightState:
 			object := record.SerializedObject.(*objects.KnightState)
-			class := getClass(object.CurrentLevelData.Key)
+			class := stem(object.CurrentLevelData.Key)
 			if class == GarranCrowClass {
 				continue
 			}
@@ -54,7 +54,7 @@ func (m *Manager) CanUnequipMastercraftedWeapons() (bool, bool) {
 		switch record.TypeName {
 		case internal.KnightState:
 			object := record.SerializedObject.(*objects.KnightState)
-			class := getClass(object.CurrentLevelData.Key)
+			class := stem(object.CurrentLevelData.Key)
 			if class == GarranCrowClass {
 				continue
 			}

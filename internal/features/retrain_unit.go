@@ -14,9 +14,9 @@ var preservedPerks = map[string]bool{
 func retrainable(unit any) (perks *[]*objects.StringValue, class string) {
 	switch u := unit.(type) {
 	case *objects.KnightState:
-		return &u.ClassPerks, getClass(u.CurrentLevelData.Key)
+		return &u.ClassPerks, stem(u.CurrentLevelData.Key)
 	case *objects.DreadnoughtState:
-		return &u.ClassPerks, getClass(u.CurrentLevelData.Key)
+		return &u.ClassPerks, stem(u.CurrentLevelData.Key)
 	default:
 		return nil, ""
 	}

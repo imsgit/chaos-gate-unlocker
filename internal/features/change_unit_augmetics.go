@@ -63,7 +63,7 @@ func (m *Manager) ChangeUnitAugmetics(unit any, changedAugmetics []string) {
 
 func (m *Manager) UnitSupportsAugmetics(unit any) bool {
 	if object, ok := unit.(*objects.KnightState); ok {
-		return getClass(object.CurrentLevelData.Key) != GarranCrowClass
+		return stem(object.CurrentLevelData.Key) != GarranCrowClass
 	}
 	return false
 }
@@ -76,7 +76,7 @@ func (m *Manager) CanChangeUnitAugmetics(unit any, idx int, heal bool) (bool, Au
 			curr = augmeticsByID[object.Augmetics[idx].Key]
 		}
 
-		class := getClass(object.CurrentLevelData.Key)
+		class := stem(object.CurrentLevelData.Key)
 		return class != GarranCrowClass &&
 				((object.LostResilience > idx && (object.HealthState.Status < 3 || heal)) ||
 					len(object.Augmetics) > idx),

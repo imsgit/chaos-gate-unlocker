@@ -32,7 +32,13 @@ replace_block() { OLD="$2" NEW="$3" perl -0777 -i -pe '
 vsub() { swap "$1"; sub "$1" "$2" "$3"; }
 vblock() { swap "$1"; replace_block "$1" "$2" "$3"; }
 
-FONT_SUBSET_RANGES="U+0000-00FF,U+0100-017F,U+0400-04FF,U+2010-2027,U+2030-205E,U+20A0-20BF,U+2116,U+2122,U+2026"
+FONT_SUBSET_RANGES="U+0000-00FF,U+0100-017F,U+0180-024F,U+0370-03FF,U+0400-04FF,U+1E00-1EFF,U+2010-2027,U+2030-205E,U+20A0-20BF,U+2116,U+2122,U+2026"
+
+slim_common() {
+	stub_fonts
+	slim_charset
+	slim_markdown
+}
 
 stub_fonts() {
 	local fontdir=vendor/fyne.io/fyne/v2/theme/font f

@@ -1,7 +1,7 @@
 package main
 
 /*
-#cgo windows LDFLAGS: -luser32
+#cgo windows LDFLAGS: -luser32 -ladvapi32
 #include <windows.h>
 
 static void cg_show(void *hwnd) {
@@ -51,6 +51,33 @@ static void cg_center(void *hwnd) {
 		SetWindowPos(h, NULL, (sw - ww) / 2, (sh - wh) / 2, 0, 0, SWP_NOSIZE | SWP_NOZORDER);
 	}
 }
+
+static int cg_webview2_available(void) {
+	const wchar_t *keys[] = {
+		L"SOFTWARE\\WOW6432Node\\Microsoft\\EdgeUpdate\\Clients\\{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}",
+		L"SOFTWARE\\Microsoft\\EdgeUpdate\\Clients\\{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}",
+	};
+	HKEY roots[] = {HKEY_LOCAL_MACHINE, HKEY_CURRENT_USER};
+	int r, k;
+	for (r = 0; r < 2; r++) {
+		for (k = 0; k < 2; k++) {
+			HKEY h;
+			if (RegOpenKeyExW(roots[r], keys[k], 0, KEY_READ, &h) == ERROR_SUCCESS) {
+				RegCloseKey(h);
+				return 1;
+			}
+		}
+	}
+	return 0;
+}
+
+static void cg_webview2_missing(void) {
+	MessageBoxW(NULL,
+		L"Microsoft Edge WebView2 runtime was not found.\n\n"
+		L"Install it from:\nhttps://developer.microsoft.com/microsoft-edge/webview2/\n\n"
+		L"or use the native build of Chaos Gate Unlocker.",
+		L"Chaos Gate Unlocker", MB_ICONERROR | MB_OK);
+}
 */
 import "C"
 
@@ -61,6 +88,11 @@ import (
 )
 
 func openWindow(title, url string) {
+	if C.cg_webview2_available() == 0 {
+		C.cg_webview2_missing()
+		return
+	}
+
 	w := webview.New(false)
 	defer w.Destroy()
 	w.SetTitle(title)

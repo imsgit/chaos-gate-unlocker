@@ -6,78 +6,61 @@ import (
 	"errors"
 	"net/url"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"runtime"
 	"strings"
 
+	"chaos-gate-unlocker/internal/bridge"
 	"chaos-gate-unlocker/internal/display"
-	"chaos-gate-unlocker/internal/files"
 	"chaos-gate-unlocker/internal/save"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/dialog"
 )
 
-func openFile(w fyne.Window, fm *files.Manager, beginLoad func(), onData func(name string, data []byte, err error)) {
+func openFile(w fyne.Window, beginLoad func(), onData func(name string, data []byte, err error)) {
 	go func() {
-		dir := fm.GetCurrentPath()
+		dir := filesManager.GetCurrentPath()
 		entries, err := os.ReadDir(dir)
+
+		var names []string
+		infos := map[string]save.Info{}
+		for _, e := range entries {
+			if !e.IsDir() && strings.HasSuffix(e.Name(), ".gksave") {
+				names = append(names, e.Name())
+				infos[e.Name()] = save.ParseFile(filepath.Join(dir, e.Name()))
+			}
+		}
 
 		fyne.Do(func() {
 			if err != nil {
 				dialog.ShowError(err, w)
 				return
 			}
-
-			var names []string
-			for _, e := range entries {
-				if !e.IsDir() && strings.HasSuffix(e.Name(), ".gksave") {
-					names = append(names, e.Name())
-				}
-			}
 			if len(names) == 0 {
 				dialog.ShowError(errors.New("\n\n\nNo .gksave files found in the save folder.\n\n"), w)
 				return
 			}
 
-			infoCache := map[string]save.Info{}
-			info := func(name string) save.Info {
-				if v, ok := infoCache[name]; ok {
-					return v
-				}
-				v := save.ParseFile(filepath.Join(dir, name))
-				infoCache[name] = v
-				return v
-			}
-
-			showSavePicker(w, names, info, func(name string) {
+			showSavePicker(w, names, func(name string) save.Info { return infos[name] }, func(name string) {
 				beginLoad()
 				path := filepath.Join(dir, name)
-				data, err := os.ReadFile(path)
-				onData(path, data, err)
+				go func() {
+					data, err := os.ReadFile(path)
+					onData(path, data, err)
+				}()
 			}, func() {
-				openSaveDir(dir)
+				_ = bridge.OpenDir(dir)
 			})
 		})
 	}()
 }
 
-func openSaveDir(dir string) {
-	var cmd *exec.Cmd
-	switch runtime.GOOS {
-	case "windows":
-		cmd = exec.Command("explorer", dir)
-	case "darwin":
-		cmd = exec.Command("open", dir)
-	default:
-		cmd = exec.Command("xdg-open", dir)
-	}
-	_ = cmd.Start()
-}
-
-func saveFile(fm *files.Manager, done func(error)) {
-	done(fm.Save())
+func saveFile(done func(error)) {
+	go func() {
+		err := filesManager.Save()
+		fyne.Do(func() { done(err) })
+	}()
 }
 
 func showTryOnline() bool { return true }

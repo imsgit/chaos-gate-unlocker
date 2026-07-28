@@ -6,6 +6,9 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
+	"strconv"
+	"strings"
 )
 
 func ParseFile(path string) Info {
@@ -53,10 +56,7 @@ type header struct {
 }
 
 func Parse(data []byte) Info {
-	first := data
-	if i := bytes.Index(data, []byte("\r\n")); i >= 0 {
-		first = data[:i]
-	}
+	first, _, _ := bytes.Cut(data, []byte("\r\n"))
 
 	var h header
 	_ = json.Unmarshal(first, &h)
@@ -65,6 +65,15 @@ func Parse(data []byte) Info {
 		Title:  h.SaveName,
 		Detail: Detail(h.GameDays, h.Difficulty, h.IronMan, h.SavedTimeStamp),
 	}
+}
+
+func SlotLabel(name string) string {
+	base := strings.TrimSuffix(filepath.Base(name), ".gksave")
+	prefix, _, _ := strings.Cut(base, "_")
+	if n, err := strconv.Atoi(prefix); err == nil {
+		return "SLOT " + strconv.Itoa(n+1)
+	}
+	return strings.ToUpper(base)
 }
 
 func DifficultyName(d int, ironMan bool) string {

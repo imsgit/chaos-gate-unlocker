@@ -10,6 +10,7 @@ import (
 	"log"
 	"net"
 	"net/http"
+	"sync"
 	"sync/atomic"
 	"time"
 
@@ -32,10 +33,12 @@ func main() {
 		return
 	}
 
-	dir := *dirFlag
-	if dir == "" {
-		dir = save.Discover("")
-	}
+	dir := sync.OnceValue(func() string {
+		if *dirFlag != "" {
+			return *dirFlag
+		}
+		return save.Discover("")
+	})
 
 	token := newToken()
 
@@ -54,7 +57,7 @@ func main() {
 	boot := fmt.Sprintf(`<!doctype html><meta charset="utf-8"><style>html,body{margin:0;height:100%%;background:#151515}</style><script>requestAnimationFrame(function(){requestAnimationFrame(function(){location.replace(%q)})})</script>`, appURL)
 
 	mux := http.NewServeMux()
-	bridge.New(token, func() string { return dir }).Register(mux)
+	bridge.New(token, dir).Register(mux)
 	var launched atomic.Bool
 	mux.HandleFunc("/__launch", func(w http.ResponseWriter, r *http.Request) {
 		if subtle.ConstantTimeCompare([]byte(r.URL.Query().Get("t")), []byte(token)) != 1 {

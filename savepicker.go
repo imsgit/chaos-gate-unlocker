@@ -2,7 +2,6 @@ package main
 
 import (
 	"sort"
-	"strconv"
 	"strings"
 
 	"chaos-gate-unlocker/internal/save"
@@ -17,17 +16,11 @@ import (
 )
 
 func slotOf(name string) string {
-	if i := strings.IndexByte(name, '_'); i >= 0 {
-		return name[:i]
+	prefix, _, ok := strings.Cut(name, "_")
+	if !ok {
+		return ""
 	}
-	return ""
-}
-
-func slotLabel(s string) string {
-	if n, err := strconv.Atoi(s); err == nil {
-		return "SLOT " + strconv.Itoa(n+1)
-	}
-	return strings.ToUpper(s)
+	return prefix
 }
 
 type oneTwoLayout struct {
@@ -103,7 +96,7 @@ func showSavePicker(w fyne.Window, names []string, info func(name string) save.I
 		savelistitem.New,
 		func(i widget.ListItemID, o fyne.CanvasObject) {
 			if item, ok := o.(*savelistitem.Widget); ok {
-				item.Bind(slotLabel(slots[i]), "")
+				item.Bind(save.SlotLabel(slots[i]), "")
 			}
 		},
 	)

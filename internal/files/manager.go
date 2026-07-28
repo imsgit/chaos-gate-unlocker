@@ -30,7 +30,7 @@ type Manager struct {
 	header           *internal.Header
 	state            *internal.State
 	combatStateBytes []byte
-	onLoadState      []func(*internal.State)
+	onLoadState      func(*internal.State)
 }
 
 func NewManager() *Manager {
@@ -38,7 +38,7 @@ func NewManager() *Manager {
 }
 
 func (m *Manager) OnLoadState(fn func(*internal.State)) {
-	m.onLoadState = append(m.onLoadState, fn)
+	m.onLoadState = fn
 }
 
 func (m *Manager) GetCurrentPath() string {
@@ -64,8 +64,8 @@ func (m *Manager) LoadBytes(path string, file []byte) error {
 	m.filePath = path
 	m.combatStateBytes = bytes.Clone(combatStateBytes)
 
-	for _, callback := range m.onLoadState {
-		callback(m.state)
+	if m.onLoadState != nil {
+		m.onLoadState(m.state)
 	}
 
 	fyne.CurrentApp().Preferences().SetString("path", m.filePath)
@@ -145,16 +145,6 @@ func (m *Manager) Save() error {
 func (m *Manager) Status() string {
 	h := m.header
 	return fmt.Sprintf("%s   ·   %s   ·   %s",
-		slotLabel(m.filePath), strings.ToUpper(h.SaveName),
-		save.Detail(h.GameDays, h.Difficulty, h.IronMan, save.Stamp(h.SavedTimeStamp)))
-}
-
-func slotLabel(path string) string {
-	base := strings.TrimSuffix(filepath.Base(path), ".gksave")
-	if i := strings.IndexByte(base, '_'); i >= 0 {
-		if n, err := strconv.Atoi(base[:i]); err == nil {
-			return "SLOT " + strconv.Itoa(n+1)
-		}
-	}
-	return strings.ToUpper(base)
+		save.SlotLabel(m.filePath), strings.ToUpper(h.SaveName),
+		save.Detail(h.GameDays, h.Difficulty, h.IronMan, h.SavedTimeStamp))
 }

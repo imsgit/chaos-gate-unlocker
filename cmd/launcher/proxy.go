@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"context"
+	"errors"
 	"io"
 	"net"
 	"net/http"
@@ -11,14 +12,16 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"chaos-gate-unlocker/internal/bridge"
 )
 
 const (
-	cacheMagic   = "cgu1"
-	stallTimeout = 10 * time.Second
+	cacheMagic    = "cgu1"
+	stallTimeout  = 10 * time.Second
+	maxAssetBytes = 32 << 20
 )
 
 type asset struct {
@@ -33,12 +36,18 @@ type siteProxy struct {
 	origin   string
 	client   *http.Client
 	cacheDir string
+
+	mu       sync.Mutex
+	inflight map[string]bool
 }
 
 func newSiteProxy(site string) (*siteProxy, string, error) {
 	u, err := url.Parse(site)
 	if err != nil {
 		return nil, "", err
+	}
+	if u.Scheme != "https" && u.Hostname() != "localhost" && u.Hostname() != "127.0.0.1" {
+		return nil, "", errors.New("site URL must use https")
 	}
 	path := u.Path
 	if path == "" {
@@ -65,21 +74,20 @@ func newSiteProxy(site string) (*siteProxy, string, error) {
 		origin:   u.Scheme + "://" + u.Host,
 		client:   &http.Client{Transport: transport},
 		cacheDir: cacheDir,
+		inflight: map[string]bool{},
 	}, path, nil
 }
 
 func (p *siteProxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	reqPath := r.URL.Path
-	q := r.URL.Query()
-	q.Del("t")
 
 	if cached, ok := p.load(reqPath); ok {
 		serveAsset(w, cached)
-		go p.fetch(reqPath, q, cached.etag, cached.lastModified)
+		p.revalidate(reqPath, cached.etag, cached.lastModified)
 		return
 	}
 
-	if fresh, ok := p.fetch(reqPath, q, "", ""); ok {
+	if fresh, ok := p.fetch(reqPath, "", ""); ok {
 		serveAsset(w, fresh)
 		return
 	}
@@ -87,12 +95,27 @@ func (p *siteProxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	http.Error(w, "site unavailable and not cached", http.StatusBadGateway)
 }
 
-func (p *siteProxy) fetch(reqPath string, q url.Values, etag, lastMod string) (asset, bool) {
-	upstream := p.origin + reqPath
-	if enc := q.Encode(); enc != "" {
-		upstream += "?" + enc
+func (p *siteProxy) revalidate(reqPath, etag, lastMod string) {
+	p.mu.Lock()
+	if p.inflight[reqPath] {
+		p.mu.Unlock()
+		return
 	}
-	req, err := http.NewRequest(http.MethodGet, upstream, nil)
+	p.inflight[reqPath] = true
+	p.mu.Unlock()
+
+	go func() {
+		defer func() {
+			p.mu.Lock()
+			delete(p.inflight, reqPath)
+			p.mu.Unlock()
+		}()
+		p.fetch(reqPath, etag, lastMod)
+	}()
+}
+
+func (p *siteProxy) fetch(reqPath, etag, lastMod string) (asset, bool) {
+	req, err := http.NewRequest(http.MethodGet, p.origin+reqPath, nil)
 	if err != nil {
 		return asset{}, false
 	}
@@ -115,8 +138,8 @@ func (p *siteProxy) fetch(reqPath string, q url.Values, etag, lastMod string) (a
 	}
 	stall := time.AfterFunc(stallTimeout, cancel)
 	defer stall.Stop()
-	body, err := io.ReadAll(&stallReader{r: resp.Body, timer: stall})
-	if err != nil {
+	body, err := io.ReadAll(io.LimitReader(&stallReader{r: resp.Body, timer: stall}, maxAssetBytes+1))
+	if err != nil || len(body) > maxAssetBytes {
 		return asset{}, false
 	}
 	a := asset{

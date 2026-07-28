@@ -26,7 +26,7 @@ type Widget struct {
 	openAbove bool
 }
 
-func New() *Widget {
+func newWidget() *Widget {
 	s := &Widget{}
 
 	s.ExtendBaseWidget(s)

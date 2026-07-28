@@ -3,8 +3,6 @@ package internal
 import (
 	"chaos-gate-unlocker/internal/objects"
 
-	"strconv"
-
 	"github.com/goccy/go-json"
 )
 
@@ -29,25 +27,25 @@ const (
 	LoseGameOccasion        = "GreyKnights.LoseGameOccasion"
 )
 
-var typeNameToObject = map[string]func() interface{}{
-	CurrencySaveState:       func() interface{} { return &objects.CurrencySaveState{} },
-	GameUnlocksSaveState:    func() interface{} { return &objects.GameUnlocksSaveState{} },
-	StarMapMission:          func() interface{} { return &objects.StarMapMission{} },
-	StarMapNodeModel:        func() interface{} { return &objects.StarMapNodeModel{} },
-	ConstructionProject:     func() interface{} { return &objects.ConstructionProject{} },
-	ResearchProject:         func() interface{} { return &objects.ResearchProject{} },
-	KnightsSaveState:        func() interface{} { return &objects.KnightsSaveState{} },
-	KnightState:             func() interface{} { return &objects.KnightState{} },
-	CallidusAssassinState:   func() interface{} { return &objects.AssassinState{} },
-	CulexusAssassinState:    func() interface{} { return &objects.AssassinState{} },
-	EversorAssassinState:    func() interface{} { return &objects.AssassinState{} },
-	VindicareAssassinState:  func() interface{} { return &objects.AssassinState{} },
-	DreadnoughtState:        func() interface{} { return &objects.DreadnoughtState{} },
-	TimeManagerSaveState:    func() interface{} { return &objects.TimeManagerSaveState{} },
-	TimelineEventOccasion:   func() interface{} { return &objects.TimelineEventOccasion{} },
-	ArmourySaveState:        func() interface{} { return &objects.ArmorySaveState{} },
-	StarMapMissionSaveState: func() interface{} { return &objects.StarMapMissionSaveState{} },
-	LoseGameOccasion:        func() interface{} { return &objects.LoseGameOccasion{} },
+var typeNameToObject = map[string]func() any{
+	CurrencySaveState:       func() any { return &objects.CurrencySaveState{} },
+	GameUnlocksSaveState:    func() any { return &objects.GameUnlocksSaveState{} },
+	StarMapMission:          func() any { return &objects.StarMapMission{} },
+	StarMapNodeModel:        func() any { return &objects.StarMapNodeModel{} },
+	ConstructionProject:     func() any { return &objects.ConstructionProject{} },
+	ResearchProject:         func() any { return &objects.ResearchProject{} },
+	KnightsSaveState:        func() any { return &objects.KnightsSaveState{} },
+	KnightState:             func() any { return &objects.KnightState{} },
+	CallidusAssassinState:   func() any { return &objects.AssassinState{} },
+	CulexusAssassinState:    func() any { return &objects.AssassinState{} },
+	EversorAssassinState:    func() any { return &objects.AssassinState{} },
+	VindicareAssassinState:  func() any { return &objects.AssassinState{} },
+	DreadnoughtState:        func() any { return &objects.DreadnoughtState{} },
+	TimeManagerSaveState:    func() any { return &objects.TimeManagerSaveState{} },
+	TimelineEventOccasion:   func() any { return &objects.TimelineEventOccasion{} },
+	ArmourySaveState:        func() any { return &objects.ArmorySaveState{} },
+	StarMapMissionSaveState: func() any { return &objects.StarMapMissionSaveState{} },
+	LoseGameOccasion:        func() any { return &objects.LoseGameOccasion{} },
 }
 
 func (r *LinearRecord) MarshalJSON() ([]byte, error) {
@@ -59,7 +57,9 @@ func (r *LinearRecord) MarshalJSON() ([]byte, error) {
 			return nil, err
 		}
 
-		serializedContents = []byte(strconv.Quote(string(serializedObject)))
+		if serializedContents, err = json.Marshal(string(serializedObject)); err != nil {
+			return nil, err
+		}
 	}
 
 	return json.Marshal(linearRecord{
@@ -85,8 +85,8 @@ func (r *LinearRecord) UnmarshalJSON(data []byte) error {
 		return nil
 	}
 
-	unquoted, err := strconv.Unquote(string(t.SerializedContents))
-	if err != nil || unquoted == "" {
+	var unquoted string
+	if err := json.Unmarshal(t.SerializedContents, &unquoted); err != nil || unquoted == "" {
 		r.SerializedContents = t.SerializedContents
 		return nil
 	}

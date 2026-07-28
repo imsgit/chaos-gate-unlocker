@@ -102,7 +102,7 @@ func (i *Widget) CreateRenderer() fyne.WidgetRenderer {
 			)))
 }
 
-func (i *Widget) Bind(val interface{}) {
+func (i *Widget) Bind(val any) {
 	var name, class, lvl string
 	var healthStatus int
 	var noPilot, underRepair, sideMission bool

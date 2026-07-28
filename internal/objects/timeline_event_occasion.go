@@ -5,7 +5,7 @@ type TimelineEventOccasion struct {
 	TriggerTime                    float64     `json:"triggerTime"`
 	ResetRegularEventsWhenTriggerd bool        `json:"resetRegularEventsWhenTriggerd"`
 	SavedChosenResults             struct {
-		Values []interface{} `json:"values"`
+		Values []any `json:"values"`
 	} `json:"savedChosenResults"`
 	CalendarTitleKey       string `json:"calendarTitleKey"`
 	CalendarDescriptionKey string `json:"calendarDescriptionKey"`

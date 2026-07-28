@@ -15,6 +15,7 @@ import (
 
 	"context"
 	"fmt"
+	"image/color"
 	"net/url"
 	"slices"
 
@@ -23,6 +24,7 @@ import (
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/dialog"
+	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 )
 
@@ -265,7 +267,10 @@ func main() {
 	back := canvas.NewImageFromImage(bgImg)
 	back.FillMode = canvas.ImageFillContain
 	back.ScaleMode = canvas.ImageScaleFastest
-	back.Translucency = 0.96
+
+	dim, _ := ui.Theme{}.Color(theme.ColorNameBackground, theme.VariantDark).(color.NRGBA)
+	dim.A = 245
+	cover := canvas.NewRectangle(dim)
 
 	eyeGlow := anim.NewEyeGlow(bgImg)
 	eyeGlowOverlay := eyeGlow.Overlay()
@@ -300,14 +305,15 @@ func main() {
 			actx, acancel = context.WithCancel(context.Background())
 			cancel := acancel
 			go func() {
-				anim.AnimateAbout(actx, back)
+				anim.AnimateAbout(actx, cover, dim)
 				cancel()
 			}()
 		default:
 			if acancel != nil {
 				acancel()
 			}
-			back.Translucency = 0.96
+			cover.FillColor = dim
+			cover.Refresh()
 		}
 	}
 	layoutTabs.Hide()
@@ -356,6 +362,7 @@ func main() {
 		eyeGlow.Flash()
 		loadCancel = animateTop(true, layoutTabs.Show)
 
+		currUnit = nil
 		healUnits = map[any]bool{}
 		retrainUnits = map[any]bool{}
 		augmeticsUnits = map[any][][]string{}
@@ -369,26 +376,29 @@ func main() {
 		if err == nil {
 			err = filesManager.LoadBytes(name, data)
 		}
-		if err != nil {
-			if loadCancel != nil {
-				loadCancel()
+
+		fyne.Do(func() {
+			if err != nil {
+				if loadCancel != nil {
+					loadCancel()
+				}
+				dialog.ShowError(err, w)
+				return
 			}
-			dialog.ShowError(err, w)
-			return
-		}
 
-		units = featuresManager.Units()
-		unitsList.Refresh()
+			units = featuresManager.Units()
+			unitsList.Refresh()
 
-		for _, f := range allFeatures {
-			toggle.Reset(f.sw, f.can)
-		}
+			for _, f := range allFeatures {
+				toggle.Reset(f.sw, f.can)
+			}
 
-		statusLabel.SetText(filesManager.Status())
+			statusLabel.SetText(filesManager.Status())
+		})
 	}
 
 	openButton = widget.NewButton("Open", func() {
-		openFile(w, filesManager, beginLoad, loadData)
+		openFile(w, beginLoad, loadData)
 	})
 
 	saveButton = widget.NewButton("Save", func() {
@@ -399,7 +409,7 @@ func main() {
 
 			resetUI()
 
-			saveFile(filesManager, func(err error) {
+			saveFile(func(err error) {
 				if err != nil {
 					cancel()
 					dialog.ShowError(err, w)
@@ -423,6 +433,7 @@ func main() {
 		bottomBar,
 		nil, nil,
 		back,
+		cover,
 		eyeGlowOverlay,
 		layoutTabs,
 	)

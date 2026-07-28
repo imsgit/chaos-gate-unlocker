@@ -8,9 +8,7 @@ echo "=== fyne package wasm | build $build (no auto-bump) ==="
 
 ensure_vendor "font stubbing"
 
-stub_fonts
-slim_charset
-slim_markdown
+slim_common
 enable_touch_scroll
 drag_scroll_widget
 
@@ -53,7 +51,8 @@ print(f"  stripped {dropped} bytes")
 PY
 
 gzip -9 -f wasm/ChaosGateUnlocker.wasm
-sub "$idx" 's#fetch("ChaosGateUnlocker.wasm")#fetch("ChaosGateUnlocker.wasm.gz").then(r=>new Response(r.body.pipeThrough(new DecompressionStream("gzip")),{headers:{"Content-Type":"application/wasm"}}))#' DecompressionStream
+sub "$idx" 's#WebAssembly.instantiateStreaming(fetch("ChaosGateUnlocker.wasm"), go.importObject)#(typeof DecompressionStream === "undefined" ? Promise.reject(new Error("please update your browser (Safari 16.4+ / Firefox 113+ required)")) : WebAssembly.instantiateStreaming(fetch("ChaosGateUnlocker.wasm.gz").then(r=>new Response(r.body.pipeThrough(new DecompressionStream("gzip")),{headers:{"Content-Type":"application/wasm"}})), go.importObject))#' DecompressionStream
+sub "$idx" '/go.run(result.instance);/{n;s#});#}).catch((err) => { action.innerHTML = "Failed to load: " + (err \&\& err.message ? err.message : err); action.className = "action-error"; });#}' '.catch((err)'
 
 del "$idx" '/webgl-debug\.js/d' webgl-debug
 rm -f wasm/webgl-debug.js

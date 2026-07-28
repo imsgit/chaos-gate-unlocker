@@ -20,6 +20,7 @@ const (
 var (
 	discoverMu sync.Mutex
 	discovered string
+	searched   bool
 )
 
 func Discover(currentPath string) string {
@@ -35,9 +36,12 @@ func Discover(currentPath string) string {
 		return discovered
 	}
 
-	if d = discover(); dirExists(d) {
-		discovered = d
-		return d
+	if !searched {
+		searched = true
+		if d = discover(); dirExists(d) {
+			discovered = d
+			return d
+		}
 	}
 
 	d, _ = os.Getwd()
@@ -95,6 +99,7 @@ func steamLibraries(home string) []string {
 		filepath.Join(home, ".steam", "root"),
 		filepath.Join(home, ".local", "share", "Steam"),
 		filepath.Join(home, ".var", "app", "com.valvesoftware.Steam", ".local", "share", "Steam"),
+		filepath.Join(home, "snap", "steam", "common", ".local", "share", "Steam"),
 	}
 
 	seen := map[string]bool{}

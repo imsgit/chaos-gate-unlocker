@@ -3,6 +3,7 @@ package anim
 import (
 	"context"
 	"image"
+	"image/color"
 	"math"
 	"math/rand"
 	"sync"
@@ -22,12 +23,15 @@ const (
 	eyeBloomBlur  = 9
 )
 
-func AnimateAbout(ctx context.Context, im *canvas.Image) {
+func AnimateAbout(ctx context.Context, cover *canvas.Rectangle, base color.NRGBA) {
 	runFrames(ctx, 30, 15*time.Millisecond, nil, func(i int) {
-		if i > 5 {
-			im.Translucency = clamp(im.Translucency - 0.04)
-			canvas.Refresh(im)
+		if i <= 5 {
+			return
 		}
+		c := base
+		c.A = uint8(float64(base.A) * (1 - float64(i-5)/24))
+		cover.FillColor = c
+		cover.Refresh()
 	})
 }
 
@@ -391,16 +395,6 @@ func buildFlicker() []flickerStep {
 		}
 	}
 	return fl
-}
-
-func clamp(v float64) float64 {
-	if v < 0 {
-		return 0
-	}
-	if v > 1 {
-		return 1
-	}
-	return v
 }
 
 func clamp8(v float64) uint8 {

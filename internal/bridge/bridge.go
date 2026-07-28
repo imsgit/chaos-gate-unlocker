@@ -92,7 +92,7 @@ func (h *Handler) open(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "forbidden", http.StatusForbidden)
 		return
 	}
-	if err := openDir(h.dir()); err != nil {
+	if err := OpenDir(h.dir()); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -109,10 +109,14 @@ func openExternally(winName string, winArgs []string, target string) error {
 	default:
 		cmd = exec.Command("xdg-open", target)
 	}
-	return cmd.Start()
+	if err := cmd.Start(); err != nil {
+		return err
+	}
+	go cmd.Wait()
+	return nil
 }
 
-func openDir(dir string) error {
+func OpenDir(dir string) error {
 	return openExternally("explorer", nil, dir)
 }
 
@@ -122,7 +126,7 @@ func (h *Handler) openURL(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	u, err := url.Parse(r.URL.Query().Get("url"))
-	if err != nil || (u.Scheme != "http" && u.Scheme != "https") {
+	if err != nil || (u.Scheme != "http" && u.Scheme != "https") || u.Host == "" || u.User != nil {
 		http.Error(w, "bad url", http.StatusBadRequest)
 		return
 	}

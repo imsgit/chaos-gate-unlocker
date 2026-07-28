@@ -43,7 +43,7 @@ func (m *Manager) SetState(state *internal.State) {
 	m.state = state
 }
 
-func classStatusLvlName(obj interface{}) (class, status, lvl int, name string) {
+func classStatusLvlName(obj any) (class, status, lvl int, name string) {
 	switch object := obj.(type) {
 	case *objects.KnightState:
 		status = object.HealthState.Status
@@ -60,7 +60,7 @@ func classStatusLvlName(obj interface{}) (class, status, lvl int, name string) {
 	}
 }
 
-func unitLess(a, b interface{}) bool {
+func unitLess(a, b any) bool {
 	iClass, iStatus, iLvl, iName := classStatusLvlName(a)
 	jClass, jStatus, jLvl, jName := classStatusLvlName(b)
 
@@ -76,8 +76,8 @@ func unitLess(a, b interface{}) bool {
 	return jName > iName
 }
 
-func (m *Manager) Units() []interface{} {
-	var units []interface{}
+func (m *Manager) Units() []any {
+	var units []any
 	knightInBarracks := map[int]bool{}
 
 	for i, record := range m.state.LinearRecords {
@@ -104,10 +104,6 @@ func (m *Manager) Units() []interface{} {
 	sort.Slice(units, func(i, j int) bool { return unitLess(units[i], units[j]) })
 
 	return units
-}
-
-func getClass(s string) string {
-	return stem(s)
 }
 
 func stem(s string) string {
@@ -174,7 +170,7 @@ func (m *Manager) canUnlockTimelineEvent(u timelineUnlock) (enable, show bool) {
 func (m *Manager) unlockTimelineEvent(eventKey string, calendarType int, alsoReset ...string) {
 	reset := func(o *objects.TimelineEventOccasion) {
 		o.TriggerTime = 0
-		o.SavedChosenResults.Values = []interface{}{}
+		o.SavedChosenResults.Values = []any{}
 	}
 
 	var eventOccasion *objects.TimelineEventOccasion
@@ -209,7 +205,7 @@ func (m *Manager) unlockTimelineEvent(eventKey string, calendarType int, alsoRes
 	eventOccasion = &objects.TimelineEventOccasion{}
 	eventOccasion.EventToPlay.Key = eventKey
 	eventOccasion.CalendarType = calendarType
-	eventOccasion.SavedChosenResults.Values = []interface{}{}
+	eventOccasion.SavedChosenResults.Values = []any{}
 
 	saveState.CurrentOccasions.Values = append(saveState.CurrentOccasions.Values, objects.IntValue{Key: id})
 	m.state.LinearInstanceIds = append(m.state.LinearInstanceIds, id)

@@ -14,9 +14,7 @@ echo "=== fyne-cross $fc | build $build (no auto-bump) ==="
 tags=no_emoji,x11
 
 ensure_vendor "font/charset/markdown swaps"
-stub_fonts
-slim_charset
-slim_markdown
+slim_common
 
 for os in windows linux; do
 	echo "=== Build $os/amd64 ==="

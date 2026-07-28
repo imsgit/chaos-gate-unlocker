@@ -13,7 +13,6 @@ import (
 	"strings"
 	"syscall/js"
 
-	"chaos-gate-unlocker/internal/files"
 	"chaos-gate-unlocker/internal/save"
 
 	"fyne.io/fyne/v2"
@@ -42,7 +41,7 @@ func bridgeBase() string {
 	return js.Global().Get("location").Get("origin").String()
 }
 
-func openFile(w fyne.Window, fm *files.Manager, beginLoad func(), onData func(name string, data []byte, err error)) {
+func openFile(w fyne.Window, beginLoad func(), onData func(name string, data []byte, err error)) {
 	if tok := bridgeToken(); tok != "" {
 		go bridgePick(w, tok, beginLoad, onData)
 		return
@@ -78,7 +77,7 @@ func openFile(w fyne.Window, fm *files.Manager, beginLoad func(), onData func(na
 			cleanup()
 			onLoad.Release()
 			onError.Release()
-			fyne.Do(func() { onData(name, data, err) })
+			go onData(name, data, err)
 		}
 		onLoad = js.FuncOf(func(_ js.Value, _ []js.Value) any {
 			buf := js.Global().Get("Uint8Array").New(reader.Get("result"))
@@ -114,13 +113,7 @@ func bridgeGet(u string) ([]byte, error) {
 		return nil, err
 	}
 	defer resp.Body.Close()
-	var body []byte
-	if resp.ContentLength > 0 {
-		body = make([]byte, resp.ContentLength)
-		_, err = io.ReadFull(resp.Body, body)
-	} else {
-		body, err = io.ReadAll(resp.Body)
-	}
+	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, err
 	}
@@ -158,36 +151,36 @@ func bridgePick(w fyne.Window, tok string, beginLoad func(), onData func(name st
 		names[i] = e.Name
 		infoMap[e.Name] = save.Info{Title: e.Title, Detail: e.Detail}
 	}
-	fyne.Do(func() { showBridgePicker(w, tok, names, infoMap, beginLoad, onData) })
-}
-
-func showBridgePicker(w fyne.Window, tok string, names []string, infoMap map[string]save.Info, beginLoad func(), onData func(name string, data []byte, err error)) {
-	showSavePicker(w, names, func(name string) save.Info { return infoMap[name] }, func(name string) {
-		beginLoad()
-		go func() {
-			data, err := bridgeGet(bridgeBase() + "/api/file?t=" + url.QueryEscape(tok) + "&name=" + url.QueryEscape(name))
-			if err == nil {
-				bridgeFile = name
-			}
-			fyne.Do(func() { onData(name, data, err) })
-		}()
-	}, func() {
-		go bridgeGet(bridgeBase() + "/api/open?t=" + url.QueryEscape(tok))
+	fyne.Do(func() {
+		showSavePicker(w, names, func(name string) save.Info { return infoMap[name] }, func(name string) {
+			beginLoad()
+			go func() {
+				data, err := bridgeGet(bridgeBase() + "/api/file?t=" + url.QueryEscape(tok) + "&name=" + url.QueryEscape(name))
+				if err == nil {
+					bridgeFile = name
+				}
+				onData(name, data, err)
+			}()
+		}, func() {
+			go bridgeGet(bridgeBase() + "/api/open?t=" + url.QueryEscape(tok))
+		})
 	})
 }
 
-func saveFile(fm *files.Manager, done func(error)) {
-	data, err := fm.Encode()
-	if err != nil {
-		done(err)
-		return
-	}
-	if tok := bridgeToken(); tok != "" {
-		bridgeSave(tok, fm.Name(), data, done)
-		return
-	}
-	download(fm.Name(), data)
-	done(nil)
+func saveFile(done func(error)) {
+	go func() {
+		data, err := filesManager.Encode()
+		if err != nil {
+			fyne.Do(func() { done(err) })
+			return
+		}
+		if tok := bridgeToken(); tok != "" {
+			bridgeSave(tok, filesManager.Name(), data, done)
+			return
+		}
+		download(filesManager.Name(), data)
+		fyne.Do(func() { done(nil) })
+	}()
 }
 
 func bridgeSave(tok, fallbackName string, data []byte, done func(error)) {
@@ -196,17 +189,15 @@ func bridgeSave(tok, fallbackName string, data []byte, done func(error)) {
 		name = fallbackName
 	}
 
-	go func() {
-		u := bridgeBase() + "/api/file?t=" + url.QueryEscape(tok) + "&name=" + url.QueryEscape(name)
-		resp, err := http.Post(u, "application/octet-stream", bytes.NewReader(data))
-		if err == nil {
-			if resp.StatusCode >= 300 {
-				err = fmt.Errorf("\n\n\nError. Cannot save file (%s).\n\n", resp.Status)
-			}
-			resp.Body.Close()
+	u := bridgeBase() + "/api/file?t=" + url.QueryEscape(tok) + "&name=" + url.QueryEscape(name)
+	resp, err := http.Post(u, "application/octet-stream", bytes.NewReader(data))
+	if err == nil {
+		if resp.StatusCode >= 300 {
+			err = fmt.Errorf("\n\n\nError. Cannot save file (%s).\n\n", resp.Status)
 		}
-		fyne.Do(func() { done(err) })
-	}()
+		resp.Body.Close()
+	}
+	fyne.Do(func() { done(err) })
 }
 
 func confirmSave(w fyne.Window, do func()) {

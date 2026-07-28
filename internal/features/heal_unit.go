@@ -8,16 +8,10 @@ func (m *Manager) HealUnit(unit any) {
 	switch object := unit.(type) {
 	case *objects.KnightState:
 		object.LostMaxHealth = 0
-		object.HealthState.Status = 0
-		object.HealthState.HealingSuspended = false
-		object.HealthState.PartialRecoveryTimeLeft = 0
-		object.HealthState.RecoveryTimeLeft = 0
+		object.HealthState = objects.HealthState{}
 	case *objects.AssassinState:
 		object.LostMaxHealth = 0
-		object.HealthState.Status = 0
-		object.HealthState.HealingSuspended = false
-		object.HealthState.PartialRecoveryTimeLeft = 0
-		object.HealthState.RecoveryTimeLeft = 0
+		object.HealthState = objects.HealthState{}
 	}
 }
 

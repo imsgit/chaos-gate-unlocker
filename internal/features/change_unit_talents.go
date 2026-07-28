@@ -283,7 +283,7 @@ func (m *Manager) CanChangeUnitTalents(unit any, idx int) (bool, Talent, []strin
 		}
 
 		talents := knightTalentsStrings
-		class := getClass(object.CurrentLevelData.Key)
+		class := stem(object.CurrentLevelData.Key)
 		if class == TechmarineClass {
 			talents = techMarineTalentsStrings
 		}

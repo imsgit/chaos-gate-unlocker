@@ -61,7 +61,7 @@ func (m *Manager) UnequipMastercraftedArmor() {
 			}
 		case internal.KnightState:
 			object := record.SerializedObject.(*objects.KnightState)
-			class := getClass(object.CurrentLevelData.Key)
+			class := stem(object.CurrentLevelData.Key)
 			if class == GarranCrowClass {
 				continue
 			}
@@ -88,7 +88,7 @@ func (m *Manager) CanUnequipMastercraftedArmor() (bool, bool) {
 		switch record.TypeName {
 		case internal.KnightState:
 			object := record.SerializedObject.(*objects.KnightState)
-			class := getClass(object.CurrentLevelData.Key)
+			class := stem(object.CurrentLevelData.Key)
 			if class != GarranCrowClass && mastercrafted(object.ArmourRef.Key) {
 				return true, true
 			}

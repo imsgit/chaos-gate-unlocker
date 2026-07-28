@@ -29,13 +29,8 @@ type KnightState struct {
 	CreationTimestamp   int64           `json:"creationTimestamp"`
 	TempEquipmentRefs   json.RawMessage `json:"tempEquipmentRefs"`
 	EquippedItemClasses []*StringValue  `json:"equippedItemClasses"`
-	HealthState         struct {
-		Status                  int     `json:"status"`
-		RecoveryTimeLeft        float64 `json:"recoveryTimeLeft"`
-		HealingSuspended        bool    `json:"healingSuspended"`
-		PartialRecoveryTimeLeft float64 `json:"partialRecoveryTimeLeft"`
-	} `json:"healthState"`
-	LostResilience      int            `json:"lostResilience"`
-	MaxResilienceOffset int            `json:"maxResilienceOffset"`
-	Augmetics           []*StringValue `json:"augmetics"`
+	HealthState         HealthState     `json:"healthState"`
+	LostResilience      int             `json:"lostResilience"`
+	MaxResilienceOffset int             `json:"maxResilienceOffset"`
+	Augmetics           []*StringValue  `json:"augmetics"`
 }
