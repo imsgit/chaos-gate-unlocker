@@ -1,7 +1,7 @@
 package main
 
 /*
-#cgo windows LDFLAGS: -luser32 -ladvapi32
+#cgo windows LDFLAGS: -luser32
 #include <windows.h>
 
 static void cg_show(void *hwnd) {
@@ -52,25 +52,6 @@ static void cg_center(void *hwnd) {
 	}
 }
 
-static int cg_webview2_available(void) {
-	const wchar_t *keys[] = {
-		L"SOFTWARE\\WOW6432Node\\Microsoft\\EdgeUpdate\\Clients\\{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}",
-		L"SOFTWARE\\Microsoft\\EdgeUpdate\\Clients\\{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}",
-	};
-	HKEY roots[] = {HKEY_LOCAL_MACHINE, HKEY_CURRENT_USER};
-	int r, k;
-	for (r = 0; r < 2; r++) {
-		for (k = 0; k < 2; k++) {
-			HKEY h;
-			if (RegOpenKeyExW(roots[r], keys[k], 0, KEY_READ, &h) == ERROR_SUCCESS) {
-				RegCloseKey(h);
-				return 1;
-			}
-		}
-	}
-	return 0;
-}
-
 static void cg_webview2_missing(void) {
 	MessageBoxW(NULL,
 		L"Microsoft Edge WebView2 runtime was not found.\n\n"
@@ -88,13 +69,13 @@ import (
 )
 
 func openWindow(title, url string) {
-	if C.cg_webview2_available() == 0 {
+	w := webview.New(false)
+	defer w.Destroy()
+	if w.Window() == nil {
 		C.cg_webview2_missing()
 		return
 	}
 
-	w := webview.New(false)
-	defer w.Destroy()
 	w.SetTitle(title)
 	w.SetSize(800, 600, webview.HintNone)
 	C.cg_set_app_icon(w.Window())

@@ -105,6 +105,20 @@ hide_webview_window() {
       m_controller = nullptr;
     }'
 	have "$wv" "m_controller->Close()"
+
+	echo "=== Null-guard webview_get_window() (webview_create returns NULL when WebView2 is missing) ==="
+	vblock "$wv" \
+		'WEBVIEW_API void *webview_get_window(webview_t w) {
+  return static_cast<webview::webview *>(w)->window();
+}' \
+		'WEBVIEW_API void *webview_get_window(webview_t w) {
+  if (!w) {
+    return nullptr;
+  }
+  return static_cast<webview::webview *>(w)->window();
+}'
+	have "$wv" "WEBVIEW_API void *webview_get_window(webview_t w) {
+  if (!w) {"
 }
 
 link_webkit() {
