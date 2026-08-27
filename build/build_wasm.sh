@@ -10,7 +10,6 @@ ensure_vendor "font stubbing"
 
 slim_common
 enable_touch_scroll
-drag_scroll_widget
 
 fyne package -os wasm --app-build "$build" --tags no_emoji
 write_build "$build"

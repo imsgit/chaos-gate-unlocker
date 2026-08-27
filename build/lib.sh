@@ -172,21 +172,9 @@ GOEOF
 }
 
 enable_touch_scroll() {
-	local ww=vendor/fyne.io/fyne/v2/internal/driver/glfw/window_wasm.go
-	echo "=== Flush pending move before click ==="
-	vblock "$ww" \
-		'	runOnMain(func() {
-		button, modifiers := convertMouseButton(btn, mods)' \
-		'	runOnMain(func() {
-		if !w.mousePosUpdateProcessed {
-			w.processMouseMoved(w.newMousePosX, w.newMousePosY)
-			w.mousePosUpdateProcessed = true
-		}
-		button, modifiers := convertMouseButton(btn, mods)'
-	have "$ww" 'if !w.mousePosUpdateProcessed {'
-
 	local wc=vendor/fyne.io/fyne/v2/internal/driver/glfw/window.go
 	echo "=== Widen drag slop 2->12 for touch (finger jitter must not turn a tap into a scroll-drag) ==="
+	have "$wc" "func (w *window) ensurePositionProcessed() {"
 	vsub "$wc" 's/dragMoveThreshold = 2 /dragMoveThreshold = 12 /' 'dragMoveThreshold = 12'
 
 	local bw=vendor/github.com/fyne-io/glfw-js/browser_wasm.go
@@ -252,24 +240,3 @@ enable_touch_scroll() {
 	have "$bw" 'Invoke("touchstart"'
 }
 
-drag_scroll_widget() {
-	local f=vendor/fyne.io/fyne/v2/internal/widget/scroller_web.go
-	echo "=== Make Scroll draggable on wasm (finger drag scrolls list + dropdown content) ==="
-	gone vendor/fyne.io/fyne/v2/internal/widget/scroller.go 'func (s *Scroll) Dragged'
-	add_swap "$f" <<'GOEOF'
-//go:build js
-
-package widget
-
-import "fyne.io/fyne/v2"
-
-func (s *Scroll) DragEnd() {
-}
-
-func (s *Scroll) Dragged(e *fyne.DragEvent) {
-	if s.updateOffset(e.Dragged.DX, e.Dragged.DY) {
-		s.refreshWithoutOffsetUpdate()
-	}
-}
-GOEOF
-}

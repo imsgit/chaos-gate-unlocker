@@ -66,7 +66,7 @@ func aquilaFrames(res fyne.Resource, pivotX, fromDeg float64) []image.Image {
 		}
 
 		dst := image.NewRGBA(b)
-		xdraw.CatmullRom.Transform(dst, m, src, b, xdraw.Over, nil)
+		xdraw.BiLinear.Transform(dst, m, src, b, xdraw.Over, nil)
 		frames[i] = dst
 	}
 	return frames
