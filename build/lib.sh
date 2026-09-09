@@ -4,13 +4,10 @@ read_version() { _toml 'Version *= *"[^"]+"' '[0-9]+(\.[0-9]+)*'; }
 write_build() { sed -i -E "s/^(\s*Build *= *).*/\1${1}/" FyneApp.toml; }
 
 declare -A _bak=()
-declare -a _added=()
 swap() { [ -n "${_bak[$1]:-}" ] || { _bak["$1"]="$(mktemp)"; cp "$1" "${_bak[$1]}"; }; }
 write_swap() { swap "$1"; cat > "$1"; }
-add_swap() { _added+=("$1"); cat > "$1"; }
 restore_swaps() {
 	for s in "${!_bak[@]}"; do mv -f "${_bak[$s]}" "$s"; done
-	for f in "${_added[@]}"; do rm -f "$f"; done
 }
 
 ensure_vendor() {
@@ -23,7 +20,6 @@ have() { grep -qF "$2" "$1" || { echo "[!] expected '$2' in $1" >&2; exit 1; }; 
 gone() { ! grep -qF "$2" "$1" || { echo "[!] '$2' still present in $1" >&2; exit 1; }; }
 
 sub() { sed -i "$2" "$1"; have "$1" "$3"; }
-del() { sed -i "$2" "$1"; gone "$1" "$3"; }
 
 replace_block() { OLD="$2" NEW="$3" perl -0777 -i -pe '
 	my $i = index($_, $ENV{OLD}); die "block not found in '"$1"'\n" if $i < 0;

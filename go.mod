@@ -4,7 +4,6 @@ go 1.24.6
 
 require (
 	fyne.io/fyne/v2 v2.8.1
-	github.com/goccy/go-json v0.10.6
 	github.com/webview/webview_go v0.0.0-20240831120633-6173450d4dd6
 	golang.org/x/image v0.36.0
 )

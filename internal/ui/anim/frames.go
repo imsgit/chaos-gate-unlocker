@@ -21,7 +21,11 @@ func runFrames(ctx context.Context, n int, interval time.Duration, onCancel func
 			return
 		case <-ticker.C:
 			frame := i
-			fyne.DoAndWait(func() { step(frame) })
+			fyne.DoAndWait(func() {
+				if ctx.Err() == nil {
+					step(frame)
+				}
+			})
 		}
 	}
 }

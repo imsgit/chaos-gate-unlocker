@@ -38,6 +38,5 @@ func (w *iconImage) MouseIn(e *desktop.MouseEvent) {
 }
 
 func (w *iconImage) CreateRenderer() fyne.WidgetRenderer {
-	w.ExtendBaseWidget(w)
 	return widget.NewSimpleRenderer(w.img)
 }

@@ -87,12 +87,9 @@ func (p *siteProxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if fresh, ok := p.fetch(reqPath, "", ""); ok {
-		serveAsset(w, fresh)
-		return
+	if !p.fetch(reqPath, "", "", w) {
+		http.Error(w, "site unavailable and not cached", http.StatusBadGateway)
 	}
-
-	http.Error(w, "site unavailable and not cached", http.StatusBadGateway)
 }
 
 func (p *siteProxy) revalidate(reqPath, etag, lastMod string) {
@@ -110,14 +107,14 @@ func (p *siteProxy) revalidate(reqPath, etag, lastMod string) {
 			delete(p.inflight, reqPath)
 			p.mu.Unlock()
 		}()
-		p.fetch(reqPath, etag, lastMod)
+		p.fetch(reqPath, etag, lastMod, nil)
 	}()
 }
 
-func (p *siteProxy) fetch(reqPath, etag, lastMod string) (asset, bool) {
+func (p *siteProxy) fetch(reqPath, etag, lastMod string, w http.ResponseWriter) bool {
 	req, err := http.NewRequest(http.MethodGet, p.origin+reqPath, nil)
 	if err != nil {
-		return asset{}, false
+		return false
 	}
 	req.Header.Set("Accept-Encoding", "gzip")
 	if etag != "" {
@@ -130,27 +127,38 @@ func (p *siteProxy) fetch(reqPath, etag, lastMod string) (asset, bool) {
 	defer cancel()
 	resp, err := p.client.Do(req.WithContext(ctx))
 	if err != nil {
-		return asset{}, false
+		return false
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
-		return asset{}, false
-	}
-	stall := time.AfterFunc(stallTimeout, cancel)
-	defer stall.Stop()
-	body, err := io.ReadAll(io.LimitReader(&stallReader{r: resp.Body, timer: stall}, maxAssetBytes+1))
-	if err != nil || len(body) > maxAssetBytes {
-		return asset{}, false
+		return false
 	}
 	a := asset{
-		body:            body,
 		contentType:     resp.Header.Get("Content-Type"),
 		contentEncoding: resp.Header.Get("Content-Encoding"),
 		etag:            resp.Header.Get("ETag"),
 		lastModified:    resp.Header.Get("Last-Modified"),
 	}
+
+	var buf bytes.Buffer
+	var dst io.Writer = &buf
+	if w != nil {
+		setAssetHeaders(w, a)
+		if resp.ContentLength >= 0 {
+			w.Header().Set("Content-Length", strconv.FormatInt(resp.ContentLength, 10))
+		}
+		dst = io.MultiWriter(&buf, w)
+	}
+
+	stall := time.AfterFunc(stallTimeout, cancel)
+	defer stall.Stop()
+	n, err := io.Copy(dst, io.LimitReader(&stallReader{r: resp.Body, timer: stall}, maxAssetBytes+1))
+	if err != nil || n > maxAssetBytes {
+		return w != nil
+	}
+	a.body = buf.Bytes()
 	p.store(reqPath, a)
-	return a, true
+	return true
 }
 
 type stallReader struct {
@@ -166,13 +174,18 @@ func (s *stallReader) Read(p []byte) (int, error) {
 	return n, err
 }
 
-func serveAsset(w http.ResponseWriter, a asset) {
+func setAssetHeaders(w http.ResponseWriter, a asset) {
 	if a.contentType != "" {
 		w.Header().Set("Content-Type", a.contentType)
 	}
 	if a.contentEncoding != "" {
 		w.Header().Set("Content-Encoding", a.contentEncoding)
 	}
+	w.Header().Set("Cache-Control", "no-store")
+}
+
+func serveAsset(w http.ResponseWriter, a asset) {
+	setAssetHeaders(w, a)
 	w.Header().Set("Content-Length", strconv.Itoa(len(a.body)))
 	w.Write(a.body)
 }

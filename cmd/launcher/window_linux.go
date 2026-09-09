@@ -10,7 +10,6 @@ static void paint_dark(void *win, int ww, int wh) {
 		return;
 	}
 	GtkWindow *window = GTK_WINDOW(win);
-	gtk_window_set_position(window, GTK_WIN_POS_CENTER);
 
 	GtkWidget *child = gtk_bin_get_child(GTK_BIN(window));
 	if (child && WEBKIT_IS_WEB_VIEW(child)) {

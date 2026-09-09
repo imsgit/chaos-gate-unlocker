@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<script>
+		(function () {
+			var dpr = 2;
+			try {
+				var p = window.parent;
+				var s = Math.min(p.innerWidth / 800, p.innerHeight / 600);
+				dpr = Math.min(s * (p.devicePixelRatio || 1), 3);
+			} catch (e) {}
+			Object.defineProperty(window, "devicePixelRatio", { configurable: true, get: function () { return dpr; } });
+			window.__setDPR = function (v) {
+				v = Math.min(Math.max(v, 0.5), 3);
+				if (Math.abs(v - dpr) < 0.01) return;
+				dpr = v;
+				window.dispatchEvent(new Event("resize"));
+			};
+			Object.defineProperty(navigator, "userAgent", { configurable: true, get: function () {
+				return "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36";
+			} });
+		})();
+	</script>
+	<title>ChaosGateUnlocker</title>
+	<link rel="icon" type="image/png" href="icon.png">
+	<style>
+		html, body {
+			margin: 0;
+			height: 100%;
+			overflow: hidden;
+			background: #151515;
+			color: #2196f3;
+			font-family: sans-serif;
+			text-align: center;
+		}
+		#main {
+			display: flex;
+			flex-direction: column;
+			align-items: center;
+			justify-content: center;
+			min-height: 100vh;
+		}
+		.application-icon {
+			max-width: 160px;
+			max-height: 160px;
+		}
+		.spinner {
+			width: 40px;
+			height: 40px;
+			margin: 20px auto;
+			border: 4px solid rgba(128, 128, 128, 0.25);
+			border-top-color: #00dee6;
+			border-radius: 50%;
+			animation: spin 1s linear infinite;
+		}
+		@keyframes spin { to { transform: rotate(360deg); } }
+		.action {
+			display: block;
+			min-height: 1.3em;
+		}
+		.action-error {
+			color: red;
+		}
+		.application-version {
+			margin-top: 12px;
+			font-size: 10px;
+			color: #00dee6;
+		}
+		#dummyEntry {
+			position: absolute;
+			left: 0;
+			top: -100pt;
+			z-index: -10;
+			font-size: 32pt;
+		}
+		@media (prefers-color-scheme: light) {
+			html, body { background: #fff; }
+			.application-version { color: #616161; }
+		}
+	</style>
+	<script src="wasm_exec.js"></script>
+	<script>
+		function load() {
+			var action = document.getElementById("action");
+			var main = document.getElementById("main");
+			function fail(msg) {
+				action.textContent = "Failed to load: " + msg;
+				action.className = "action-error";
+			}
+			if (!window.WebAssembly || !WebAssembly.instantiateStreaming) {
+				return fail("WebAssembly is not supported in your browser");
+			}
+			if (typeof DecompressionStream === "undefined") {
+				return fail("please update your browser (Safari 16.4+ / Firefox 113+ required)");
+			}
+			var probe = document.createElement("canvas");
+			if (!(probe.getContext("webgl") || probe.getContext("experimental-webgl"))) {
+				return fail("WebGL is not supported in your browser");
+			}
+			action.textContent = "Downloading web assembly file.";
+			var go = new Go();
+			fetch("ChaosGateUnlocker.wasm.gz")
+				.then(function (r) {
+					var body = r.body.pipeThrough(new DecompressionStream("gzip"));
+					return new Response(body, { headers: { "Content-Type": "application/wasm" } });
+				})
+				.then(function (r) { return WebAssembly.instantiateStreaming(r, go.importObject); })
+				.then(function (result) {
+					main.remove();
+					go.run(result.instance);
+				})
+				.catch(function (err) { fail(err && err.message ? err.message : err); });
+		}
+	</script>
+</head>
+<body onload="load()">
+	<div id="main">
+		<img class="application-icon" src="icon.png" alt="Application icon">
+		<div class="spinner"></div>
+		<div class="action" id="action"><noscript>JavaScript must be enabled for this application to work.</noscript></div>
+		<div class="application-version">v__VERSION__</div>
+	</div>
+	<input id="dummyEntry" inputmode="none" readonly>
+</body>
+</html>

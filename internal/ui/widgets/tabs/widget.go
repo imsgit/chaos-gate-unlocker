@@ -157,7 +157,6 @@ func (r *tabsRenderer) Refresh() {
 	r.selection.FillColor = r.tabs.Theme().Color(theme.ColorNameSelection, v)
 	r.selection.CornerRadius = r.tabs.Theme().Size(theme.SizeNameSelectionRadius)
 	r.selection.Refresh()
-	canvas.Refresh(r.tabs)
 }
 
 func (r *tabsRenderer) Objects() []fyne.CanvasObject {

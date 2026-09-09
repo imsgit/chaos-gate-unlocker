@@ -24,11 +24,6 @@ jobs:
         with:
           go-version-file: go.mod
 
-      - name: Install fyne CLI
-        run: |
-          go install fyne.io/tools/cmd/fyne@latest
-          echo "$(go env GOPATH)/bin" >> "$GITHUB_PATH"
-
       - name: Install fonttools (for font subsetting)
         run: pipx install fonttools
 

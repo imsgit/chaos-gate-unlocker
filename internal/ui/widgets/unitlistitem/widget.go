@@ -128,7 +128,7 @@ func (i *Widget) Bind(val any) {
 		sideMission = object.CurrentSideMission.MissionID != ""
 	}
 
-	i.iconClass.Image = ui.DecodeMasked(ui.IconByName(class))
+	iconClass := ui.DecodeMasked(ui.IconByName(class))
 	i.SetToolTip(splitOnCapital(class))
 
 	i.textName.Text = name
@@ -177,10 +177,15 @@ func (i *Widget) Bind(val any) {
 	if strings.HasPrefix(i.textStatus.Text, "Unavailable") {
 		dim = 0.5
 	}
-	i.iconClass.Translucency = dim
-	i.imgLvl.Translucency = dim
-	i.iconClass.Refresh()
-	i.imgLvl.Refresh()
+	if i.iconClass.Image != iconClass || i.iconClass.Translucency != dim {
+		i.iconClass.Image = iconClass
+		i.iconClass.Translucency = dim
+		i.iconClass.Refresh()
+	}
+	if i.imgLvl.Translucency != dim {
+		i.imgLvl.Translucency = dim
+		i.imgLvl.Refresh()
+	}
 
 	i.textName.Refresh()
 	i.textLvl.Refresh()

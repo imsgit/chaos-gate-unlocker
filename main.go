@@ -8,6 +8,7 @@ import (
 	"chaos-gate-unlocker/internal/ui/widgets/dragscroll"
 	"chaos-gate-unlocker/internal/ui/widgets/dropdown"
 	"chaos-gate-unlocker/internal/ui/widgets/progress"
+	"chaos-gate-unlocker/internal/ui/widgets/statuslabel"
 	"chaos-gate-unlocker/internal/ui/widgets/tabs"
 	"chaos-gate-unlocker/internal/ui/widgets/toggle"
 	"chaos-gate-unlocker/internal/ui/widgets/tooltip"
@@ -18,6 +19,7 @@ import (
 	"image/color"
 	"net/url"
 	"slices"
+	"strconv"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/app"
@@ -29,8 +31,12 @@ import (
 )
 
 const (
+	appID      = "chaos.gate.unlocker"
+	appName    = "ChaosGateUnlocker"
 	version    = "%s.%d"
 	websiteURL = "https://imsgit.github.io/chaos-gate-unlocker/"
+
+	missionToolTip = "Attention: this save was made during a mission, not on the star map;\nthe changes apply to the star map only and won't affect the ongoing battle"
 )
 
 type feature struct {
@@ -45,6 +51,8 @@ type feature struct {
 }
 
 var (
+	appVersion, appBuild string
+
 	featuresManager = features.NewManager()
 	filesManager    = files.NewManager()
 
@@ -96,7 +104,11 @@ var (
 func main() {
 	validateScale()
 
-	a := app.NewWithID("chaos.gate.unlocker")
+	if appVersion != "" {
+		build, _ := strconv.Atoi(appBuild)
+		app.SetMetadata(fyne.AppMetadata{ID: appID, Name: appName, Version: appVersion, Build: build})
+	}
+	a := app.NewWithID(appID)
 
 	md := a.Metadata()
 	if md.Migrations == nil {
@@ -186,7 +198,7 @@ func main() {
 		healWoundSwitch, repairDamageSwitch, retrainSwitch, container.NewVBox(), container.NewVBox())
 
 	var units []any
-	statusLabel := widget.NewLabel("")
+	statusLabel := statuslabel.New()
 
 	unitsList := widget.NewList(
 		func() int { return len(units) },
@@ -354,7 +366,7 @@ func main() {
 		layoutTabs.Hide()
 		layoutTabs.SelectIndex(0)
 		unitsList.UnselectAll()
-		statusLabel.SetText("")
+		statusLabel.Set("", "")
 	}
 
 	var loadCancel context.CancelFunc
@@ -393,7 +405,11 @@ func main() {
 				toggle.Reset(f.sw, f.can)
 			}
 
-			statusLabel.SetText(filesManager.Status())
+			toolTip := ""
+			if filesManager.InMission() {
+				toolTip = missionToolTip
+			}
+			statusLabel.Set(filesManager.Status(), toolTip)
 		})
 	}
 

@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"bytes"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
@@ -13,7 +14,6 @@ import (
 	"strconv"
 
 	"fyne.io/fyne/v2"
-	"github.com/goccy/go-json"
 )
 
 var (
@@ -142,9 +142,15 @@ func (m *Manager) Save() error {
 	return nil
 }
 
+func (m *Manager) InMission() bool { return len(m.combatStateBytes) > 0 }
+
 func (m *Manager) Status() string {
 	h := m.header
-	return fmt.Sprintf("%s   ·   %s   ·   %s",
+	status := fmt.Sprintf("%s   ·   %s   ·   %s",
 		save.SlotLabel(m.filePath), strings.ToUpper(h.SaveName),
 		save.Detail(h.GameDays, h.Difficulty, h.IronMan, h.SavedTimeStamp))
+	if m.InMission() {
+		status += "   ·   MISSION"
+	}
+	return status
 }

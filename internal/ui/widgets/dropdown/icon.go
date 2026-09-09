@@ -24,7 +24,6 @@ func NewIconWidget() *IconWidget {
 }
 
 func (s *IconWidget) MinSize() fyne.Size {
-	s.ExtendBaseWidget(s)
 	return fyne.NewSize(0, 54)
 }
 

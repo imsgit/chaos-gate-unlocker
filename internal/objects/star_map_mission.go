@@ -1,7 +1,7 @@
 package objects
 
 import (
-	"github.com/goccy/go-json"
+	"encoding/json"
 )
 
 type StarMapMission struct {

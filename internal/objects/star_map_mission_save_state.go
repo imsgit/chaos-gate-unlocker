@@ -1,6 +1,6 @@
 package objects
 
-import "github.com/goccy/go-json"
+import "encoding/json"
 
 type StarMapMissionSaveState struct {
 	WeekThatKoramarWasDefeated                   int             `json:"weekThatKoramarWasDefeated"`

@@ -3,7 +3,7 @@ package internal
 import (
 	"chaos-gate-unlocker/internal/objects"
 
-	"github.com/goccy/go-json"
+	"encoding/json"
 )
 
 const (

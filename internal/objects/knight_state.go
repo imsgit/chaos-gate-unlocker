@@ -1,6 +1,6 @@
 package objects
 
-import "github.com/goccy/go-json"
+import "encoding/json"
 
 type KnightState struct {
 	MenuCustomModelOverride string          `json:"menuCustomModelOverride"`

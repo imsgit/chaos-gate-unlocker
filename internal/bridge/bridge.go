@@ -142,6 +142,10 @@ func openInBrowser(rawURL string) error {
 }
 
 func WriteFileAtomic(path string, parts ...[]byte) error {
+	mode := os.FileMode(0o644)
+	if info, err := os.Stat(path); err == nil {
+		mode = info.Mode().Perm()
+	}
 	tmp, err := os.CreateTemp(filepath.Dir(path), filepath.Base(path)+".*.tmp")
 	if err != nil {
 		return err
@@ -151,6 +155,9 @@ func WriteFileAtomic(path string, parts ...[]byte) error {
 		if _, err = tmp.Write(part); err != nil {
 			break
 		}
+	}
+	if err == nil {
+		err = tmp.Chmod(mode)
 	}
 	if err == nil {
 		err = tmp.Sync()

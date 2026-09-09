@@ -3,15 +3,12 @@ package main
 import (
 	"context"
 	"crypto/rand"
-	"crypto/subtle"
-	"encoding/hex"
 	"flag"
 	"fmt"
 	"log"
 	"net"
 	"net/http"
 	"sync"
-	"sync/atomic"
 	"time"
 
 	"chaos-gate-unlocker/internal/bridge"
@@ -40,7 +37,7 @@ func main() {
 		return save.Discover("")
 	})
 
-	token := newToken()
+	token := rand.Text()
 
 	ln, err := net.Listen("tcp", "127.0.0.1:0")
 	if err != nil {
@@ -53,24 +50,9 @@ func main() {
 	}
 
 	host := ln.Addr().String()
-	appURL := "http://" + host + sitePath + "?t=" + token
-	boot := fmt.Sprintf(`<!doctype html><meta charset="utf-8"><style>html,body{margin:0;height:100%%;background:#151515}</style><script>requestAnimationFrame(function(){requestAnimationFrame(function(){location.replace(%q)})})</script>`, appURL)
 
 	mux := http.NewServeMux()
 	bridge.New(token, dir).Register(mux)
-	var launched atomic.Bool
-	mux.HandleFunc("/__launch", func(w http.ResponseWriter, r *http.Request) {
-		if subtle.ConstantTimeCompare([]byte(r.URL.Query().Get("t")), []byte(token)) != 1 {
-			http.Error(w, "forbidden", http.StatusForbidden)
-			return
-		}
-		if !launched.CompareAndSwap(false, true) {
-			http.Error(w, "gone", http.StatusGone)
-			return
-		}
-		w.Header().Set("Content-Type", "text/html; charset=utf-8")
-		_, _ = w.Write([]byte(boot))
-	})
 	mux.Handle("/", proxy)
 
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -88,17 +70,9 @@ func main() {
 		}
 	}()
 
-	openWindow("Chaos Gate Unlocker", "http://"+host+"/__launch?t="+token)
+	openWindow("Chaos Gate Unlocker", "http://"+host+sitePath+"?t="+token)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 	_ = srv.Shutdown(ctx)
-}
-
-func newToken() string {
-	b := make([]byte, 16)
-	if _, err := rand.Read(b); err != nil {
-		log.Fatalf("token: %v", err)
-	}
-	return hex.EncodeToString(b)
 }

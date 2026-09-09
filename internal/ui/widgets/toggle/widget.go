@@ -47,8 +47,6 @@ func New(onChanged func(on bool), icon, name, toolTip string) *Widget {
 
 	s.icon.Image = ui.DecodeMasked(ui.IconByName(icon))
 
-	go getSwitchFrames()
-
 	s.ExtendBaseWidget(s)
 	s.showStatic()
 	return s
@@ -114,6 +112,9 @@ func setTranslucency(img *canvas.Image, t float64) {
 }
 
 func (s *Widget) setSwitch(img image.Image) {
+	if s.sw.Image == img {
+		return
+	}
 	s.sw.Image = img
 	s.sw.Refresh()
 }

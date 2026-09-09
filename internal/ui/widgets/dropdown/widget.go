@@ -39,12 +39,10 @@ func (s *Widget) ExtendBaseWidget(wid fyne.Widget) {
 }
 
 func (s *Widget) MinSize() fyne.Size {
-	s.ExtendBaseWidget(s)
 	return fyne.NewSize(0, 36)
 }
 
 func (s *Widget) CreateRenderer() fyne.WidgetRenderer {
-	s.ExtendBaseWidget(s)
 	base := s.Select.CreateRenderer()
 	r := &arrowRenderer{base: base, w: s}
 	for _, o := range base.Objects() {

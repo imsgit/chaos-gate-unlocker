@@ -3,7 +3,7 @@ package internal
 import (
 	"chaos-gate-unlocker/internal/save"
 
-	"github.com/goccy/go-json"
+	"encoding/json"
 )
 
 type Header struct {

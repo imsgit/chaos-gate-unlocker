@@ -89,7 +89,6 @@ func (r *tipRenderer) Refresh() {
 	r.bg.Refresh()
 
 	r.tip.richtext.Refresh()
-	canvas.Refresh(r.tip)
 }
 
 func (r *tipRenderer) Objects() []fyne.CanvasObject { return r.objects }
