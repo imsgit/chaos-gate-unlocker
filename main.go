@@ -36,7 +36,7 @@ const (
 	version    = "%s.%d"
 	websiteURL = "https://imsgit.github.io/chaos-gate-unlocker/"
 
-	missionToolTip = "Attention: this save was made during a mission, not on the star map;\nthe changes apply to the star map only and won't affect the ongoing battle"
+	missionToolTip = "This save was made during a mission;\nThe changes apply to the star map only and won't affect the ongoing battle"
 )
 
 type feature struct {
