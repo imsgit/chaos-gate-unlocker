@@ -10,7 +10,10 @@ import (
 	"fyne.io/fyne/v2/widget"
 )
 
-const missionText = "·   MISSION"
+const (
+	missionText  = "·   IN COMBAT"
+	missionShift = -6
+)
 
 type Widget struct {
 	widget.BaseWidget
@@ -23,7 +26,7 @@ type Widget struct {
 func New() *Widget {
 	l := &Widget{text: widget.NewLabel(""), mission: newMissionLabel()}
 	l.mission.Hide()
-	l.box = container.New(layout.NewCustomPaddedHBoxLayout(0), l.text, l.mission)
+	l.box = container.New(layout.NewCustomPaddedHBoxLayout(missionShift), l.text, l.mission)
 	l.ExtendBaseWidget(l)
 	return l
 }
