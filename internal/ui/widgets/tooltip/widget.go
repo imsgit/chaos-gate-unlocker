@@ -13,9 +13,12 @@ type WidgetExtend struct {
 	toolTip string
 
 	tipLayer         *fyne.Container
+	tipObj           fyne.CanvasObject
 	absoluteMousePos fyne.Position
 	pending          *time.Timer
 	pendingActive    bool
+	popUp            *time.Timer
+	popUpActive      bool
 }
 
 func (t *WidgetExtend) SetToolTip(toolTip string) { t.toolTip = toolTip }
@@ -44,6 +47,28 @@ func (t *WidgetExtend) MouseOut() {
 	t.cancel()
 }
 
+func (t *WidgetExtend) PopUpToolTip() {
+	if t.toolTip == "" || t.Obj == nil {
+		return
+	}
+	t.cancel()
+	t.popUpActive = true
+	t.popUp = time.AfterFunc(popUpDelay, func() {
+		fyne.Do(func() {
+			if !t.popUpActive || t.toolTip == "" {
+				return
+			}
+			driver := fyne.CurrentApp().Driver()
+			pos := driver.AbsolutePositionForObject(t.Obj)
+			pos.X += t.Obj.Size().Width / 2
+			t.show(driver.CanvasForObject(t.Obj), pos)
+			t.popUp = time.AfterFunc(popUpDuration, func() { fyne.Do(t.DismissToolTip) })
+		})
+	})
+}
+
+func (t *WidgetExtend) DismissToolTip() { t.cancel() }
+
 func (t *WidgetExtend) setPending() {
 	t.pendingActive = true
 	if t.pending != nil {
@@ -56,10 +81,16 @@ func (t *WidgetExtend) setPending() {
 				return
 			}
 			t.cancel()
-			canvas := fyne.CurrentApp().Driver().CanvasForObject(t.Obj)
-			t.tipLayer = showAtMousePosition(canvas, t.absoluteMousePos, t.toolTip)
+			t.show(fyne.CurrentApp().Driver().CanvasForObject(t.Obj), t.absoluteMousePos)
 		})
 	})
+}
+
+func (t *WidgetExtend) show(canvas fyne.Canvas, pos fyne.Position) {
+	t.tipLayer = showAtMousePosition(canvas, pos, t.toolTip)
+	if t.tipLayer != nil && len(t.tipLayer.Objects) > 0 {
+		t.tipObj = t.tipLayer.Objects[0]
+	}
 }
 
 func (t *WidgetExtend) cancel() {
@@ -67,8 +98,15 @@ func (t *WidgetExtend) cancel() {
 	if t.pending != nil {
 		t.pending.Stop()
 	}
+	t.popUpActive = false
+	if t.popUp != nil {
+		t.popUp.Stop()
+		t.popUp = nil
+	}
 	if t.tipLayer != nil {
-		hide(t.tipLayer)
-		t.tipLayer = nil
+		if len(t.tipLayer.Objects) > 0 && t.tipLayer.Objects[0] == t.tipObj {
+			hide(t.tipLayer)
+		}
+		t.tipLayer, t.tipObj = nil, nil
 	}
 }

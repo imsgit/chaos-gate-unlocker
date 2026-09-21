@@ -13,7 +13,7 @@ slim_common
 enable_touch_scroll
 
 mkdir -p wasm
-GOOS=js GOARCH=wasm go build -tags no_emoji -trimpath \
+GOOS=js GOARCH=wasm go build -tags no_emoji,no_metadata -trimpath \
 	-ldflags "-s -w -X main.appVersion=$version -X main.appBuild=$build" \
 	-o wasm/ChaosGateUnlocker.wasm .
 

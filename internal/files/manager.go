@@ -146,11 +146,7 @@ func (m *Manager) InMission() bool { return len(m.combatStateBytes) > 0 }
 
 func (m *Manager) Status() string {
 	h := m.header
-	status := fmt.Sprintf("%s   ·   %s   ·   %s",
+	return fmt.Sprintf("%s   ·   %s   ·   %s",
 		save.SlotLabel(m.filePath), strings.ToUpper(h.SaveName),
 		save.Detail(h.GameDays, h.Difficulty, h.IronMan, h.SavedTimeStamp))
-	if m.InMission() {
-		status += "   ·   MISSION"
-	}
-	return status
 }

@@ -11,7 +11,7 @@ fc=$(fyne-cross version 2>/dev/null | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -
 build=$(read_build)
 echo "=== fyne-cross $fc | build $build (no auto-bump) ==="
 
-tags=no_emoji,x11
+tags=no_emoji,x11,no_metadata
 
 ensure_vendor "font/charset/markdown swaps"
 slim_common

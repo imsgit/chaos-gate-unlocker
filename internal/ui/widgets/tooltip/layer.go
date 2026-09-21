@@ -15,6 +15,8 @@ const (
 	initialDelay        = 750 * time.Millisecond
 	subsequentDelay     = 300 * time.Millisecond
 	subsequentValidTime = 1500 * time.Millisecond
+	popUpDelay          = 400 * time.Millisecond
+	popUpDuration       = 6 * time.Second
 	maxWidth            = 600
 	belowMouseDistance  = 16
 	aboveMouseDistance  = 8
