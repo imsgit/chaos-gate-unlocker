@@ -25,14 +25,8 @@ type State struct {
 }
 
 type LinearRecord struct {
-	TypeName           string
-	AssetName          string
-	SerializedContents json.RawMessage
-	SerializedObject   any
-}
-
-type linearRecord struct {
 	TypeName           string          `json:"typeName"`
 	AssetName          string          `json:"assetName"`
 	SerializedContents json.RawMessage `json:"serializedContents"`
+	SerializedObject   any             `json:"-"`
 }

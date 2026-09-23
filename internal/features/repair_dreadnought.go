@@ -1,12 +1,11 @@
 package features
 
 import (
-	"chaos-gate-unlocker/internal"
 	"chaos-gate-unlocker/internal/objects"
 )
 
 func (m *Manager) RepairDreadnought() {
-	object := first[objects.DreadnoughtState](m, internal.DreadnoughtState)
+	object := first[objects.DreadnoughtState](m)
 	if object == nil {
 		return
 	}
@@ -17,7 +16,7 @@ func (m *Manager) RepairDreadnought() {
 }
 
 func (m *Manager) CanRepairDreadnought() (bool, bool) {
-	object := first[objects.DreadnoughtState](m, internal.DreadnoughtState)
+	object := first[objects.DreadnoughtState](m)
 	if object == nil {
 		return false, false
 	}

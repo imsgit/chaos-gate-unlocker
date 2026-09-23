@@ -1,7 +1,6 @@
 package features
 
 import (
-	"chaos-gate-unlocker/internal"
 	"chaos-gate-unlocker/internal/objects"
 )
 
@@ -13,7 +12,7 @@ const (
 )
 
 func (m *Manager) UnlockAssassins() {
-	forEach(m, internal.GameUnlocksSaveState, func(o *objects.GameUnlocksSaveState) {
+	forEach(m, func(o *objects.GameUnlocksSaveState) {
 		o.Unlocks = append(o.Unlocks, objects.Unlock{
 			ID: HasQueuedExecutionForce,
 		})

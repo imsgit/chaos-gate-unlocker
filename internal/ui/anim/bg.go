@@ -1,7 +1,6 @@
 package anim
 
 import (
-	"context"
 	"image"
 	"image/color"
 	"math"
@@ -11,6 +10,7 @@ import (
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
+	"fyne.io/fyne/v2/container"
 )
 
 const (
@@ -23,8 +23,8 @@ const (
 	eyeBloomBlur  = 9
 )
 
-func AnimateAbout(ctx context.Context, cover *canvas.Rectangle, base color.NRGBA) {
-	runFrames(ctx, 30, 15*time.Millisecond, nil, func(i int) {
+func AnimateAbout(cover *canvas.Rectangle, base color.NRGBA) *fyne.Animation {
+	an := Steps(30, 30*15*time.Millisecond, func(i int) {
 		if i <= 5 {
 			return
 		}
@@ -32,7 +32,9 @@ func AnimateAbout(ctx context.Context, cover *canvas.Rectangle, base color.NRGBA
 		c.A = uint8(float64(base.A) * (1 - float64(i-5)/24))
 		cover.FillColor = c
 		cover.Refresh()
-	})
+	}, nil)
+	an.Start()
+	return an
 }
 
 type glowEye struct{ cx, cy, rx, ry, reveal, bloom, lo, hi, grad float64 }
@@ -103,6 +105,7 @@ type EyeGlow struct {
 	once sync.Once
 	img  *image.RGBA
 	sh   *canvas.Shader
+	box  *fyne.Container
 
 	animOnce sync.Once
 }
@@ -198,6 +201,7 @@ func (g *EyeGlow) build() {
 			"intensity": 0,
 			"aspect":    float32(b.Dx()) / float32(b.Dy()),
 		}
+		g.box = container.New(fillLayout{}, g.sh)
 	})
 }
 
@@ -264,19 +268,45 @@ func lensMask(r, g, b, lo, hi float64) float64 {
 	return smoothstep((l - lo) / (hi - lo))
 }
 
-func (g *EyeGlow) apply(t float64) bool {
+func (g *EyeGlow) set(t float64) {
 	v := float32(t)
 	if g.sh.Uniforms["intensity"] == v {
-		return false
+		return
 	}
 	g.sh.Uniforms["intensity"] = v
-	return true
+	if !hidden() {
+		g.show()
+	}
 }
 
-func (g *EyeGlow) Overlay() *canvas.Shader {
-	g.build()
-	return g.sh
+func (g *EyeGlow) show() {
+	if g.sh.Uniforms["intensity"] <= 0 {
+		g.sh.Hide()
+		return
+	}
+	if g.sh.Visible() {
+		g.sh.Refresh()
+		return
+	}
+	g.sh.Show()
+	g.box.Refresh()
 }
+
+func (g *EyeGlow) Overlay() fyne.CanvasObject {
+	g.build()
+	return g.box
+}
+
+type fillLayout struct{}
+
+func (fillLayout) Layout(objects []fyne.CanvasObject, size fyne.Size) {
+	for _, o := range objects {
+		o.Move(fyne.Position{})
+		o.Resize(size)
+	}
+}
+
+func (fillLayout) MinSize([]fyne.CanvasObject) fyne.Size { return fyne.Size{} }
 
 func (g *EyeGlow) Animate() {
 	if g.sh == nil {
@@ -286,52 +316,56 @@ func (g *EyeGlow) Animate() {
 		onShown(func() {
 			fyne.Do(func() {
 				if g.sh != nil {
-					g.sh.Refresh()
+					g.show()
 				}
 			})
 		})
 		go func() {
 			ticker := time.NewTicker(eyeGlowPeriod)
 			defer ticker.Stop()
-			var cancel context.CancelFunc
+			var cur *fyne.Animation
 			for {
 				select {
 				case <-ticker.C:
 				case <-g.kick:
 					ticker.Reset(eyeGlowPeriod)
 				}
-				if cancel != nil {
-					cancel()
-					cancel = nil
-				}
-				if hidden() {
-					continue
-				}
-				cancel = g.pulse()
+				fyne.Do(func() {
+					if cur != nil {
+						cur.Stop()
+						cur = nil
+					}
+					if !hidden() {
+						cur = g.pulse()
+						cur.Start()
+					}
+				})
 			}
 		}()
 	})
 }
 
-func (g *EyeGlow) pulse() context.CancelFunc {
+func (g *EyeGlow) pulse() *fyne.Animation {
 	flicker := buildFlicker()
-	return Frames(eyeGlowSteps, eyeGlowFrame,
-		func() {
-			if g.apply(0) && !hidden() {
-				g.sh.Refresh()
-			}
-		},
+	last := -1
+	return Steps(eyeGlowSteps, eyeGlowSteps*eyeGlowFrame,
 		func(i int) {
 			fr := flicker[i]
+			if i > last {
+				for _, f := range flicker[last+1 : i] {
+					fr.spark = max(fr.spark, f.spark)
+					fr.gate = min(fr.gate, f.gate)
+				}
+				last = i
+			}
 			breath := 1 + 0.13*math.Sin(float64(i)*0.035) + 0.04*math.Sin(float64(i)*0.25)
 			t := eyeGlowEnvelope(i) * eyeGlowBase * fr.gate * breath
 			if s := fr.spark * eyeGlowFlash; s > t {
 				t = s
 			}
-			if g.apply(t) && !hidden() {
-				g.sh.Refresh()
-			}
-		})
+			g.set(t)
+		},
+		func() { g.set(0) })
 }
 
 func eyeGlowEnvelope(i int) float64 {

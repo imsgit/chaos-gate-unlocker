@@ -71,19 +71,17 @@ import (
 func openWindow(title, url string) {
 	w := webview.New(false)
 	defer w.Destroy()
-	if w.Window() == nil {
+	hwnd := w.Window()
+	if hwnd == nil {
 		C.cg_webview2_missing()
 		return
 	}
 
 	w.SetTitle(title)
 	w.SetSize(800, 600, webview.HintNone)
-	C.cg_set_app_icon(w.Window())
-	C.cg_center(w.Window())
-	var once sync.Once
-	_ = w.Bind("__cgReady", func() {
-		once.Do(func() { C.cg_show(w.Window()) })
-	})
+	C.cg_set_app_icon(hwnd)
+	C.cg_center(hwnd)
+	_ = w.Bind("__cgReady", sync.OnceFunc(func() { C.cg_show(hwnd) }))
 
 	w.Init(`(function(){function r(){window.__cgReady&&window.__cgReady()}` +
 		`requestAnimationFrame(function(){requestAnimationFrame(r)});setTimeout(r,3000)})()`)

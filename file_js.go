@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
+	"sync"
 	"syscall/js"
 
 	"chaos-gate-unlocker/internal/save"
@@ -19,31 +20,39 @@ import (
 	"fyne.io/fyne/v2/dialog"
 )
 
-var bridgeFile string
+var bridgeEnv = sync.OnceValues(func() (token, base string) {
+	loc := js.Global().Get("location")
+	q, _ := url.ParseQuery(strings.TrimPrefix(loc.Get("search").String(), "?"))
+	return q.Get("t"), loc.Get("origin").String()
+})
 
 func bridgeToken() string {
-	search := js.Global().Get("location").Get("search").String()
-	q, _ := url.ParseQuery(strings.TrimPrefix(search, "?"))
-	return q.Get("t")
+	tok, _ := bridgeEnv()
+	return tok
+}
+
+func bridgeURL(path string, q url.Values) string {
+	tok, base := bridgeEnv()
+	if q == nil {
+		q = url.Values{}
+	}
+	q.Set("t", tok)
+	return base + path + "?" + q.Encode()
 }
 
 func showTryOnline() bool { return bridgeToken() != "" }
 
 func openWebsite(u *url.URL) {
-	if tok := bridgeToken(); tok != "" {
-		go bridgeGet(bridgeBase() + "/api/openurl?t=" + url.QueryEscape(tok) + "&url=" + url.QueryEscape(u.String()))
+	if bridgeToken() != "" {
+		go bridgeGet(bridgeURL("/api/openurl", url.Values{"url": {u.String()}}))
 		return
 	}
 	_ = fyne.CurrentApp().OpenURL(u)
 }
 
-func bridgeBase() string {
-	return js.Global().Get("location").Get("origin").String()
-}
-
 func openFile(w fyne.Window, beginLoad func(), onData func(name string, data []byte, err error)) {
-	if tok := bridgeToken(); tok != "" {
-		go bridgePick(w, tok, beginLoad, onData)
+	if bridgeToken() != "" {
+		go bridgePick(w, beginLoad, onData)
 		return
 	}
 
@@ -123,18 +132,17 @@ func bridgeGet(u string) ([]byte, error) {
 	return body, nil
 }
 
-func bridgePick(w fyne.Window, tok string, beginLoad func(), onData func(name string, data []byte, err error)) {
+func bridgePick(w fyne.Window, beginLoad func(), onData func(name string, data []byte, err error)) {
 	fail := func(err error) { fyne.Do(func() { dialog.ShowError(err, w) }) }
 
-	body, err := bridgeGet(bridgeBase() + "/api/list?t=" + url.QueryEscape(tok))
+	body, err := bridgeGet(bridgeURL("/api/list", nil))
 	if err != nil {
 		fail(err)
 		return
 	}
 	var list []struct {
-		Name   string `json:"name"`
-		Title  string `json:"title"`
-		Detail string `json:"detail"`
+		Name string `json:"name"`
+		save.Info
 	}
 	if err := json.Unmarshal(body, &list); err != nil {
 		fail(err)
@@ -145,59 +153,41 @@ func bridgePick(w fyne.Window, tok string, beginLoad func(), onData func(name st
 		return
 	}
 
-	names := make([]string, len(list))
-	infoMap := make(map[string]save.Info, len(list))
-	for i, e := range list {
-		names[i] = e.Name
-		infoMap[e.Name] = save.Info{Title: e.Title, Detail: e.Detail}
+	infos := make(map[string]save.Info, len(list))
+	for _, e := range list {
+		infos[e.Name] = e.Info
 	}
 	fyne.Do(func() {
-		showSavePicker(w, names, func(name string) save.Info { return infoMap[name] }, func(name string) {
+		showSavePicker(w, infos, func(name string) {
 			beginLoad()
 			go func() {
-				data, err := bridgeGet(bridgeBase() + "/api/file?t=" + url.QueryEscape(tok) + "&name=" + url.QueryEscape(name))
-				if err == nil {
-					bridgeFile = name
-				}
+				data, err := bridgeGet(bridgeURL("/api/file", url.Values{"name": {name}}))
 				onData(name, data, err)
 			}()
 		}, func() {
-			go bridgeGet(bridgeBase() + "/api/open?t=" + url.QueryEscape(tok))
+			go bridgeGet(bridgeURL("/api/open", nil))
 		})
 	})
 }
 
-func saveFile(done func(error)) {
-	go func() {
-		data, err := filesManager.Encode()
-		if err != nil {
-			fyne.Do(func() { done(err) })
-			return
-		}
-		if tok := bridgeToken(); tok != "" {
-			bridgeSave(tok, filesManager.Name(), data, done)
-			return
-		}
+func saveFile() error {
+	data, err := filesManager.Encode()
+	if err != nil {
+		return err
+	}
+	if bridgeToken() == "" {
 		download(filesManager.Name(), data)
-		fyne.Do(func() { done(nil) })
-	}()
-}
-
-func bridgeSave(tok, fallbackName string, data []byte, done func(error)) {
-	name := bridgeFile
-	if name == "" {
-		name = fallbackName
+		return nil
 	}
-
-	u := bridgeBase() + "/api/file?t=" + url.QueryEscape(tok) + "&name=" + url.QueryEscape(name)
-	resp, err := http.Post(u, "application/octet-stream", bytes.NewReader(data))
-	if err == nil {
-		if resp.StatusCode >= 300 {
-			err = fmt.Errorf("\n\n\nError. Cannot save file (%s).\n\n", resp.Status)
-		}
-		resp.Body.Close()
+	resp, err := http.Post(bridgeURL("/api/file", url.Values{"name": {filesManager.Name()}}), "application/octet-stream", bytes.NewReader(data))
+	if err != nil {
+		return err
 	}
-	fyne.Do(func() { done(err) })
+	resp.Body.Close()
+	if resp.StatusCode >= 300 {
+		return fmt.Errorf("\n\n\nError. Cannot save file (%s).\n\n", resp.Status)
+	}
+	return nil
 }
 
 func confirmSave(w fyne.Window, do func()) {
@@ -212,9 +202,7 @@ func download(name string, data []byte) {
 	buf := js.Global().Get("Uint8Array").New(len(data))
 	js.CopyBytesToJS(buf, data)
 
-	parts := js.Global().Get("Array").New()
-	parts.Call("push", buf)
-	blob := js.Global().Get("Blob").New(parts, map[string]any{"type": "application/octet-stream"})
+	blob := js.Global().Get("Blob").New([]any{buf}, map[string]any{"type": "application/octet-stream"})
 
 	objURL := js.Global().Get("URL").Call("createObjectURL", blob)
 	defer js.Global().Get("URL").Call("revokeObjectURL", objURL)

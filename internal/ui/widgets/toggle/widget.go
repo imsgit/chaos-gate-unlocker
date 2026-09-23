@@ -5,7 +5,6 @@ import (
 	"chaos-gate-unlocker/internal/ui/anim"
 	"chaos-gate-unlocker/internal/ui/widgets/tooltip"
 
-	"context"
 	"image"
 	"image/color"
 	"time"
@@ -17,19 +16,20 @@ import (
 )
 
 type Widget struct {
-	widget.DisableableWidget
+	widget.BaseWidget
 	tooltip.WidgetExtend
 
 	icon *canvas.Image
 	sw   *canvas.Image
 
-	animCancel context.CancelFunc
+	anim *fyne.Animation
 
 	textName *canvas.Text
 
 	onChanged func(on bool)
 	on        bool
 	focused   bool
+	disabled  bool
 }
 
 func New(onChanged func(on bool), icon, name, toolTip string) *Widget {
@@ -61,13 +61,15 @@ func (s *Widget) SetState(on, notify bool) {
 	s.set(on, notify, false)
 }
 
+func (s *Widget) Disabled() bool { return s.disabled }
+
 func (s *Widget) Enable() {
-	s.DisableableWidget.Enable()
+	s.disabled = false
 	s.set(s.on, false, false)
 }
 
 func (s *Widget) Disable() {
-	s.DisableableWidget.Disable()
+	s.disabled = true
 	s.set(s.on, false, false)
 }
 
@@ -96,11 +98,15 @@ func (s *Widget) set(on, notify, animate bool) {
 		return
 	}
 
-	if s.animCancel != nil {
-		s.animCancel()
-		s.animCancel = nil
-	}
+	s.stopAnim()
 	s.showStatic()
+}
+
+func (s *Widget) stopAnim() {
+	if s.anim != nil {
+		s.anim.Stop()
+		s.anim = nil
+	}
 }
 
 func setTranslucency(img *canvas.Image, t float64) {
@@ -120,24 +126,21 @@ func (s *Widget) setSwitch(img image.Image) {
 }
 
 func (s *Widget) showStatic() {
-	st := getStaticFrames()
 	if s.on {
-		s.setSwitch(st.on)
+		s.setSwitch(staticOn)
 	} else {
-		s.setSwitch(st.off)
+		s.setSwitch(staticOff)
 	}
 }
 
 func (s *Widget) animateTo(on bool) {
-	frames := getSwitchFrames()
+	frames := switchFrames()
 	if len(frames) == 0 {
 		s.showStatic()
 		return
 	}
 
-	if s.animCancel != nil {
-		s.animCancel()
-	}
+	s.stopAnim()
 
 	n := len(frames)
 	if on {
@@ -146,13 +149,13 @@ func (s *Widget) animateTo(on bool) {
 		s.setSwitch(frames[n-1])
 	}
 
-	s.animCancel = anim.Frames(n, 16*time.Millisecond, s.showStatic, func(i int) {
-		idx := i - 1
+	s.anim = anim.Steps(n, time.Duration(n)*16*time.Millisecond, func(i int) {
 		if !on {
-			idx = n - i
+			i = n - 1 - i
 		}
-		s.setSwitch(frames[idx])
-	})
+		s.setSwitch(frames[i])
+	}, s.showStatic)
+	s.anim.Start()
 }
 
 func (s *Widget) MinSize() fyne.Size {
@@ -201,14 +204,10 @@ func (s *Widget) TappedSecondary(*fyne.PointEvent) {
 }
 
 func (s *Widget) CreateRenderer() fyne.WidgetRenderer {
-	iconContainer := container.NewPadded(container.NewStack(s.icon))
-	swContainer := container.NewStack(s.sw)
-	nameContainer := container.NewPadded(s.textName)
-
 	return widget.NewSimpleRenderer(container.NewHBox(
-		iconContainer,
-		swContainer,
-		nameContainer,
+		container.NewPadded(s.icon),
+		s.sw,
+		container.NewPadded(s.textName),
 	))
 }
 

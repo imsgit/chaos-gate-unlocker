@@ -1,17 +1,16 @@
 package features
 
 import (
-	"chaos-gate-unlocker/internal"
 	"chaos-gate-unlocker/internal/objects"
 )
 
-var (
+const (
 	HammerCrysylix3      = "Hammer_Crysylix_3"
 	DominaLiberDaemonica = "DominaLiberDaemonica"
 )
 
 func (m *Manager) UnlockPreorderItems() {
-	object := first[objects.ArmorySaveState](m, internal.ArmourySaveState)
+	object := first[objects.ArmorySaveState](m)
 	if object == nil {
 		return
 	}
@@ -29,7 +28,7 @@ func (m *Manager) UnlockPreorderItems() {
 }
 
 func (m *Manager) CanUnlockPreorderItems() (bool, bool) {
-	object := first[objects.ArmorySaveState](m, internal.ArmourySaveState)
+	object := first[objects.ArmorySaveState](m)
 	if object == nil {
 		return true, true
 	}

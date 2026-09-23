@@ -5,6 +5,11 @@ source build/lib.sh
 
 ver=$(read_version)
 
+case "$(uname -s)" in
+MINGW* | MSYS* | CYGWIN* | Windows_NT) host=windows ;;
+*) host=linux ;;
+esac
+
 ensure_vendor "webview.h swap"
 hide_webview_window
 
@@ -25,14 +30,11 @@ build_windows() {
 	mkdir -p "$(dirname "$out")"
 
 	local env=(CGO_ENABLED=1 CGO_CFLAGS="-I$PWD/build/winsdk" CGO_CXXFLAGS="-I$PWD/build/winsdk")
-	case "$(uname -s)" in
-	MINGW* | MSYS* | CYGWIN* | Windows_NT) ;;
-	*)
+	if [ "$host" != windows ]; then
 		command -v x86_64-w64-mingw32-gcc >/dev/null ||
 			{ echo "[!] x86_64-w64-mingw32-gcc not found (needed to cross-build the Windows launcher)" >&2; exit 1; }
 		env+=(GOOS=windows GOARCH=amd64 CC=x86_64-w64-mingw32-gcc CXX=x86_64-w64-mingw32-g++)
-		;;
-	esac
+	fi
 
 	env "${env[@]}" go build -trimpath \
 		-ldflags "-s -w -H windowsgui -X main.version=$ver" \
@@ -40,15 +42,7 @@ build_windows() {
 	ls -lh "$out"
 }
 
-targets=("$@")
-if [ ${#targets[@]} -eq 0 ]; then
-	case "$(uname -s)" in
-	MINGW* | MSYS* | CYGWIN* | Windows_NT) targets=(windows) ;;
-	*) targets=(linux) ;;
-	esac
-fi
-
-for t in "${targets[@]}"; do
+for t in "${@:-$host}"; do
 	case $t in
 	linux) build_linux ;;
 	windows) build_windows ;;

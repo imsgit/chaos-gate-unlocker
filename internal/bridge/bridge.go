@@ -10,7 +10,6 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime"
-	"sort"
 	"strconv"
 	"strings"
 
@@ -29,10 +28,20 @@ func New(token string, dir func() string) *Handler {
 }
 
 func (h *Handler) Register(mux *http.ServeMux) {
-	mux.HandleFunc("/api/list", h.list)
-	mux.HandleFunc("/api/file", h.file)
-	mux.HandleFunc("/api/open", h.open)
-	mux.HandleFunc("/api/openurl", h.openURL)
+	for path, f := range map[string]http.HandlerFunc{
+		"/api/list":    h.list,
+		"/api/file":    h.file,
+		"/api/open":    h.open,
+		"/api/openurl": h.openURL,
+	} {
+		mux.HandleFunc(path, func(w http.ResponseWriter, r *http.Request) {
+			if !h.authed(r) {
+				http.Error(w, "forbidden", http.StatusForbidden)
+				return
+			}
+			f(w, r)
+		})
+	}
 }
 
 func (h *Handler) authed(r *http.Request) bool {
@@ -48,19 +57,13 @@ func (h *Handler) resolve(name string) string {
 }
 
 type entry struct {
-	Name    string `json:"name"`
-	ModTime int64  `json:"modTime"`
-	Title   string `json:"title"`
-	Detail  string `json:"detail"`
+	Name string `json:"name"`
+	save.Info
 }
 
 func (h *Handler) list(w http.ResponseWriter, r *http.Request) {
-	if !h.authed(r) {
-		http.Error(w, "forbidden", http.StatusForbidden)
-		return
-	}
-
-	ents, err := os.ReadDir(h.dir())
+	dir := h.dir()
+	ents, err := os.ReadDir(dir)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -71,27 +74,14 @@ func (h *Handler) list(w http.ResponseWriter, r *http.Request) {
 		if e.IsDir() || !strings.HasSuffix(e.Name(), ".gksave") {
 			continue
 		}
-		info, err := e.Info()
-		if err != nil {
-			continue
-		}
-		si := save.ParseFile(filepath.Join(h.dir(), e.Name()))
-		out = append(out, entry{
-			Name: e.Name(), ModTime: info.ModTime().Unix(),
-			Title: si.Title, Detail: si.Detail,
-		})
+		out = append(out, entry{e.Name(), save.ParseFile(filepath.Join(dir, e.Name()))})
 	}
-	sort.Slice(out, func(i, j int) bool { return out[i].ModTime > out[j].ModTime })
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(out)
 }
 
 func (h *Handler) open(w http.ResponseWriter, r *http.Request) {
-	if !h.authed(r) {
-		http.Error(w, "forbidden", http.StatusForbidden)
-		return
-	}
 	if err := OpenDir(h.dir()); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -121,10 +111,6 @@ func OpenDir(dir string) error {
 }
 
 func (h *Handler) openURL(w http.ResponseWriter, r *http.Request) {
-	if !h.authed(r) {
-		http.Error(w, "forbidden", http.StatusForbidden)
-		return
-	}
 	u, err := url.Parse(r.URL.Query().Get("url"))
 	if err != nil || (u.Scheme != "http" && u.Scheme != "https") || u.Host == "" || u.User != nil {
 		http.Error(w, "bad url", http.StatusBadRequest)
@@ -176,11 +162,6 @@ func WriteFileAtomic(path string, parts ...[]byte) error {
 }
 
 func (h *Handler) file(w http.ResponseWriter, r *http.Request) {
-	if !h.authed(r) {
-		http.Error(w, "forbidden", http.StatusForbidden)
-		return
-	}
-
 	path := h.resolve(r.URL.Query().Get("name"))
 	if path == "" {
 		http.Error(w, "bad name", http.StatusBadRequest)

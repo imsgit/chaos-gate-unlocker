@@ -2,6 +2,8 @@ package features
 
 import (
 	"chaos-gate-unlocker/internal/objects"
+
+	"slices"
 )
 
 var preservedPerks = map[string]bool{
@@ -22,38 +24,23 @@ func retrainable(unit any) (perks *[]*objects.StringValue, class string) {
 	}
 }
 
-func (m *Manager) RetrainUnit(unit any) {
-	perks, class := retrainable(unit)
-	if perks == nil {
-		return
-	}
-
+func trainedPerk(class string) func(*objects.StringValue) bool {
 	defaultPerk := class + "_DefaultPerk"
-
-	kept := (*perks)[:0]
-	for _, perk := range *perks {
-		if perk.Key == defaultPerk || preservedPerks[perk.Key] {
-			kept = append(kept, perk)
-		}
+	return func(perk *objects.StringValue) bool {
+		return perk.Key != defaultPerk && !preservedPerks[perk.Key]
 	}
-	*perks = kept
+}
+
+func (m *Manager) RetrainUnit(unit any) {
+	if perks, class := retrainable(unit); perks != nil {
+		*perks = slices.DeleteFunc(*perks, trainedPerk(class))
+	}
 }
 
 func (m *Manager) CanRetrainUnit(unit any) (enable, show bool) {
 	perks, class := retrainable(unit)
-	if perks == nil {
+	if perks == nil || class == GarranCrowClass {
 		return false, false
 	}
-
-	if class == GarranCrowClass {
-		return false, false
-	}
-
-	defaultPerk := class + "_DefaultPerk"
-	for _, perk := range *perks {
-		if perk.Key != defaultPerk && !preservedPerks[perk.Key] {
-			return true, true
-		}
-	}
-	return false, true
+	return slices.ContainsFunc(*perks, trainedPerk(class)), true
 }

@@ -14,7 +14,6 @@ import (
 	"chaos-gate-unlocker/internal/ui/widgets/tooltip"
 	"chaos-gate-unlocker/internal/ui/widgets/unitlistitem"
 
-	"context"
 	"fmt"
 	"image/color"
 	"net/url"
@@ -122,18 +121,11 @@ func main() {
 
 	var saveButton *widget.Button
 	refreshSaveButton = func() {
-		canApplyChanges := len(healUnits) > 0 || len(retrainUnits) > 0 ||
-			anyDirty(augmeticsUnits) || anyDirty(talentsUnits)
-		for _, f := range allFeatures {
-			if f.on {
-				canApplyChanges = true
-				break
-			}
-		}
-
-		saveButton.Disable()
-		if canApplyChanges {
+		if len(healUnits) > 0 || len(retrainUnits) > 0 || anyDirty(augmeticsUnits) || anyDirty(talentsUnits) ||
+			slices.ContainsFunc(allFeatures, func(f *feature) bool { return f.on }) {
 			saveButton.Enable()
+		} else {
+			saveButton.Disable()
 		}
 	}
 
@@ -209,62 +201,37 @@ func main() {
 			}
 		})
 	unitsList.HideSeparators = true
-	unitsList.OnSelected = func(id widget.ListItemID) {
-		if id >= len(units) {
-			return
+	showSwitch := func(sw *toggle.Widget, enable, on bool) {
+		sw.Show()
+		if enable {
+			sw.Enable()
+		} else {
+			sw.Disable()
+			on = true
 		}
+		sw.SetState(on, false)
+	}
+	unitsList.OnSelected = func(id widget.ListItemID) {
 		currUnit = units[id]
 
 		enable, showHeal := featuresManager.CanHealUnit(currUnit)
 		if showHeal {
-			healWoundSwitch.Show()
+			tip := "Heals the wound"
 			if featuresManager.UnitSupportsAugmetics(currUnit) {
-				healWoundSwitch.SetToolTip("Heals the wound;\nIf the wound was critical, you can also select a new augmetic")
-			} else {
-				healWoundSwitch.SetToolTip("Heals the wound")
+				tip += ";\nIf the wound was critical, you can also select a new augmetic"
 			}
-			if enable {
-				healWoundSwitch.Enable()
-				healWoundSwitch.SetState(healUnits[currUnit], false)
-			} else {
-				healWoundSwitch.Disable()
-				healWoundSwitch.SetState(true, false)
-			}
+			healWoundSwitch.SetToolTip(tip)
+			showSwitch(healWoundSwitch, enable, healUnits[currUnit])
 		} else {
-			repairDamageSwitch.Show()
-			if enable {
-				repairDamageSwitch.Enable()
-				repairDamageSwitch.SetState(repairDreadnought.on, false)
-			} else {
-				repairDamageSwitch.Disable()
-				repairDamageSwitch.SetState(true, false)
-			}
+			showSwitch(repairDamageSwitch, enable, repairDreadnought.on)
 		}
 
 		if canRetrain, showRetrain := featuresManager.CanRetrainUnit(currUnit); showRetrain {
-			retrainSwitch.Show()
-			if canRetrain {
-				retrainSwitch.Enable()
-				retrainSwitch.SetState(retrainUnits[currUnit], false)
-			} else {
-				retrainSwitch.Disable()
-				retrainSwitch.SetState(true, false)
-			}
-		} else {
-			retrainSwitch.Hide()
+			showSwitch(retrainSwitch, canRetrain, retrainUnits[currUnit])
 		}
 
-		initTalents := len(talentsUnits[currUnit]) == 0
-		if initTalents {
-			talentsUnits[currUnit] = append(talentsUnits[currUnit], []string{}, []string{})
-		}
-		unitsBox.Objects[3] = fillDropdownBox(renderTalent, initTalents)
-
-		initAugmetics := len(augmeticsUnits[currUnit]) == 0
-		if initAugmetics {
-			augmeticsUnits[currUnit] = append(augmeticsUnits[currUnit], []string{}, []string{})
-		}
-		unitsBox.Objects[4] = fillDropdownBox(renderAugmetic, initAugmetics)
+		unitsBox.Objects[3] = fillDropdownBox(talentsUnits, renderTalent)
+		unitsBox.Objects[4] = fillDropdownBox(augmeticsUnits, renderAugmetic)
 	}
 	unitsList.OnUnselected = func(widget.ListItemID) {
 		healWoundSwitch.Hide()
@@ -300,29 +267,21 @@ func main() {
 	unitsTab := &tabs.Item{Title: "Units", Icon: ui.AppTabUnitsIcon(),
 		Content: container.NewGridWithColumns(2, dragscroll.List(unitsList), dragscroll.Scroll(unitsScrollBox))}
 	nexusURL, _ := url.Parse("https://www.nexusmods.com/warhammer40kchaosgatedaemonhunters/mods/5")
-	fyneURL, _ := url.Parse("https://apps.fyne.io/apps/chaos.gate.unlocker.html")
 	aboutTab := &tabs.Item{Title: "About", Icon: ui.AppTabAboutIcon(),
 		Content: container.NewBorder(nil, nil,
 			container.NewVBox(
-				widget.NewHyperlink("> Visit Nexus Mods for more information", nexusURL),
-				widget.NewHyperlink("> Visit Fyne.io for app details", fyneURL)),
+				widget.NewHyperlink("> Visit Nexus Mods for more information", nexusURL)),
 			widget.NewLabel(fmt.Sprintf(version, a.Metadata().Version, a.Metadata().Build)))}
 
-	var acancel context.CancelFunc
+	var aboutAnim *fyne.Animation
 	layoutTabs := tabs.New(mainTab, unitsTab, aboutTab)
 	layoutTabs.OnSelected = func(item *tabs.Item) {
 		switch item {
 		case aboutTab:
-			var actx context.Context
-			actx, acancel = context.WithCancel(context.Background())
-			cancel := acancel
-			go func() {
-				anim.AnimateAbout(actx, cover, dim)
-				cancel()
-			}()
+			aboutAnim = anim.AnimateAbout(cover, dim)
 		default:
-			if acancel != nil {
-				acancel()
+			if aboutAnim != nil {
+				aboutAnim.Stop()
 			}
 			cover.FillColor = dim
 			cover.Refresh()
@@ -330,34 +289,32 @@ func main() {
 	}
 	layoutTabs.Hide()
 
-	newAquilaImage := func(res fyne.Resource) *canvas.Image {
-		img := canvas.NewImageFromResource(res)
+	newAquilaImage := func() *canvas.Image {
+		img := canvas.NewImageFromImage(nil)
 		img.ScaleMode = canvas.ImageScaleFastest
 		img.SetMinSize(fyne.NewSize(100, 0))
 		img.Translucency = 1
 		return img
 	}
-	leftAquila := newAquilaImage(ui.AppLeftAquilaIcon())
-	rightAquila := newAquilaImage(ui.AppRightAquilaIcon())
+	leftAquila := newAquilaImage()
+	rightAquila := newAquilaImage()
 
 	aquila := anim.NewAquila(ui.AppLeftAquilaIcon(), ui.AppRightAquilaIcon())
 	aquila.Prewarm()
 
 	progressLine := progress.New()
 	var openButton *widget.Button
-	animateTop := func(open bool, onDone func()) context.CancelFunc {
-		ctx, cancel := context.WithCancel(context.Background())
-		go func() {
-			aquila.Animate(ctx, leftAquila, rightAquila, progressLine, open)
-			fyne.DoAndWait(func() {
-				openButton.Enable()
-				if ctx.Err() == nil && onDone != nil {
-					onDone()
-				}
-			})
-			cancel()
-		}()
-		return cancel
+	animateTop := func(open bool, onDone func()) func() {
+		stop := aquila.Animate(leftAquila, rightAquila, progressLine, open, func() {
+			openButton.Enable()
+			if onDone != nil {
+				onDone()
+			}
+		})
+		return func() {
+			stop()
+			openButton.Enable()
+		}
 	}
 
 	resetUI := func() {
@@ -369,7 +326,7 @@ func main() {
 		statusLabel.Set("", "")
 	}
 
-	var loadCancel context.CancelFunc
+	var loadCancel func()
 	beginLoad := func() {
 		eyeGlow.Flash()
 		loadCancel = animateTop(true, layoutTabs.Show)
@@ -383,8 +340,7 @@ func main() {
 		resetUI()
 	}
 
-	loadData := func(name string, data []byte, loadErr error) {
-		err := loadErr
+	loadData := func(name string, data []byte, err error) {
 		if err == nil {
 			err = filesManager.LoadBytes(name, data)
 		}
@@ -425,12 +381,14 @@ func main() {
 
 			resetUI()
 
-			saveFile(func(err error) {
-				if err != nil {
-					cancel()
-					dialog.ShowError(err, w)
+			go func() {
+				if err := saveFile(); err != nil {
+					fyne.Do(func() {
+						cancel()
+						dialog.ShowError(err, w)
+					})
 				}
-			})
+			}()
 		})
 	})
 	saveButton.Disable()
@@ -473,7 +431,11 @@ type dropdownSpec struct {
 	lookup      func(name string) dropdownItem
 }
 
-func fillDropdownBox(render func(idx int, init bool) *dropdown.IconWidget, init bool) *fyne.Container {
+func fillDropdownBox(store map[any][][]string, render func(idx int, init bool) *dropdown.IconWidget) *fyne.Container {
+	init := len(store[currUnit]) == 0
+	if init {
+		store[currUnit] = [][]string{{}, {}}
+	}
 	box := container.NewVBox()
 	for i := 0; ; i++ {
 		sel := render(i, init)

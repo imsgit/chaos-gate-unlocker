@@ -10,37 +10,15 @@ import (
 )
 
 var (
-	switchFramesOnce sync.Once
-	switchFrames     []image.Image
-
-	staticFramesOnce sync.Once
-	staticImgs       switchStatics
+	staticOff    = ui.DecodeMasked(ui.WidgetSwitchOffIcon())
+	staticOn     = ui.DecodeMasked(ui.WidgetSwitchOnIcon())
+	switchFrames = sync.OnceValue(buildSwitchFrames)
 )
 
-type switchStatics struct {
-	off, on image.Image
-}
-
-func getSwitchFrames() []image.Image {
-	switchFramesOnce.Do(buildSwitchFrames)
-	return switchFrames
-}
-
-func getStaticFrames() switchStatics {
-	staticFramesOnce.Do(func() {
-		staticImgs = switchStatics{
-			off: ui.DecodeMasked(ui.WidgetSwitchOffIcon()),
-			on:  ui.DecodeMasked(ui.WidgetSwitchOnIcon()),
-		}
-	})
-	return staticImgs
-}
-
-func buildSwitchFrames() {
-	st := getStaticFrames()
-	off, on := st.off, st.on
+func buildSwitchFrames() []image.Image {
+	off, on := staticOff, staticOn
 	if off == nil || on == nil {
-		return
+		return nil
 	}
 
 	b := off.Bounds()
@@ -66,7 +44,7 @@ func buildSwitchFrames() {
 		drawShifted(dst, cog, int(float64(travel)*p+0.5))
 		frames[i] = dst
 	}
-	switchFrames = frames
+	return frames
 }
 
 func maskCircle(src image.Image, cx, cy, r int, inside bool) *image.RGBA {

@@ -17,70 +17,42 @@ const (
 	protonUser = "pfx/drive_c/users/steamuser"
 )
 
-var (
-	discoverMu sync.Mutex
-	discovered string
-	searched   bool
-)
-
-func Discover(currentPath string) string {
-	d := filepath.Dir(currentPath)
-	if currentPath != "" && dirExists(d) {
+var discovered = sync.OnceValue(func() string {
+	if d := discover(); dirExists(d) {
 		return d
 	}
+	return ""
+})
 
-	discoverMu.Lock()
-	defer discoverMu.Unlock()
-
-	if discovered != "" && dirExists(discovered) {
-		return discovered
+func Discover(currentPath string) string {
+	if d := filepath.Dir(currentPath); currentPath != "" && dirExists(d) {
+		return d
 	}
-
-	if !searched {
-		searched = true
-		if d = discover(); dirExists(d) {
-			discovered = d
-			return d
-		}
+	if d := discovered(); dirExists(d) {
+		return d
 	}
-
-	d, _ = os.Getwd()
+	d, _ := os.Getwd()
 	return d
 }
 
 func discover() string {
-	d, _ := os.UserHomeDir()
+	home, _ := os.UserHomeDir()
 
 	switch runtime.GOOS {
 	case "linux":
-		if found := steamSaveDir(d); found != "" {
+		if found := steamSaveDir(home); found != "" {
 			return found
 		}
-
-		dirSteam := searchDir(filepath.Join(d, ".steam"), protonDir)
-		if dirSteam != "" {
-			d = dirSteam
-		} else {
-			d = searchDir(d, protonDir)
-		}
-
-		if d == "" {
-			for _, path := range []string{"/run/media", "/media", "/mnt"} {
-				d = searchDir(path, protonDir)
-				if d != "" {
-					break
-				}
+		for _, root := range []string{filepath.Join(home, ".steam"), home, "/run/media", "/media", "/mnt"} {
+			if d := searchDir(root, protonDir); d != "" {
+				return searchDir(d, dir)
 			}
 		}
-
-		if d != "" {
-			d = searchDir(d, dir)
-		}
+		return ""
 	case "windows":
-		d = filepath.Join(d, dir)
+		return filepath.Join(home, dir)
 	}
-
-	return d
+	return home
 }
 
 func steamSaveDir(home string) string {

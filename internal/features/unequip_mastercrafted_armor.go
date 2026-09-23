@@ -1,7 +1,6 @@
 package features
 
 import (
-	"chaos-gate-unlocker/internal"
 	"chaos-gate-unlocker/internal/objects"
 
 	"strings"
@@ -51,31 +50,25 @@ func (m *Manager) UnequipMastercraftedArmor() {
 	upgrades := map[string][]bool{}
 
 	for _, record := range m.state.LinearRecords {
-		switch record.TypeName {
-		case internal.ArmourySaveState:
-			object := record.SerializedObject.(*objects.ArmorySaveState)
+		switch object := record.SerializedObject.(type) {
+		case *objects.ArmorySaveState:
 			for _, armor := range object.UnlockedArmours {
 				if _, ok := armorWithIncreasedSlots[armor.Data.Key]; ok {
 					upgrades[armor.Data.Key] = armor.Upgrades
 				}
 			}
-		case internal.KnightState:
-			object := record.SerializedObject.(*objects.KnightState)
-			class := stem(object.CurrentLevelData.Key)
-			if class == GarranCrowClass {
+		case *objects.KnightState:
+			if stem(object.CurrentLevelData.Key) == GarranCrowClass {
 				continue
 			}
-
 			clearIncreasedSlots(object.ArmourRef.Key, object.EquippedItemClasses, upgrades)
 			object.ArmourRef.Key = stem(object.ArmourRef.Key)
-		case internal.DreadnoughtState:
-			object := record.SerializedObject.(*objects.DreadnoughtState)
+		case *objects.DreadnoughtState:
 			object.ArmourRef.Key = stem(object.ArmourRef.Key)
-		case internal.CallidusAssassinState, internal.CulexusAssassinState, internal.EversorAssassinState, internal.VindicareAssassinState:
-			object := record.SerializedObject.(*objects.AssassinState)
-			if strings.HasPrefix(object.ArmourRef.Key, SynskinBodyglovePrefix) {
+		case *objects.AssassinState:
+			if rest, ok := strings.CutPrefix(object.ArmourRef.Key, SynskinBodyglovePrefix); ok {
 				clearIncreasedSlots(object.ArmourRef.Key, object.EquippedItemClasses, upgrades)
-				object.ArmourRef.Key = SynskinBodyglovePrefix + stem(strings.TrimPrefix(object.ArmourRef.Key, SynskinBodyglovePrefix))
+				object.ArmourRef.Key = SynskinBodyglovePrefix + stem(rest)
 			} else {
 				object.ArmourRef.Key = stem(object.ArmourRef.Key)
 			}
@@ -85,20 +78,16 @@ func (m *Manager) UnequipMastercraftedArmor() {
 
 func (m *Manager) CanUnequipMastercraftedArmor() (bool, bool) {
 	for _, record := range m.state.LinearRecords {
-		switch record.TypeName {
-		case internal.KnightState:
-			object := record.SerializedObject.(*objects.KnightState)
-			class := stem(object.CurrentLevelData.Key)
-			if class != GarranCrowClass && mastercrafted(object.ArmourRef.Key) {
+		switch object := record.SerializedObject.(type) {
+		case *objects.KnightState:
+			if stem(object.CurrentLevelData.Key) != GarranCrowClass && mastercrafted(object.ArmourRef.Key) {
 				return true, true
 			}
-		case internal.DreadnoughtState:
-			object := record.SerializedObject.(*objects.DreadnoughtState)
+		case *objects.DreadnoughtState:
 			if mastercrafted(object.ArmourRef.Key) {
 				return true, true
 			}
-		case internal.CallidusAssassinState, internal.CulexusAssassinState, internal.EversorAssassinState, internal.VindicareAssassinState:
-			object := record.SerializedObject.(*objects.AssassinState)
+		case *objects.AssassinState:
 			if mastercrafted(object.ArmourRef.Key, SynskinBodyglovePrefix) {
 				return true, true
 			}

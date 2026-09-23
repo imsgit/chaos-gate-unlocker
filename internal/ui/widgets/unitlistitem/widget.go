@@ -94,12 +94,11 @@ func (i *Widget) CreateRenderer() fyne.WidgetRenderer {
 	))
 
 	return widget.NewSimpleRenderer(
-		container.NewStack(i.hoverBg,
-			container.NewBorder(nil, nil, container.NewHBox(
-				classContainer,
-				lvlContainer,
-				nameContainer), nil,
-			)))
+		container.NewStack(i.hoverBg, container.NewHBox(
+			classContainer,
+			lvlContainer,
+			nameContainer,
+		)))
 }
 
 func (i *Widget) Bind(val any) {
@@ -131,50 +130,48 @@ func (i *Widget) Bind(val any) {
 	iconClass := ui.DecodeMasked(ui.IconByName(class))
 	i.SetToolTip(splitOnCapital(class))
 
-	i.textName.Text = name
-	i.textLvl.Text = lvl
-	i.textStatus.Color = ui.MutedForeground
-	i.textStatus.Text = "Battle ready"
+	status := "Battle ready"
+	var statusColor color.Color = ui.MutedForeground
 
 	isDread := class == features.DreadnoughtClass
 	switch healthStatus {
 	case 3:
-		i.textStatus.Color = criticalColor
+		statusColor = criticalColor
 		if isDread {
-			i.textStatus.Text = "Unavailable - Critical damage"
+			status = "Unavailable - Critical damage"
 			if noPilot {
-				i.textStatus.Text = "Unavailable - No pilot"
+				status = "Unavailable - No pilot"
 			}
 		} else {
-			i.textStatus.Text = "Unavailable - Critical wound"
+			status = "Unavailable - Critical wound"
 		}
 	case 1, 2:
-		i.textStatus.Color = lightColor
+		statusColor = lightColor
 		damage, wound := " - Damage", " - Wound"
 		if healthStatus == 1 {
 			damage, wound = " - Light damage", " - Light wound"
 		}
 		if isDread {
-			i.textStatus.Text += damage
+			status += damage
 			if underRepair {
-				i.textStatus.Text = "Unavailable - Under repair"
+				status = "Unavailable - Under repair"
 			}
 			if noPilot {
-				i.textStatus.Text = "Unavailable - No pilot"
-				i.textStatus.Color = criticalColor
+				status = "Unavailable - No pilot"
+				statusColor = criticalColor
 			}
 		} else {
-			i.textStatus.Text += wound
+			status += wound
 		}
 	}
 
 	if sideMission {
-		i.textStatus.Text = "Unavailable - On mission"
-		i.textStatus.Color = moderateColor
+		status = "Unavailable - On mission"
+		statusColor = moderateColor
 	}
 
 	dim := 0.0
-	if strings.HasPrefix(i.textStatus.Text, "Unavailable") {
+	if strings.HasPrefix(status, "Unavailable") {
 		dim = 0.5
 	}
 	if i.iconClass.Image != iconClass || i.iconClass.Translucency != dim {
@@ -187,9 +184,17 @@ func (i *Widget) Bind(val any) {
 		i.imgLvl.Refresh()
 	}
 
-	i.textName.Refresh()
-	i.textLvl.Refresh()
-	i.textStatus.Refresh()
+	setText(i.textName, name, i.textName.Color)
+	setText(i.textLvl, lvl, i.textLvl.Color)
+	setText(i.textStatus, status, statusColor)
+}
+
+func setText(t *canvas.Text, text string, c color.Color) {
+	if t.Text == text && t.Color == c {
+		return
+	}
+	t.Text, t.Color = text, c
+	t.Refresh()
 }
 
 func override(base, over string) string {

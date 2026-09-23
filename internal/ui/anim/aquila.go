@@ -1,10 +1,7 @@
 package anim
 
 import (
-	"bytes"
-	"context"
 	"image"
-	_ "image/png"
 	"math"
 	"sync"
 	"time"
@@ -45,11 +42,10 @@ const (
 )
 
 func aquilaFrames(res fyne.Resource, pivotX, fromDeg float64) []image.Image {
-	src, _, err := image.Decode(bytes.NewReader(res.Content()))
-	if err != nil {
+	src := ui.ScaleDown(ui.Decode(res), aquilaBaseW)
+	if src == nil {
 		return nil
 	}
-	src = ui.ScaleDown(src, aquilaBaseW)
 
 	b := src.Bounds()
 	px := float64(b.Min.X) + pivotX*float64(b.Dx())
@@ -72,29 +68,24 @@ func aquilaFrames(res fyne.Resource, pivotX, fromDeg float64) []image.Image {
 	return frames
 }
 
-func (a *Aquila) Animate(ctx context.Context, im, im2 *canvas.Image, p *progress.Widget, open bool) {
+func (a *Aquila) Animate(im, im2 *canvas.Image, p *progress.Widget, open bool, onDone func()) (stop func()) {
 	leftFrames, rightFrames := a.frames()
-
-	width := float32(0)
 	sOffset := p.Size().Width / 20
 
 	if open {
 		im.Translucency = 1
 		im2.Translucency = 1
 		if len(leftFrames) > 0 {
-			im.Resource = nil
-			im2.Resource = nil
 			im.Image = leftFrames[0]
 			im2.Image = rightFrames[0]
 		}
 	}
+	p.Reset()
 
-	fyne.DoAndWait(p.Reset)
-
-	runFrames(ctx, 30, 15*time.Millisecond, p.Reset, func(i int) {
+	finished := false
+	an := Steps(30, 30*15*time.Millisecond, func(i int) {
 		if i < 20 {
-			width += sOffset
-			p.Grow(width)
+			p.Grow(float32(i+1) * sOffset)
 		} else if open {
 			p.Complete()
 		} else {
@@ -118,5 +109,18 @@ func (a *Aquila) Animate(ctx context.Context, im, im2 *canvas.Image, p *progress
 			im.Refresh()
 			im2.Refresh()
 		}
+	}, func() {
+		finished = true
+		onDone()
 	})
+	an.Start()
+
+	return func() {
+		if finished {
+			return
+		}
+		finished = true
+		an.Stop()
+		p.Reset()
+	}
 }

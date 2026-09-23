@@ -28,20 +28,17 @@ func New() *Widget {
 	return p
 }
 
-func (p *Widget) Grow(width float32) {
-	p.width = width
-	p.active = true
-	p.Refresh()
-}
+func (p *Widget) Grow(width float32) { p.set(width, true) }
 
-func (p *Widget) Complete() {
-	p.active = false
-	p.Refresh()
-}
+func (p *Widget) Complete() { p.set(p.width, false) }
 
-func (p *Widget) Reset() {
-	p.width = 0
-	p.active = false
+func (p *Widget) Reset() { p.set(0, false) }
+
+func (p *Widget) set(width float32, active bool) {
+	if p.width == width && p.active == active {
+		return
+	}
+	p.width, p.active = width, active
 	p.Refresh()
 }
 
@@ -73,7 +70,6 @@ func (r *progressRenderer) MinSize() fyne.Size {
 
 func (r *progressRenderer) Refresh() {
 	r.Layout(r.progress.Size())
-	r.progress.bg.Refresh()
 	r.progress.edge.Refresh()
 }
 

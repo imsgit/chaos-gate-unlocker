@@ -213,20 +213,23 @@ func (b *tabButton) refresh() {
 	v := fyne.CurrentApp().Settings().ThemeVariant()
 	th := b.Theme()
 
+	labelColor := th.Color(theme.ColorNamePlaceHolder, v)
 	if b.selected {
-		b.label.Color = th.Color(theme.ColorNameForeground, v)
-	} else {
-		b.label.Color = th.Color(theme.ColorNamePlaceHolder, v)
+		labelColor = th.Color(theme.ColorNameForeground, v)
 	}
-	if b.hovered && !b.selected {
-		b.bg.FillColor = th.Color(theme.ColorNameHover, v)
-	} else {
-		b.bg.FillColor = color.Transparent
+	if size := th.Size(theme.SizeNameText); b.label.Color != labelColor || b.label.TextSize != size {
+		b.label.Color, b.label.TextSize = labelColor, size
+		b.label.Refresh()
 	}
 
-	b.label.TextSize = th.Size(theme.SizeNameText)
-	b.label.Refresh()
-	b.bg.Refresh()
+	var fill color.Color = color.Transparent
+	if b.hovered && !b.selected {
+		fill = th.Color(theme.ColorNameHover, v)
+	}
+	if b.bg.FillColor != fill {
+		b.bg.FillColor = fill
+		b.bg.Refresh()
+	}
 }
 
 func (b *tabButton) Tapped(*fyne.PointEvent) {

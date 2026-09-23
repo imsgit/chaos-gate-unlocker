@@ -35,8 +35,8 @@ func DecodeMasked(res fyne.Resource) image.Image {
 	if img, ok := decoded[res]; ok {
 		return img
 	}
-	src, _, err := image.Decode(bytes.NewReader(res.Content()))
-	if err != nil {
+	src := Decode(res)
+	if src == nil {
 		return nil
 	}
 	img := ScaleDown(src, iconBaseW)

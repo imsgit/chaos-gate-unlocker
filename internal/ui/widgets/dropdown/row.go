@@ -141,8 +141,10 @@ func (r *selectRowRenderer) Refresh() {
 	th := r.row.Theme()
 	v := fyne.CurrentApp().Settings().ThemeVariant()
 
-	r.text.Text = r.row.text
-	r.text.Color = th.Color(theme.ColorNameForeground, v)
+	if c := th.Color(theme.ColorNameForeground, v); r.text.Text != r.row.text || r.text.Color != c {
+		r.text.Text, r.text.Color = r.row.text, c
+		r.text.Refresh()
+	}
 
 	switch {
 	case r.row.selected:
@@ -152,8 +154,6 @@ func (r *selectRowRenderer) Refresh() {
 	default:
 		r.bg.FillColor = color.Transparent
 	}
-
-	r.text.Refresh()
 	r.bg.Refresh()
 }
 

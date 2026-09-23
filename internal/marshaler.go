@@ -48,49 +48,38 @@ var typeNameToObject = map[string]func() any{
 	LoseGameOccasion:        func() any { return &objects.LoseGameOccasion{} },
 }
 
-func (r *LinearRecord) MarshalJSON() ([]byte, error) {
-	serializedContents := r.SerializedContents
+type linearRecord LinearRecord
 
+func (r *LinearRecord) MarshalJSON() ([]byte, error) {
+	out := linearRecord(*r)
 	if r.SerializedObject != nil {
 		serializedObject, err := json.Marshal(r.SerializedObject)
 		if err != nil {
 			return nil, err
 		}
-
-		if serializedContents, err = json.Marshal(string(serializedObject)); err != nil {
+		if out.SerializedContents, err = json.Marshal(string(serializedObject)); err != nil {
 			return nil, err
 		}
 	}
-
-	return json.Marshal(linearRecord{
-		TypeName:           r.TypeName,
-		AssetName:          r.AssetName,
-		SerializedContents: serializedContents,
-	})
+	return json.Marshal(out)
 }
 
 func (r *LinearRecord) UnmarshalJSON(data []byte) error {
-	var t linearRecord
-	err := json.Unmarshal(data, &t)
-	if err != nil {
+	if err := json.Unmarshal(data, (*linearRecord)(r)); err != nil {
 		return err
 	}
 
-	r.TypeName = t.TypeName
-	r.AssetName = t.AssetName
-
-	newObject, exists := typeNameToObject[t.TypeName]
+	newObject, exists := typeNameToObject[r.TypeName]
 	if !exists {
-		r.SerializedContents = t.SerializedContents
 		return nil
 	}
 
 	var unquoted string
-	if err := json.Unmarshal(t.SerializedContents, &unquoted); err != nil || unquoted == "" {
-		r.SerializedContents = t.SerializedContents
+	if err := json.Unmarshal(r.SerializedContents, &unquoted); err != nil || unquoted == "" {
 		return nil
 	}
 
+	r.SerializedContents = nil
 	r.SerializedObject = newObject()
 	return json.Unmarshal([]byte(unquoted), r.SerializedObject)
 }

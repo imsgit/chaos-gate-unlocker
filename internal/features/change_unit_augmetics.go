@@ -50,14 +50,8 @@ func IsSkipOption(option string) bool {
 }
 
 func (m *Manager) ChangeUnitAugmetics(unit any, changedAugmetics []string) {
-	switch object := unit.(type) {
-	case *objects.KnightState:
-		object.Augmetics = object.Augmetics[:0]
-		for _, augmetic := range changedAugmetics {
-			if augmetic != "" {
-				object.Augmetics = append(object.Augmetics, &objects.StringValue{Key: augmeticsByName[augmetic]})
-			}
-		}
+	if object, ok := unit.(*objects.KnightState); ok {
+		object.Augmetics = keysFromNames(object.Augmetics, changedAugmetics, augmeticsByName)
 	}
 }
 
@@ -71,11 +65,7 @@ func (m *Manager) UnitSupportsAugmetics(unit any) bool {
 func (m *Manager) CanChangeUnitAugmetics(unit any, idx int, heal bool) (bool, Augmetic, []string) {
 	switch object := unit.(type) {
 	case *objects.KnightState:
-		var curr Augmetic
-		if idx >= 0 && idx < len(object.Augmetics) {
-			curr = augmeticsByID[object.Augmetics[idx].Key]
-		}
-
+		curr := lookupAt(object.Augmetics, idx, augmeticsByID)
 		class := stem(object.CurrentLevelData.Key)
 		return class != GarranCrowClass &&
 				((object.LostResilience > idx && (object.HealthState.Status < 3 || heal)) ||

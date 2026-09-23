@@ -42,25 +42,24 @@ var _ = func() bool {
 
 var (
 	glContext   js.Value
-	glFound     bool
 	lossHandled bool
 )
 
 func contextIsLost(doc js.Value) bool {
-	if !glFound {
+	if !glContext.Truthy() {
 		canvases := doc.Call("getElementsByTagName", "canvas")
-		for i := 0; i < canvases.Length() && !glFound; i++ {
+		for i := 0; i < canvases.Length() && !glContext.Truthy(); i++ {
 			canvas := canvases.Index(i)
 			gl := canvas.Call("getContext", "webgl")
 			if !gl.Truthy() {
 				gl = canvas.Call("getContext", "experimental-webgl")
 			}
 			if gl.Truthy() {
-				glContext, glFound = gl, true
+				glContext = gl
 			}
 		}
 	}
-	return glFound && glContext.Call("isContextLost").Bool()
+	return glContext.Truthy() && glContext.Call("isContextLost").Bool()
 }
 
 func onContextLost(doc js.Value) {
@@ -105,10 +104,7 @@ func backoff(attempts int) time.Duration {
 	for i := 1; i < attempts && delay < retryBackoffMax; i++ {
 		delay *= 2
 	}
-	if delay > retryBackoffMax {
-		return retryBackoffMax
-	}
-	return delay
+	return min(delay, retryBackoffMax)
 }
 
 func loadAttempts() (attempts int, remembered bool) {

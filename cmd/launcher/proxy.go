@@ -36,9 +36,7 @@ type siteProxy struct {
 	origin   string
 	client   *http.Client
 	cacheDir string
-
-	mu       sync.Mutex
-	inflight map[string]bool
+	inflight sync.Map
 }
 
 func newSiteProxy(site string) (*siteProxy, string, error) {
@@ -74,7 +72,6 @@ func newSiteProxy(site string) (*siteProxy, string, error) {
 		origin:   u.Scheme + "://" + u.Host,
 		client:   &http.Client{Transport: transport},
 		cacheDir: cacheDir,
-		inflight: map[string]bool{},
 	}, path, nil
 }
 
@@ -93,26 +90,19 @@ func (p *siteProxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 func (p *siteProxy) revalidate(reqPath, etag, lastMod string) {
-	p.mu.Lock()
-	if p.inflight[reqPath] {
-		p.mu.Unlock()
+	if _, busy := p.inflight.LoadOrStore(reqPath, struct{}{}); busy {
 		return
 	}
-	p.inflight[reqPath] = true
-	p.mu.Unlock()
-
 	go func() {
-		defer func() {
-			p.mu.Lock()
-			delete(p.inflight, reqPath)
-			p.mu.Unlock()
-		}()
+		defer p.inflight.Delete(reqPath)
 		p.fetch(reqPath, etag, lastMod, nil)
 	}()
 }
 
 func (p *siteProxy) fetch(reqPath, etag, lastMod string, w http.ResponseWriter) bool {
-	req, err := http.NewRequest(http.MethodGet, p.origin+reqPath, nil)
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, p.origin+reqPath, nil)
 	if err != nil {
 		return false
 	}
@@ -123,9 +113,7 @@ func (p *siteProxy) fetch(reqPath, etag, lastMod string, w http.ResponseWriter) 
 	if lastMod != "" {
 		req.Header.Set("If-Modified-Since", lastMod)
 	}
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-	resp, err := p.client.Do(req.WithContext(ctx))
+	resp, err := p.client.Do(req)
 	if err != nil {
 		return false
 	}
@@ -141,6 +129,9 @@ func (p *siteProxy) fetch(reqPath, etag, lastMod string, w http.ResponseWriter) 
 	}
 
 	var buf bytes.Buffer
+	if resp.ContentLength > 0 && resp.ContentLength <= maxAssetBytes {
+		buf.Grow(int(resp.ContentLength))
+	}
 	var dst io.Writer = &buf
 	if w != nil {
 		setAssetHeaders(w, a)
@@ -155,6 +146,9 @@ func (p *siteProxy) fetch(reqPath, etag, lastMod string, w http.ResponseWriter) 
 	n, err := io.Copy(dst, io.LimitReader(&stallReader{r: resp.Body, timer: stall}, maxAssetBytes+1))
 	if err != nil || n > maxAssetBytes {
 		return w != nil
+	}
+	if w != nil {
+		http.NewResponseController(w).Flush()
 	}
 	a.body = buf.Bytes()
 	p.store(reqPath, a)
@@ -195,11 +189,10 @@ func (p *siteProxy) cachePath(reqPath string) string {
 	if clean == "" || strings.HasSuffix(reqPath, "/") {
 		clean = filepath.Join(clean, "index.html")
 	}
-	full := filepath.Join(p.cacheDir, clean)
-	if rel, err := filepath.Rel(p.cacheDir, full); err != nil || strings.HasPrefix(rel, "..") {
+	if !filepath.IsLocal(clean) {
 		return ""
 	}
-	return full
+	return filepath.Join(p.cacheDir, clean)
 }
 
 func (p *siteProxy) store(reqPath string, a asset) {

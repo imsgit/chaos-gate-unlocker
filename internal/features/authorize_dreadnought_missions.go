@@ -1,7 +1,6 @@
 package features
 
 import (
-	"chaos-gate-unlocker/internal"
 	"chaos-gate-unlocker/internal/objects"
 
 	"strings"
@@ -13,7 +12,7 @@ const (
 )
 
 func (m *Manager) AuthorizeDreadnoughtMissions() {
-	forEach(m, internal.StarMapMission, func(o *objects.StarMapMission) {
+	forEach(m, func(o *objects.StarMapMission) {
 		if canBeTechnophageMission(o) {
 			o.IsTechnophageMission = true
 		}
@@ -26,22 +25,16 @@ func (m *Manager) CanAuthorizeDreadnoughtMissions() (bool, bool) {
 	currentMissions := map[int]bool{}
 
 	for i, record := range m.state.LinearRecords {
-		switch record.TypeName {
-		case internal.GameUnlocksSaveState:
-			object := record.SerializedObject.(*objects.GameUnlocksSaveState)
-			for i := range object.Unlocks {
-				if object.Unlocks[i].ID == HonourOfTheAncientsComplete {
-					dreadnoughtAvailable = true
-					break
-				}
+		switch object := record.SerializedObject.(type) {
+		case *objects.GameUnlocksSaveState:
+			if hasUnlock(object, HonourOfTheAncientsComplete) {
+				dreadnoughtAvailable = true
 			}
-		case internal.StarMapMissionSaveState:
-			object := record.SerializedObject.(*objects.StarMapMissionSaveState)
+		case *objects.StarMapMissionSaveState:
 			for _, mission := range object.CurrentMissions.Values {
 				currentMissions[mission.Key] = true
 			}
-		case internal.StarMapMission:
-			object := record.SerializedObject.(*objects.StarMapMission)
+		case *objects.StarMapMission:
 			if currentMissions[m.state.LinearInstanceIds[i]] {
 				if object.IsTechnophageMission {
 					hasMissions = true

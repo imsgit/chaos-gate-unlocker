@@ -1,8 +1,9 @@
 package features
 
 import (
-	"chaos-gate-unlocker/internal"
 	"chaos-gate-unlocker/internal/objects"
+
+	"slices"
 )
 
 const (
@@ -10,30 +11,25 @@ const (
 	PrognosticarTutorial = "Prognosticar_Tutorial"
 )
 
+func prognosticarCurrency(o *objects.CurrencySaveState, current *objects.Currency) *objects.Currency {
+	for _, c := range o.SavedCurrencies {
+		if c.CurrencyType.Key == Prognosticars {
+			current = c
+		}
+	}
+	return current
+}
+
 func (m *Manager) RestorePrognosticars() {
 	var currency *objects.Currency
 
 	for _, record := range m.state.LinearRecords {
-		switch record.TypeName {
-		case internal.GameUnlocksSaveState:
-			object := record.SerializedObject.(*objects.GameUnlocksSaveState)
-			temp := object.Unlocks[:0]
-			for i := range object.Unlocks {
-				if object.Unlocks[i].ID == PrognosticarTutorial {
-					continue
-				}
-				temp = append(temp, object.Unlocks[i])
-			}
-			object.Unlocks = temp
-		case internal.CurrencySaveState:
-			object := record.SerializedObject.(*objects.CurrencySaveState)
-			for i := range object.SavedCurrencies {
-				if object.SavedCurrencies[i].CurrencyType.Key == Prognosticars {
-					currency = object.SavedCurrencies[i]
-				}
-			}
-		case internal.StarMapNodeModel:
-			object := record.SerializedObject.(*objects.StarMapNodeModel)
+		switch object := record.SerializedObject.(type) {
+		case *objects.GameUnlocksSaveState:
+			object.Unlocks = slices.DeleteFunc(object.Unlocks, func(u objects.Unlock) bool { return u.ID == PrognosticarTutorial })
+		case *objects.CurrencySaveState:
+			currency = prognosticarCurrency(object, currency)
+		case *objects.StarMapNodeModel:
 			if object.HasPrognosticar.Value && currency != nil {
 				object.HasPrognosticar.Value = false
 				currency.Amount++
@@ -50,24 +46,14 @@ func (m *Manager) CanRestorePrognosticars() (bool, bool) {
 	)
 
 	for _, record := range m.state.LinearRecords {
-		switch record.TypeName {
-		case internal.GameUnlocksSaveState:
-			object := record.SerializedObject.(*objects.GameUnlocksSaveState)
-			for i := range object.Unlocks {
-				if object.Unlocks[i].ID == PrognosticarTutorial {
-					available = true
-					break
-				}
+		switch object := record.SerializedObject.(type) {
+		case *objects.GameUnlocksSaveState:
+			if hasUnlock(object, PrognosticarTutorial) {
+				available = true
 			}
-		case internal.CurrencySaveState:
-			object := record.SerializedObject.(*objects.CurrencySaveState)
-			for i := range object.SavedCurrencies {
-				if object.SavedCurrencies[i].CurrencyType.Key == Prognosticars {
-					currency = object.SavedCurrencies[i]
-				}
-			}
-		case internal.StarMapNodeModel:
-			object := record.SerializedObject.(*objects.StarMapNodeModel)
+		case *objects.CurrencySaveState:
+			currency = prognosticarCurrency(object, currency)
+		case *objects.StarMapNodeModel:
 			if object.HasPrognosticar.Value {
 				hasProg = true
 			}

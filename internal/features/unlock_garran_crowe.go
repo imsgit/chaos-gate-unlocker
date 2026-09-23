@@ -1,7 +1,6 @@
 package features
 
 import (
-	"chaos-gate-unlocker/internal"
 	"chaos-gate-unlocker/internal/objects"
 )
 
@@ -11,12 +10,12 @@ const (
 )
 
 func (m *Manager) UnlockGarranCrowe() {
-	forEach(m, internal.GameUnlocksSaveState, func(o *objects.GameUnlocksSaveState) {
+	forEach(m, func(o *objects.GameUnlocksSaveState) {
 		o.Unlocks = append(o.Unlocks, objects.Unlock{
 			ID: HasSeenFirstGrandMasterReportOfAct2,
 		})
 	})
-	forEach(m, internal.KnightsSaveState, func(o *objects.KnightsSaveState) {
+	forEach(m, func(o *objects.KnightsSaveState) {
 		o.DaysUntilNextCroweStateChange = 0
 	})
 }
@@ -25,19 +24,11 @@ func (m *Manager) CanUnlockGarranCrowe() (bool, bool) {
 	var croweAvailable, advancedTime bool
 
 	for _, record := range m.state.LinearRecords {
-		switch record.TypeName {
-		case internal.GameUnlocksSaveState:
-			object := record.SerializedObject.(*objects.GameUnlocksSaveState)
-			for i := range object.Unlocks {
-				if object.Unlocks[i].ID == CroweAvailable {
-					croweAvailable = true
-				}
-				if object.Unlocks[i].ID == KoramarMissionDefeated {
-					advancedTime = true
-				}
-			}
-		case internal.KnightsSaveState:
-			object := record.SerializedObject.(*objects.KnightsSaveState)
+		switch object := record.SerializedObject.(type) {
+		case *objects.GameUnlocksSaveState:
+			croweAvailable = croweAvailable || hasUnlock(object, CroweAvailable)
+			advancedTime = advancedTime || hasUnlock(object, KoramarMissionDefeated)
+		case *objects.KnightsSaveState:
 			if object.HasBeenOfferedCrowe || object.DaysUntilNextCroweStateChange == 0 {
 				return false, true
 			}

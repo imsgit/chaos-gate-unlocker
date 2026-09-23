@@ -1,7 +1,8 @@
 package main
 
 import (
-	"sort"
+	"maps"
+	"slices"
 	"strings"
 
 	"chaos-gate-unlocker/internal/save"
@@ -24,7 +25,7 @@ func slotOf(name string) string {
 }
 
 type oneTwoLayout struct {
-	btns func() fyne.CanvasObject
+	btns fyne.CanvasObject
 }
 
 func (oneTwoLayout) MinSize(o []fyne.CanvasObject) fyne.Size {
@@ -32,14 +33,12 @@ func (oneTwoLayout) MinSize(o []fyne.CanvasObject) fyne.Size {
 	return fyne.NewSize(a.Width+b.Width+theme.Padding(), fyne.Max(a.Height, b.Height))
 }
 
-func (l oneTwoLayout) Layout(o []fyne.CanvasObject, s fyne.Size) {
+func (l *oneTwoLayout) Layout(o []fyne.CanvasObject, s fyne.Size) {
 	pad := theme.Padding()
 	lw := (s.Width - pad) / 4
 	if l.btns != nil {
-		if b := l.btns(); b != nil {
-			if w := s.Width/2 - b.MinSize().Width/2 - pad; w > pad {
-				lw = w
-			}
+		if w := s.Width/2 - l.btns.MinSize().Width/2 - pad; w > pad {
+			lw = w
 		}
 	}
 	o[0].Resize(fyne.NewSize(lw, s.Height))
@@ -48,19 +47,15 @@ func (l oneTwoLayout) Layout(o []fyne.CanvasObject, s fyne.Size) {
 	o[1].Move(fyne.NewPos(lw+pad, 0))
 }
 
-func showSavePicker(w fyne.Window, names []string, info func(name string) save.Info, onPick func(name string), onOpenDir func()) {
-	slots := make([]string, 0)
+func showSavePicker(w fyne.Window, infos map[string]save.Info, onPick func(name string), onOpenDir func()) {
 	bySlot := map[string][]string{}
-	for _, n := range names {
+	for n := range infos {
 		s := slotOf(n)
-		if _, ok := bySlot[s]; !ok {
-			slots = append(slots, s)
-		}
 		bySlot[s] = append(bySlot[s], n)
 	}
-	sort.Strings(slots)
+	slots := slices.Sorted(maps.Keys(bySlot))
 	for _, s := range slots {
-		sort.Strings(bySlot[s])
+		slices.Sort(bySlot[s])
 	}
 
 	var current []string
@@ -71,19 +66,14 @@ func showSavePicker(w fyne.Window, names []string, info func(name string) save.I
 		func(i widget.ListItemID, o fyne.CanvasObject) {
 			if item, ok := o.(*savelistitem.Widget); ok {
 				file := current[i]
-				disp := file
-				if j := strings.IndexByte(disp, '_'); j >= 0 {
-					disp = disp[j+1:]
-				}
-				if strings.HasPrefix(disp, "Slot") {
-					disp = "Save" + disp[len("Slot"):]
-				}
-				disp = strings.TrimSuffix(disp, ".gksave")
-
-				in := info(file)
+				in := infos[file]
 				title := in.Title
 				if title == "" {
-					title = disp
+					title = file[strings.IndexByte(file, '_')+1:]
+					if rest, ok := strings.CutPrefix(title, "Slot"); ok {
+						title = "Save" + rest
+					}
+					title = strings.TrimSuffix(title, ".gksave")
 				}
 				item.Bind(title, in.Detail)
 			}
@@ -102,27 +92,22 @@ func showSavePicker(w fyne.Window, names []string, info func(name string) save.I
 	)
 	slotsList.HideSeparators = true
 
-	var btnRow *fyne.Container
+	layout := &oneTwoLayout{}
 	body := container.New(
-		oneTwoLayout{btns: func() fyne.CanvasObject { return btnRow }},
+		layout,
 		dragscroll.List(slotsList), dragscroll.List(savesList),
 	)
 
 	d := dialog.NewCustomWithoutButtons(" Save selection", body, w)
-	buttons := make([]fyne.CanvasObject, 0, 2)
-	buttons = append(buttons, widget.NewButtonWithIcon("Cancel", theme.CancelIcon(), d.Hide))
-	if onOpenDir != nil {
-		browse := widget.NewButtonWithIcon("Browse", theme.FolderOpenIcon(), onOpenDir)
-		browse.Importance = widget.HighImportance
-		buttons = append(buttons, browse)
-	}
-	btnRow = container.NewGridWithRows(1, buttons...)
+	browse := widget.NewButtonWithIcon("Browse", theme.FolderOpenIcon(), onOpenDir)
+	browse.Importance = widget.HighImportance
+	btnRow := container.NewGridWithRows(1, widget.NewButtonWithIcon("Cancel", theme.CancelIcon(), d.Hide), browse)
+	layout.btns = btnRow
 	d.SetButtons([]fyne.CanvasObject{btnRow})
 	d.Resize(fyne.NewSize(520, 440))
 
 	slotsList.OnSelected = func(i widget.ListItemID) {
 		current = bySlot[slots[i]]
-		savesList.UnselectAll()
 		savesList.Refresh()
 		savesList.ScrollToTop()
 	}
@@ -133,9 +118,7 @@ func showSavePicker(w fyne.Window, names []string, info func(name string) save.I
 		onPick(name)
 	}
 
-	if len(slots) > 0 {
-		slotsList.Select(0)
-	}
+	slotsList.Select(0)
 
 	d.Show()
 }
